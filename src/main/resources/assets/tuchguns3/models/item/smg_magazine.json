@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "tuchguns3:item/ammo/smg_magazine"
-  }
-}

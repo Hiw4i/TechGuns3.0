@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "techguns3_ammo",
+  "ingredients": [
+    "minecraft:gunpowder",
+    "minecraft:iron_ingot",
+    "minecraft:paper"
+  ],
+  "result": {
+    "id": "techguns3:shotgun_rounds",
+    "count": 4
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:blasting",
+  "cookingtime": 100,
+  "experience": 0.7,
+  "group": "techguns3_ingot",
+  "ingredient": "techguns3:uranium_ore",
+  "result": {
+    "id": "techguns3:uranium_ingot"
+  }
+}

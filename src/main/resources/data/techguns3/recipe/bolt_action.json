@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "W": "minecraft:spruce_planks"
+  },
+  "pattern": [
+    "  I",
+    " WI",
+    "W  "
+  ],
+  "result": {
+    "id": "techguns3:bolt_action"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "pistol_fire": {
+    "sounds": [
+      "techguns3:guns/pistol_shot_a",
+      "techguns3:guns/pistol_shot_b",
+      "techguns3:guns/pistol_shot_c"
+    ]
+  },
+  "pistol_reload": {
+    "sounds": ["techguns3:guns/pistol_reload"]
+  },
+  "revolver_fire": {
+    "sounds": [
+      "techguns3:guns/revolver_shot_a",
+      "techguns3:guns/revolver_shot_b",
+      "techguns3:guns/revolver_shot_c"
+    ]
+  },
+  "revolver_reload": {
+    "sounds": ["techguns3:guns/revolver_reload"]
+  },
+  "ak47_fire": {
+    "sounds": [
+      "techguns3:guns/ak47_shot_a",
+      "techguns3:guns/ak47_shot_b",
+      "techguns3:guns/ak47_shot_c"
+    ]
+  },
+  "ak47_reload": {
+    "sounds": ["techguns3:guns/ak47_reload"]
+  },
+  "m4_fire": {
+    "sounds": [
+      "techguns3:guns/ar1_shot_a",
+      "techguns3:guns/ar1_shot_b"
+    ]
+  },
+  "m4_reload": {
+    "sounds": ["techguns3:guns/ar1_reload"]
+  },
+  "thompson_fire": {
+    "sounds": [
+      "techguns3:guns/thompson_shot_a",
+      "techguns3:guns/thompson_shot_b",
+      "techguns3:guns/thompson_shot_c"
+    ]
+  },
+  "thompson_reload": {
+    "sounds": ["techguns3:guns/thompson_reload"]
+  },
+  "combat_shotgun_fire": {
+    "sounds": [
+      "techguns3:guns/combatshotgun_shot_a",
+      "techguns3:guns/combatshotgun_shot_b",
+      "techguns3:guns/combatshotgun_shot_c"
+    ]
+  },
+  "combat_shotgun_reload": {
+    "sounds": ["techguns3:guns/combatshotgun_reload"]
+  },
+  "combat_shotgun_pump": {
+    "sounds": ["techguns3:guns/combatshotgun_pump"]
+  },
+  "bolt_action_fire": {
+    "sounds": [
+      "techguns3:guns/boltaction_shot_a",
+      "techguns3:guns/boltaction_shot_b",
+      "techguns3:guns/boltaction_shot_c"
+    ]
+  },
+  "bolt_action_reload": {
+    "sounds": ["techguns3:guns/boltaction_reload"]
+  },
+  "bolt_action_rechamber": {
+    "sounds": ["techguns3:guns/boltaction_rechamber"]
+  },
+  "impact_rock": {
+    "sounds": [
+      "techguns3:effects/impact_rock-01",
+      "techguns3:effects/impact_rock-02",
+      "techguns3:effects/impact_rock-03",
+      "techguns3:effects/impact_rock-04"
+    ]
+  },
+  "impact_metal": {
+    "sounds": [
+      "techguns3:effects/impact_metal-01",
+      "techguns3:effects/impact_metal-02",
+      "techguns3:effects/impact_metal-03",
+      "techguns3:effects/impact_metal-04",
+      "techguns3:effects/impact_metal-05"
+    ]
+  },
+  "impact_dirt": {
+    "sounds": [
+      "techguns3:effects/impact_dirt-01",
+      "techguns3:effects/impact_dirt-02",
+      "techguns3:effects/impact_dirt-03",
+      "techguns3:effects/impact_dirt-04"
+    ]
+  },
+  "impact_wood": {
+    "sounds": [
+      "techguns3:effects/impact_wood-01",
+      "techguns3:effects/impact_wood-02",
+      "techguns3:effects/impact_wood-03",
+      "techguns3:effects/impact_wood-04",
+      "techguns3:effects/impact_wood-05"
+    ]
+  },
+  "impact_glass": {
+    "sounds": [
+      "techguns3:effects/impact_glass-01",
+      "techguns3:effects/impact_glass-02",
+      "techguns3:effects/impact_glass-03",
+      "techguns3:effects/impact_glass-04",
+      "techguns3:effects/impact_glass-05"
+    ]
+  },
+  "impact_bricks": {
+    "sounds": [
+      "techguns3:effects/impact_bricks-01",
+      "techguns3:effects/impact_bricks-02",
+      "techguns3:effects/impact_bricks-03",
+      "techguns3:effects/impact_bricks-04",
+      "techguns3:effects/impact_bricks-05"
+    ]
+  },
+  "impact_water": {
+    "sounds": [
+      "techguns3:effects/impact_water-01",
+      "techguns3:effects/impact_water-02",
+      "techguns3:effects/impact_water-03",
+      "techguns3:effects/impact_water-04",
+      "techguns3:effects/impact_water-05"
+    ]
+  }
+}

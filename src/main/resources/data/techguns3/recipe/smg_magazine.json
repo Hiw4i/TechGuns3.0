@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "techguns3_ammo",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "techguns3:pistol_rounds"
+  },
+  "pattern": [
+    " I ",
+    "IRI",
+    " I "
+  ],
+  "result": {
+    "id": "techguns3:smg_magazine"
+  }
+}
