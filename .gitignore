@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# NeoForge / Minecraft run dirs
+run/
+run-data/
+logs/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Java
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Publishing repo
+repo/

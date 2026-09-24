@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "tuchguns3_ammo",
+  "ingredients": [
+    "minecraft:gunpowder",
+    "minecraft:iron_nugget",
+    "minecraft:iron_nugget"
+  ],
+  "result": {
+    "id": "tuchguns3:pistol_rounds",
+    "count": 4
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "tuchguns3_gun",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "W": "minecraft:oak_planks"
+  },
+  "pattern": [
+    "  I",
+    " WI",
+    "WW "
+  ],
+  "result": {
+    "id": "tuchguns3:combat_shotgun"
+  }
+}

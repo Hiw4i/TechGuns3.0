@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "cookingtime": 200,
+  "experience": 0.7,
+  "group": "tuchguns3_ingot",
+  "ingredient": "tuchguns3:lead_ore",
+  "result": {
+    "id": "tuchguns3:lead_ingot"
+  }
+}

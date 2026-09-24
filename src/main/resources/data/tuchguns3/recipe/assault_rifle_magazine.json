@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "tuchguns3_ammo",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "tuchguns3:rifle_rounds"
+  },
+  "pattern": [
+    " I ",
+    "IRI",
+    " I "
+  ],
+  "result": {
+    "id": "tuchguns3:assault_rifle_magazine"
+  }
+}
