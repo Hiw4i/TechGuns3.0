@@ -1,6 +1,7 @@
 package com.techguns.techguns3.registry;
 
 import com.techguns.techguns3.TechGuns3;
+import com.techguns.techguns3.turret.TurretBaseBlock;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
@@ -23,7 +24,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *   <li>{@code metalpanel} had N variants via {@code GenericBlockMetaEnumCamoChangeable};
  *       MVP keeps a single {@code metal_panel} placeholder, variants return later.</li>
  * </ul>
- * Ore generation (BiomeModifiers) and loot tables land in phase 2.</p>
+ * Ore generation and loot tables are supplied as data pack resources.</p>
  */
 public final class TGBlocks {
     private TGBlocks() {}
@@ -64,7 +65,12 @@ public final class TGBlocks {
                     .strength(8.0f, 6.0f)
                     .requiresCorrectToolForDrops());
 
-    private static DeferredItem<BlockItem> blockItem(DeferredBlock<Block> block) {
+    public static final DeferredBlock<TurretBaseBlock> TURRET_BASE = BLOCKS.registerBlock("turret_base",
+            TurretBaseBlock::new, () -> BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).sound(SoundType.METAL)
+                    .strength(5.0f, 12.0f).requiresCorrectToolForDrops());
+
+    private static <T extends Block> DeferredItem<BlockItem> blockItem(DeferredBlock<T> block) {
         return TGItems.ITEMS.registerSimpleBlockItem(block.getId().getPath(), block);
     }
 
@@ -76,4 +82,5 @@ public final class TGBlocks {
     public static final DeferredItem<BlockItem> URANIUM_ORE_ITEM = blockItem(URANIUM_ORE);
     public static final DeferredItem<BlockItem> TITANIUM_ORE_ITEM = blockItem(TITANIUM_ORE);
     public static final DeferredItem<BlockItem> METAL_PANEL_ITEM = blockItem(METAL_PANEL);
+    public static final DeferredItem<BlockItem> TURRET_BASE_ITEM = blockItem(TURRET_BASE);
 }

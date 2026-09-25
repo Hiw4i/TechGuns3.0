@@ -43,6 +43,9 @@ public final class TGConfig {
     private static final ModConfigSpec.BooleanValue AMMO_HUD = CLIENT
             .comment("Show the TechGuns ammo HUD overlay (reworked HUD from CE, simplified in MVP).")
             .define("ammoHud", true);
+    private static final ModConfigSpec.BooleanValue CAMERA_RECOIL = CLIENT
+            .comment("Apply a small client-side camera kick when firing. Damage stays server-side.")
+            .define("cameraRecoil", true);
 
     static final ModConfigSpec COMMON_SPEC = COMMON.build();
     static final ModConfigSpec CLIENT_SPEC = CLIENT.build();
@@ -54,6 +57,7 @@ public final class TGConfig {
     private static boolean generateUranium = true;
     private static boolean generateTitanium = true;
     private static boolean ammoHud = true;
+    private static boolean cameraRecoil = true;
 
     public static double gunDamageMultiplier() { return gunDamageMultiplier; }
     public static boolean generateCopper() { return generateCopper; }
@@ -62,6 +66,7 @@ public final class TGConfig {
     public static boolean generateUranium() { return generateUranium; }
     public static boolean generateTitanium() { return generateTitanium; }
     public static boolean ammoHud() { return ammoHud; }
+    public static boolean cameraRecoil() { return cameraRecoil; }
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -74,6 +79,7 @@ public final class TGConfig {
             generateTitanium = GEN_TITANIUM.get();
         } else if (event.getConfig().getSpec() == CLIENT_SPEC) {
             ammoHud = AMMO_HUD.get();
+            cameraRecoil = CAMERA_RECOIL.get();
         }
     }
 }

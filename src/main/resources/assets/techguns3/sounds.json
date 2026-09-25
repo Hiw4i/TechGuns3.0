@@ -61,6 +61,20 @@
   "combat_shotgun_pump": {
     "sounds": ["techguns3:guns/combatshotgun_pump"]
   },
+  "minigun_fire": {
+    "sounds": ["techguns3:guns/minigun_shot_a", "techguns3:guns/minigun_shot_b",
+      "techguns3:guns/minigun_shot_c", "techguns3:guns/minigun_shot_d"]
+  },
+  "minigun_reload": {
+    "sounds": ["techguns3:guns/minigun_reload"]
+  },
+  "teslagun_fire": {
+    "sounds": ["techguns3:guns/teslagun_shot_a", "techguns3:guns/teslagun_shot_b",
+      "techguns3:guns/teslagun_shot_c", "techguns3:guns/teslagun_shot_d"]
+  },
+  "teslagun_reload": {
+    "sounds": ["techguns3:guns/teslagun_reload"]
+  },
   "bolt_action_fire": {
     "sounds": [
       "techguns3:guns/boltaction_shot_a",

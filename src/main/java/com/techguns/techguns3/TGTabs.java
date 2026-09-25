@@ -27,12 +27,10 @@ public final class TGTabs {
                     .displayItems((parameters, output) -> {
                         // Wave-1 guns
                         output.accept(TGItems.PISTOL.get());
-                        output.accept(TGItems.REVOLVER.get());
                         output.accept(TGItems.AK47.get());
-                        output.accept(TGItems.M4.get());
-                        output.accept(TGItems.THOMPSON.get());
                         output.accept(TGItems.COMBAT_SHOTGUN.get());
-                        output.accept(TGItems.BOLT_ACTION.get());
+                        output.accept(TGItems.MINIGUN.get());
+                        output.accept(TGItems.TESLAGUN.get());
                         // Wave-1 ammo
                         output.accept(TGItems.PISTOL_ROUNDS.get());
                         output.accept(TGItems.RIFLE_ROUNDS.get());
@@ -40,6 +38,14 @@ public final class TGTabs {
                         output.accept(TGItems.PISTOL_MAGAZINE.get());
                         output.accept(TGItems.ASSAULT_RIFLE_MAGAZINE.get());
                         output.accept(TGItems.SMG_MAGAZINE.get());
+                        output.accept(TGItems.PISTOL_MAGAZINE_EMPTY.get());
+                        output.accept(TGItems.ASSAULT_RIFLE_MAGAZINE_EMPTY.get());
+                        output.accept(TGItems.SMG_MAGAZINE_EMPTY.get());
+                        output.accept(TGItems.TURRET_ARMOR_IRON.get());
+                        output.accept(TGItems.MINIGUN_DRUM.get());
+                        output.accept(TGItems.MINIGUN_DRUM_EMPTY.get());
+                        output.accept(TGItems.ENERGY_CELL.get());
+                        output.accept(TGItems.ENERGY_CELL_EMPTY.get());
                         // Wave-1 ingots
                         output.accept(TGItems.TIN_INGOT.get());
                         output.accept(TGItems.LEAD_INGOT.get());
@@ -52,6 +58,7 @@ public final class TGTabs {
                         output.accept(TGBlocks.URANIUM_ORE_ITEM.get());
                         output.accept(TGBlocks.TITANIUM_ORE_ITEM.get());
                         output.accept(TGBlocks.METAL_PANEL_ITEM.get());
+                        output.accept(TGBlocks.TURRET_BASE_ITEM.get());
                     })
                     .build());
 }

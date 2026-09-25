@@ -3,6 +3,7 @@ package com.techguns.techguns3.entity;
 import com.techguns.techguns3.registry.TGEntities;
 import com.techguns.techguns3.registry.TGItems;
 import com.techguns.techguns3.registry.TGSounds;
+import com.techguns.techguns3.turret.TurretHeadEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -89,7 +90,10 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
     @Override
     protected boolean canHitEntity(Entity entity) {
         return super.canHitEntity(entity) && entity != getOwner()
-                && entity.isAlive() && entity.canBeCollidedWith(this);
+                && entity.canBeHitByProjectile()
+                && (!(getOwner() instanceof LivingEntity living) || !living.isAlliedTo(entity))
+                && (!(getOwner() instanceof TurretHeadEntity turret)
+                    || !(entity instanceof LivingEntity target) || turret.canAttackTarget(target));
     }
 
     @Override
@@ -102,21 +106,29 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
         }
         super.tick();
 
-        ttlLeft--;
-        if (ttlLeft <= 0) {
-            discard();
-            return;
+        // The server owns lifetime and collision. Client spawn packets do not carry
+        // the per-shot Spec, so a client must not discard its visual tracer at tick 1.
+        if (!level().isClientSide()) {
+            ttlLeft--;
+            if (ttlLeft <= 0) {
+                discard();
+                return;
+            }
         }
 
         Vec3 from = position();
         Vec3 to = from.add(getDeltaMovement());
-        HitResult hit = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
-        if (hit.getType() != HitResult.Type.MISS) {
-            onBulletHit(hit);
-            return;
+        if (!level().isClientSide()) {
+            HitResult hit = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
+            if (hit.getType() != HitResult.Type.MISS) {
+                onBulletHit(hit);
+                return;
+            }
         }
 
         setPos(to.x, to.y, to.z);
+
+        // Visuals come from the custom tracer renderer; no stock particles here.
 
         Vec3 motion = getDeltaMovement();
         float horizontal = (float) Math.sqrt(motion.x * motion.x + motion.z * motion.z);
@@ -151,7 +163,10 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 } else {
                     source = damageSources().thrown(this, owner != null ? owner : this);
                 }
-                target.hurtServer(serverLevel, source, damageAt(getX(), getY(), getZ()));
+                Vec3 impact = entityHit.getLocation();
+                target.hurtServer(serverLevel, source, damageAt(impact.x, impact.y, impact.z));
+                level().addFreshEntity(new MuzzleFlashEntity(level(),
+                        impact.x, impact.y, impact.z, MuzzleFlashEntity.WHITE, 0.3f));
             }
             discard();
         } else if (hit instanceof BlockHitResult blockHit) {
@@ -160,6 +175,9 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 SoundEvent impact = impactFor(sound).get();
                 level().playSound(null, blockHit.getLocation().x, blockHit.getLocation().y,
                         blockHit.getLocation().z, impact, SoundSource.BLOCKS, 1.0f, 1.0f);
+                Vec3 at = blockHit.getLocation();
+                level().addFreshEntity(new MuzzleFlashEntity(level(),
+                        at.x, at.y, at.z, MuzzleFlashEntity.WHITE, 0.25f));
             }
             discard();
         }
@@ -194,10 +212,7 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
     protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
     }
 
-    /**
-     * Rendered by vanilla {@code ThrownItemRenderer} as a spinning tracer sprite.
-     * A proper elongated glow-quad tracer is a later visual upgrade.
-     */
+    /** Inventory representation only; in flight the tracer is rendered with particles. */
     @Override
     public net.minecraft.world.item.ItemStack getItem() {
         return new net.minecraft.world.item.ItemStack(TGItems.RIFLE_ROUNDS.get());
@@ -215,6 +230,10 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 input.getDoubleOr("Gravity", 0.0),
                 input.getFloatOr("Penetration", 0.0f));
         ttlLeft = input.getIntOr("TTLLeft", spec.ttlTicks());
+        startX = input.getDoubleOr("StartX", getX());
+        startY = input.getDoubleOr("StartY", getY());
+        startZ = input.getDoubleOr("StartZ", getZ());
+        startInit = input.getBooleanOr("StartInit", true);
     }
 
     @Override
@@ -228,5 +247,9 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
         output.putDouble("Gravity", spec.gravity());
         output.putFloat("Penetration", spec.penetration());
         output.putInt("TTLLeft", ttlLeft);
+        output.putDouble("StartX", startX);
+        output.putDouble("StartY", startY);
+        output.putDouble("StartZ", startZ);
+        output.putBoolean("StartInit", startInit);
     }
 }

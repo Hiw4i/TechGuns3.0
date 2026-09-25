@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#minecraft:is_overworld",
+  "spawners": [
+    {"type": "techguns3:zombie_soldier", "weight": 20, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
+    {"type": "techguns3:bandit", "weight": 10, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}}
+  ]
+}

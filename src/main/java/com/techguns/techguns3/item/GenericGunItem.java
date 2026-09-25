@@ -2,11 +2,10 @@ package com.techguns.techguns3.item;
 
 import com.techguns.techguns3.TGConfig;
 import com.techguns.techguns3.TechGuns3;
-import com.techguns.techguns3.entity.BulletProjectile;
 import com.techguns.techguns3.registry.TGDataComponents;
+import com.techguns.techguns3.registry.TGItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,27 +16,21 @@ import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * 26.3 firearm base. Ports the 1.12 {@code GenericGun.shootGunPrimary} loop in simplified form:
+ * 26.3 firearm base.
  *
- * <ul>
- *   <li>Loaded round count lives in the {@code AMMO} data component (was NBT {@code "ammo"}).
- *       A stack without the component counts as a full magazine.</li>
- *   <li>Each trigger pull consumes 1 loaded round and spawns {@code pellets} bullets server-side.</li>
- *   <li>An empty gun reloads from the player's inventory: 1 magazine item refills a
- *       magazine-fed gun, loose rounds refill round-by-round (shotgun shells use the
- *       1.12 {@code ammoCount}-style multi-consume). Creative reloads for free.</li>
- *   <li>Fire rate is enforced with vanilla item cooldowns ({@code minFiretime} /
- *       {@code reloadtime} in ticks); full-auto guns keep firing via the use-hold loop,
- *       semi-auto guns fire once per click.</li>
- * </ul>
- * Not ported yet: zoom, recoil spring, muzzle flash, ammo variants (incendiary),
- * melee-attack mode of tools, NPC AI usage, reload key handling.
+ * <p>Controls (like the 1.12 original): <b>LMB = fire</b> (handled by the client
+ * input handler + server-authoritative {@code GunServerLogic}, not by vanilla
+ * attack), <b>RMB hold = aim/zoom</b> (vanilla {@code use} with the {@code BOW}
+ * pose), <b>R = reload</b> (keybind + auto-reload on empty).</p>
+ *
+ * <p>Loaded round count lives in the {@code AMMO} data component (was NBT {@code "ammo"}).
+ * A stack without the component counts as a full magazine. Fire rate, ammo consumption
+ * and projectiles are owned by the server; this class only describes the gun.</p>
  */
 public class GenericGunItem extends Item {
     private final GunStats stats;
@@ -53,6 +46,21 @@ public class GenericGunItem extends Item {
 
     public GunStats stats() { return stats; }
 
+    public Item ammoItem() { return ammoItem.get(); }
+
+    public boolean isTwoHanded() {
+        return this != TGItems.PISTOL.get() && this != TGItems.REVOLVER.get();
+    }
+
+    public Item emptyMagazineItem() {
+        if (ammoItem.get() == TGItems.PISTOL_MAGAZINE.get()) return TGItems.PISTOL_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == TGItems.ASSAULT_RIFLE_MAGAZINE.get()) return TGItems.ASSAULT_RIFLE_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == TGItems.SMG_MAGAZINE.get()) return TGItems.SMG_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == TGItems.MINIGUN_DRUM.get()) return TGItems.MINIGUN_DRUM_EMPTY.get();
+        if (ammoItem.get() == TGItems.ENERGY_CELL.get()) return TGItems.ENERGY_CELL_EMPTY.get();
+        return null;
+    }
+
     public float effectiveDamage() {
         return (float) (stats.baseDamage() * TGConfig.gunDamageMultiplier());
     }
@@ -61,13 +69,16 @@ public class GenericGunItem extends Item {
         return gun.getOrDefault(TGDataComponents.AMMO.get(), stats.magazineSize());
     }
 
-    // --- hold-to-fire: use() starts using, onUseTick() fires while held ---
+    public boolean isReloading(Player player, ItemStack gun) {
+        return player.getCooldowns().isOnCooldown(gun);
+    }
+
+    // --- RMB hold = aim/zoom (vanilla use system, BOW pose gives aiming arms for free) ---
 
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        ItemStack gun = player.getItemInHand(hand);
-        if (player.getCooldowns().isOnCooldown(gun)) {
-            return InteractionResult.FAIL;
+        if (!stats.canZoom()) {
+            return InteractionResult.PASS;
         }
         player.startUsingItem(hand);
         return InteractionResult.CONSUME;
@@ -80,114 +91,7 @@ public class GenericGunItem extends Item {
 
     @Override
     public ItemUseAnimation getUseAnimation(ItemStack stack) {
-        return ItemUseAnimation.NONE;
-    }
-
-    @Override
-    public void onUseTick(Level level, LivingEntity user, ItemStack gun, int remainingTicks) {
-        if (!(user instanceof Player player)) {
-            return;
-        }
-        int elapsed = getUseDuration(gun, user) - remainingTicks;
-        if (stats.semiAuto() && elapsed > 1) {
-            return;
-        }
-        if (player.getCooldowns().isOnCooldown(gun)) {
-            return;
-        }
-        fire(level, player, gun);
-    }
-
-    @Override
-    public boolean releaseUsing(ItemStack stack, Level level, LivingEntity user, int remainingTicks) {
-        return true;
-    }
-
-    private void fire(Level level, Player player, ItemStack gun) {
-        int loaded = loadedRounds(gun);
-        if (loaded > 0) {
-            if (!player.isCreative()) {
-                gun.set(TGDataComponents.AMMO.get(), loaded - 1);
-            }
-            player.getCooldowns().addCooldown(gun, stats.fireCooldownTicks());
-            if (!level.isClientSide()) {
-                Vec3 spawn = muzzlePos(player);
-                float yaw = player.getYRot();
-                float pitch = player.getXRot();
-                for (int i = 0; i < stats.pellets(); i++) {
-                    float spread = i == 0 ? stats.spread() : stats.pelletSpread();
-                    BulletProjectile.Spec spec = new BulletProjectile.Spec(
-                            effectiveDamage(), stats.bulletSpeed(),
-                            ticksToLive(), stats.dropStart(), stats.dropEnd(), stats.dropMin(),
-                            stats.gravity(), stats.penetration());
-                    level.addFreshEntity(new BulletProjectile(level, player, spawn, yaw, pitch, spread, spec));
-                }
-                level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                        stats.fireSound().get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-                if (stats.extraSound() != null) {
-                    level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                            stats.extraSound().get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-                }
-            }
-        } else {
-            reload(level, player, gun);
-        }
-    }
-
-    private void reload(Level level, Player player, ItemStack gun) {
-        if (player.isCreative()) {
-            gun.set(TGDataComponents.AMMO.get(), stats.magazineSize());
-            player.getCooldowns().addCooldown(gun, stats.reloadTimeTicks());
-            return;
-        }
-        Item wanted = ammoItem.get();
-        int slots = player.getInventory().getContainerSize();
-        int found = 0;
-        for (int i = 0; i < slots; i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (!stack.isEmpty() && stack.is(wanted)) {
-                found += stack.getCount();
-            }
-        }
-        if (found <= 0) {
-            return;
-        }
-        int take = stats.magazineFed() ? 1 : Math.min(stats.magazineSize(), found);
-        int remaining = take;
-        for (int i = 0; i < slots; i++) {
-            if (remaining <= 0) {
-                break;
-            }
-            ItemStack stack = player.getInventory().getItem(i);
-            if (!stack.isEmpty() && stack.is(wanted)) {
-                int remove = Math.min(remaining, stack.getCount());
-                stack.shrink(remove);
-                remaining -= remove;
-            }
-        }
-        int consumed = take - remaining;
-        if (consumed <= 0) {
-            return;
-        }
-        int loaded = stats.magazineFed() ? stats.magazineSize() : Math.min(consumed, stats.magazineSize());
-        gun.set(TGDataComponents.AMMO.get(), loaded);
-        player.getCooldowns().addCooldown(gun, stats.reloadTimeTicks());
-        if (!level.isClientSide()) {
-            level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                    stats.reloadSound().get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-        }
-    }
-
-    /** 1.12 scaled TTL to tick count so range in blocks ≈ TTL. */
-    private int ticksToLive() {
-        return (int) Math.ceil(stats.maxRange() / stats.bulletSpeed());
-    }
-
-    /** Eye position shifted to the right hand side, like the 1.12 spawn offset. */
-    private static Vec3 muzzlePos(Player player) {
-        Vec3 eye = player.getEyePosition();
-        double yawRad = Math.toRadians(player.getYRot());
-        return eye.add(-Math.cos(yawRad) * 0.16, -0.1, -Math.sin(yawRad) * 0.16);
+        return ItemUseAnimation.BOW;
     }
 
     // --- tooltip + ammo bar ---
@@ -202,7 +106,11 @@ public class GenericGunItem extends Item {
         tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.loaded",
                 loadedRounds(stack), stats.magazineSize()).withStyle(ChatFormatting.YELLOW));
         tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.range",
-                stats.maxRange()).withStyle(ChatFormatting.DARK_GRAY));
+                stats.projectileKind() == GunStats.ProjectileKind.ELECTRIC
+                        ? stats.maxRange() : Math.round(stats.maxRange() * stats.bulletSpeed()))
+                .withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.controls")
+                .withStyle(ChatFormatting.DARK_GRAY));
         super.appendHoverText(stack, context, display, tooltip, flag);
     }
 

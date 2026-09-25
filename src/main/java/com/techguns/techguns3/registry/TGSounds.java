@@ -44,6 +44,10 @@ public final class TGSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> COMBAT_SHOTGUN_FIRE = sound("combat_shotgun_fire");
     public static final DeferredHolder<SoundEvent, SoundEvent> COMBAT_SHOTGUN_RELOAD = sound("combat_shotgun_reload");
     public static final DeferredHolder<SoundEvent, SoundEvent> COMBAT_SHOTGUN_PUMP = sound("combat_shotgun_pump");
+    public static final DeferredHolder<SoundEvent, SoundEvent> MINIGUN_FIRE = sound("minigun_fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> MINIGUN_RELOAD = sound("minigun_reload");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TESLAGUN_FIRE = sound("teslagun_fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TESLAGUN_RELOAD = sound("teslagun_reload");
 
     public static final DeferredHolder<SoundEvent, SoundEvent> BOLT_ACTION_FIRE = sound("bolt_action_fire");
     public static final DeferredHolder<SoundEvent, SoundEvent> BOLT_ACTION_RELOAD = sound("bolt_action_reload");
