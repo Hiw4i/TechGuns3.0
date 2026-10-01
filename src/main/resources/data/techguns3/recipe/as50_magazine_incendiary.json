@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "M": "techguns3:as50_magazine",
+    "B": "minecraft:blaze_powder"
+  },
+  "pattern": [
+    "MB"
+  ],
+  "result": {
+    "id": "techguns3:as50_magazine_incendiary"
+  }
+}

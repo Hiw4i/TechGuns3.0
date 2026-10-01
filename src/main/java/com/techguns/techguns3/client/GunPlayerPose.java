@@ -14,9 +14,11 @@ import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import com.techguns.techguns3.TechGuns3;
 
 /**
- * Gun stances. Hip fire keeps the original two-arm hold; aiming (RMB, vanilla
- * {@code use} with the {@code BOW} animation) raises the bow-aim pose so both
- * first- and third-person reads match modern shooters.
+ * Gun stances. Long guns are always shouldered with the crossbow hold (both
+ * hands forward around the weapon); aiming (RMB, vanilla {@code use} with the
+ * {@code CROSSBOW} animation) raises the same hold to eye level. One-handed
+ * hip fire keeps the vanilla arm; one-handed aim extends the gun arm only.
+ * Nothing here ever uses the bow draw — guns are not bows.
  */
 @EventBusSubscriber(modid = TechGuns3.MODID, value = Dist.CLIENT)
 public final class GunPlayerPose {
@@ -27,18 +29,20 @@ public final class GunPlayerPose {
         AvatarRenderState state = event.getRenderState();
         if (!(state.getMainHandItemStack().getItem() instanceof GenericGunItem gun)) return;
         boolean aiming = isAiming(state);
-        HumanoidModel.ArmPose mainPose =
-                aiming ? HumanoidModel.ArmPose.BOW_AND_ARROW : HumanoidModel.ArmPose.CROSSBOW_HOLD;
         if (!gun.isTwoHanded() && !aiming) {
-            // One-handed hip fire: vanilla arm, no forced crossbow stance.
+            // One-handed hip fire: vanilla arm, no forced stance.
             return;
         }
+        HumanoidModel.ArmPose mainPose = HumanoidModel.ArmPose.CROSSBOW_HOLD;
+        HumanoidModel.ArmPose offPose = gun.isTwoHanded()
+                ? HumanoidModel.ArmPose.CROSSBOW_HOLD
+                : HumanoidModel.ArmPose.EMPTY;
         if (state.mainArm == HumanoidArm.RIGHT) {
             state.rightArmPose = mainPose;
-            state.leftArmPose = gun.isTwoHanded() ? HumanoidModel.ArmPose.EMPTY : state.leftArmPose;
+            state.leftArmPose = offPose;
         } else {
             state.leftArmPose = mainPose;
-            state.rightArmPose = gun.isTwoHanded() ? HumanoidModel.ArmPose.EMPTY : state.rightArmPose;
+            state.rightArmPose = offPose;
         }
     }
 
@@ -57,7 +61,7 @@ public final class GunPlayerPose {
         if (player == null || !player.getOffhandItem().isEmpty()
                 || !(player.getMainHandItem().getItem() instanceof GenericGunItem gun)
                 || !gun.isTwoHanded() || event.getArm() == player.getMainArm()) return;
-        if (player.isUsingItem()) return; // BOW animation already places both arms.
+        if (player.isUsingItem()) return; // CROSSBOW animation already places both arms.
         int side = event.getArm() == HumanoidArm.LEFT ? 1 : -1;
         event.getPoseStack().translate(side * 0.38, 0.10, -0.18);
     }

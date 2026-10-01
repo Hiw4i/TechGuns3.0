@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "L": "techguns3:lead_ingot"
+  },
+  "pattern": [
+    "ILI",
+    "LIL",
+    "ILI"
+  ],
+  "result": {
+    "id": "techguns3:gauss_slugs"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "G": "minecraft:glass",
+    "E": "techguns3:energy_cell",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "GEG",
+    "IEI",
+    "GEG"
+  ],
+  "result": {
+    "id": "techguns3:lasergun"
+  }
+}

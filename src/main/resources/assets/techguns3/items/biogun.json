@@ -1,0 +1,9 @@
+{
+ "model": {
+  "type": "minecraft:special",
+  "base": "techguns3:item/biogun",
+  "model": {
+   "type": "geckolib:geckolib"
+  }
+ }
+}

@@ -75,6 +75,31 @@
   "teslagun_reload": {
     "sounds": ["techguns3:guns/teslagun_reload"]
   },
+  "biogun_fire": {
+    "sounds": [
+      "techguns3:guns/biogun_shot_a",
+      "techguns3:guns/biogun_shot_b",
+      "techguns3:guns/biogun_shot_c"
+    ]
+  },
+  "biogun_reload": {
+    "sounds": ["techguns3:guns/biogun_reload"]
+  },
+  "flamethrower_fire": {
+    "sounds": [
+      "techguns3:guns/flamethrower_shot_a",
+      "techguns3:guns/flamethrower_shot_b",
+      "techguns3:guns/flamethrower_shot_c",
+      "techguns3:guns/flamethrower_shot_d",
+      "techguns3:guns/flamethrower_shot_e"
+    ]
+  },
+  "flamethrower_reload": {
+    "sounds": ["techguns3:guns/flamethrower_reload"]
+  },
+  "flamethrower_start": {
+    "sounds": ["techguns3:guns/flamethrower_start_a"]
+  },
   "bolt_action_fire": {
     "sounds": [
       "techguns3:guns/boltaction_shot_a",
@@ -148,5 +173,175 @@
       "techguns3:effects/impact_water-04",
       "techguns3:effects/impact_water-05"
     ]
+  },
+  "flesh_impact": {
+    "sounds": [
+      "techguns3:effects/impact_water-01",
+      "techguns3:effects/impact_water-02",
+      "techguns3:effects/impact_dirt-02",
+      "techguns3:effects/impact_dirt-03"
+    ]
+  },
+  "gore_split": {
+    "sounds": [
+      "techguns3:effects/impact_water-03",
+      "techguns3:effects/impact_water-04",
+      "techguns3:effects/impact_dirt-01",
+      "techguns3:effects/impact_dirt-04"
+    ]
+  },
+  "tfg_fire": {
+    "sounds": [
+      "techguns3:guns/tfg_shot_a",
+      "techguns3:guns/tfg_shot_b",
+      "techguns3:guns/tfg_shot_c"
+    ]
+  },
+  "tfg_charge": {
+    "sounds": ["techguns3:guns/tfg_charge"]
+  },
+  "tfg_explosion": {
+    "sounds": [
+      "techguns3:effects/tfg_explosion_a",
+      "techguns3:effects/tfg_explosion_b"
+    ]
+  },
+  "tfg_explosion_echo": {
+    "sounds": ["techguns3:effects/tfg_explosion_echo"]
+  },
+  "ndr_fire": {
+    "sounds": [
+      "techguns3:guns/beamgun_loop_a",
+      "techguns3:guns/beamgun_loop_b",
+      "techguns3:guns/beamgun_loop_c",
+      "techguns3:guns/beamgun_loop_d"
+    ]
+  },
+  "ndr_start": {
+    "sounds": [
+      "techguns3:guns/beamgun_start_a",
+      "techguns3:guns/beamgun_start_b",
+      "techguns3:guns/beamgun_start_c"
+    ]
+  },
+  "ndr_reload": {
+    "sounds": ["techguns3:guns/beamgun_reload"]
+  },
+  "gauss_fire": {
+    "sounds": [
+      "techguns3:guns/gaussrifle_shot_a",
+      "techguns3:guns/gaussrifle_shot_b",
+      "techguns3:guns/gaussrifle_shot_c"
+    ]
+  },
+  "gauss_reload": {
+    "sounds": ["techguns3:guns/gauss_reload"]
+  },
+  "gauss_rechamber": {
+    "sounds": [
+      "techguns3:guns/gauss_rechamber_a",
+      "techguns3:guns/gauss_rechamber_b"
+    ]
+  },
+  "rocket_fire": {
+    "sounds": [
+      "techguns3:guns/rocket_shot_a",
+      "techguns3:guns/rocket_shot_b",
+      "techguns3:guns/rocket_shot_c"
+    ]
+  },
+  "rocket_reload": {
+    "sounds": ["techguns3:guns/rocket_reload"]
+  },
+  "explosion": {
+    "sounds": [
+      "techguns3:effects/explosion1_a",
+      "techguns3:effects/explosion1_b"
+    ]
+  },
+  "nuke_explosion": {
+    "sounds": ["techguns3:effects/nukeexplosion"]
+  },
+  "guided_fire": {
+    "sounds": [
+      "techguns3:guns/guidedmissilelauncher_shot_a",
+      "techguns3:guns/guidedmissilelauncher_shot_b",
+      "techguns3:guns/guidedmissilelauncher_shot_c"
+    ]
+  },
+  "lockon_beep": {
+    "sounds": ["techguns3:guns/lockon_beep"]
+  },
+  "locked_beep": {
+    "sounds": ["techguns3:guns/locked_beep"]
+  },
+  "sonic_fire": {
+    "sounds": [
+      "techguns3:guns/sonicshotgun_shot_a",
+      "techguns3:guns/sonicshotgun_shot_b",
+      "techguns3:guns/sonicshotgun_shot_c"
+    ]
+  },
+  "sonic_reload": {
+    "sounds": ["techguns3:guns/sonicshotgun_reload"]
+  },
+  "laser_fire": {
+    "sounds": [
+      "techguns3:guns/lasergun_shot_a",
+      "techguns3:guns/lasergun_shot_b",
+      "techguns3:guns/lasergun_shot_c"
+    ]
+  },
+  "laser_reload": {
+    "sounds": ["techguns3:guns/lasergun_reload"]
+  },
+  "laserpistol_fire": {
+    "sounds": [
+      "techguns3:guns/laser_pistol_shot_a",
+      "techguns3:guns/laser_pistol_shot_b"
+    ]
+  },
+  "laserpistol_reload": {
+    "sounds": ["techguns3:guns/laser_pistol_reload"]
+  },
+  "pulse_fire": {
+    "sounds": [
+      "techguns3:guns/pulserifle_shot_a",
+      "techguns3:guns/pulserifle_shot_b",
+      "techguns3:guns/pulserifle_shot_c",
+      "techguns3:guns/pulserifle_shot_d"
+    ]
+  },
+  "pulse_reload": {
+    "sounds": ["techguns3:guns/pulserifle_reload"]
+  },
+  "vector_fire": {
+    "sounds": [
+      "techguns3:guns/vector_shot_a",
+      "techguns3:guns/vector_shot_b",
+      "techguns3:guns/vector_shot_c"
+    ]
+  },
+  "vector_reload": {
+    "sounds": ["techguns3:guns/vector_reload"]
+  },
+  "pdw_fire": {
+    "sounds": [
+      "techguns3:guns/pdw_shot_a",
+      "techguns3:guns/pdw_shot_b",
+      "techguns3:guns/pdw_shot_c"
+    ]
+  },
+  "pdw_reload": {
+    "sounds": ["techguns3:guns/pdw_reload"]
+  },
+  "as50_fire": {
+    "sounds": [
+      "techguns3:guns/as50_shot_a",
+      "techguns3:guns/as50_shot_b"
+    ]
+  },
+  "as50_reload": {
+    "sounds": ["techguns3:guns/as50_reload"]
   }
 }

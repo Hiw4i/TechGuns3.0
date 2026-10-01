@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "R": "techguns3:rocket",
+    "D": "minecraft:redstone"
+  },
+  "pattern": [
+    "RD"
+  ],
+  "result": {
+    "id": "techguns3:rocket_hv"
+  }
+}

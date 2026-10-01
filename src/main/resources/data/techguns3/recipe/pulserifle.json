@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "T": "techguns3:titanium_ingot",
+    "M": "techguns3:advanced_magazine",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "TMT",
+    "RTR",
+    "TMT"
+  ],
+  "result": {
+    "id": "techguns3:pulserifle"
+  }
+}

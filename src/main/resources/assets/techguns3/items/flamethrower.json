@@ -1,0 +1,9 @@
+{
+ "model": {
+  "type": "minecraft:special",
+  "base": "techguns3:item/flamethrower",
+  "model": {
+   "type": "geckolib:geckolib"
+  }
+ }
+}

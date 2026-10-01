@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "L": "techguns3:rocketlauncher",
+    "C": "minecraft:compass",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "CRC",
+    "RLR",
+    "CRC"
+  ],
+  "result": {
+    "id": "techguns3:guidedmissilelauncher"
+  }
+}

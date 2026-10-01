@@ -3,8 +3,10 @@ package com.techguns.techguns3;
 import com.mojang.logging.LogUtils;
 import com.techguns.techguns3.network.GunPackets;
 import com.techguns.techguns3.registry.TGBlocks;
+import com.techguns.techguns3.registry.TGParticles;
 import com.techguns.techguns3.registry.TGBlockEntities;
 import com.techguns.techguns3.registry.TGDataComponents;
+import com.techguns.techguns3.registry.TGEffects;
 import com.techguns.techguns3.registry.TGEntities;
 import com.techguns.techguns3.registry.TGItems;
 import com.techguns.techguns3.registry.TGMenus;
@@ -46,6 +48,8 @@ public class TechGuns3 {
         modEventBus.addListener(TechGuns3::registerEntityAttributes);
         modEventBus.addListener(TechGuns3::registerSpawnPlacements);
         TGDataComponents.DATA_COMPONENTS.register(modEventBus);
+        TGEffects.EFFECTS.register(modEventBus);
+        TGParticles.TYPES.register(modEventBus);
         TGTabs.CREATIVE_MODE_TABS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, TGConfig.COMMON_SPEC);

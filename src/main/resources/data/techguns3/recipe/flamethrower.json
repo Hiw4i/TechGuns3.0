@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","category":"equipment","group":"techguns3_gun","key":{"I":"minecraft:iron_ingot","L":"techguns3:lead_ingot","B":"minecraft:blaze_powder"},"pattern":["LIL","IBI"," L "],"result":{"id":"techguns3:flamethrower"}}

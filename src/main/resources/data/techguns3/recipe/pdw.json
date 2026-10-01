@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "T": "techguns3:titanium_ingot",
+    "M": "techguns3:advanced_magazine"
+  },
+  "pattern": [
+    "TMT",
+    "MTM",
+    "TMT"
+  ],
+  "result": {
+    "id": "techguns3:pdw"
+  }
+}

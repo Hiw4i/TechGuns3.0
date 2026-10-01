@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "techguns3:sniper_rounds"
+  },
+  "pattern": [
+    " I ",
+    "IRI",
+    " I "
+  ],
+  "result": {
+    "id": "techguns3:as50_magazine"
+  }
+}

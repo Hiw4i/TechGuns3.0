@@ -50,9 +50,27 @@ public record GunStats(
         float recoilPitchDeg,
         float recoilYawJitter,
         float muzzleFlashScale,
-        boolean spinsBarrels
+        boolean spinsBarrels,
+        // --- slime on block hit per landed shot (0 = off; tesla feeds wall hits) ---
+        float slimeGrowthPerHit,
+        // --- delayed action sound (pump, bolt rechamber): played N ticks after the shot ---
+        Supplier<SoundEvent> actionSound,
+        int actionDelayTicks,
+        // --- projectile body volume (1 = rifle round; shotgun pellets / blobs are fatter) ---
+        float bulletBulk
 ) {
-    public enum ProjectileKind { BALLISTIC, ELECTRIC }
+    public enum ProjectileKind { BALLISTIC, ELECTRIC, BIO, FIRE,
+        EXPLOSIVE, BEAM, LASER, SONIC, PLASMA, GAUSS, ADVANCED }
+
+    /** Copy with a delayed action sound (pump/rechamber); keeps the 11 gun definitions terse. */
+    public GunStats withAction(Supplier<SoundEvent> actionSound, int actionDelayTicks) {
+        return new GunStats(baseDamage, fireCooldownTicks, magazineSize, reloadTimeTicks,
+                maxRange, spread, bulletSpeed, gravity, pellets, pelletSpread,
+                dropStart, dropEnd, dropMin, penetration, semiAuto, magazineFed,
+                fireSound, reloadSound, extraSound, projectileKind, canZoom, zoomFov,
+                zoomSpreadMult, recoilPitchDeg, recoilYawJitter, muzzleFlashScale,
+                spinsBarrels, slimeGrowthPerHit, actionSound, actionDelayTicks, bulletBulk);
+    }
 
     public GunStats(float baseDamage, int fireCooldownTicks, int magazineSize, int reloadTimeTicks,
                     int maxRange, float spread, float bulletSpeed, double gravity, int pellets,
@@ -63,6 +81,7 @@ public record GunStats(
         this(baseDamage, fireCooldownTicks, magazineSize, reloadTimeTicks, maxRange, spread,
                 bulletSpeed, gravity, pellets, pelletSpread, dropStart, dropEnd, dropMin,
                 penetration, semiAuto, magazineFed, fireSound, reloadSound, extraSound,
-                ProjectileKind.BALLISTIC, true, 0.8f, 0.5f, 0.8f, 0.4f, 0.7f, false);
+                ProjectileKind.BALLISTIC, true, 0.8f, 0.5f, 0.8f, 0.4f, 0.7f, false, 0.0f,
+                null, 0, 1.0f);
     }
 }

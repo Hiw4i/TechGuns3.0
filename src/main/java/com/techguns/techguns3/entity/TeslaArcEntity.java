@@ -58,6 +58,11 @@ public class TeslaArcEntity extends Entity {
     }
 
     @Override
+    public boolean canBeHitByProjectile() {
+        return false;
+    }
+
+    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(END, new Vector3f());
         builder.define(SEED, 0);

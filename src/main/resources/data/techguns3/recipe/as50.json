@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "T": "techguns3:titanium_ingot",
+    "S": "techguns3:sniper_rounds",
+    "G": "minecraft:glass"
+  },
+  "pattern": [
+    "TST",
+    "GSG",
+    "TST"
+  ],
+  "result": {
+    "id": "techguns3:as50"
+  }
+}

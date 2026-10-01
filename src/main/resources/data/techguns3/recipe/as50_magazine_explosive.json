@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "M": "techguns3:as50_magazine",
+    "T": "minecraft:tnt"
+  },
+  "pattern": [
+    "MT"
+  ],
+  "result": {
+    "id": "techguns3:as50_magazine_explosive"
+  }
+}

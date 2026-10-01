@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "R": "minecraft:redstone",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "RIR",
+    "IRI",
+    "RIR"
+  ],
+  "result": {
+    "id": "techguns3:redstone_battery"
+  }
+}

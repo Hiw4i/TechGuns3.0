@@ -77,14 +77,16 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
             level.playSound(null, getX(), getY(), getZ(), gun.stats().reloadSound().get(), SoundSource.BLOCKS, 1, 1);
             return;
         }
-        Vec3 muzzle = getEyePosition();
+        // Barrel tip ahead of the housing: never spawn the flash inside the head.
+        Vec3 muzzle = com.techguns.techguns3.combat.GunServerLogic.muzzlePos(this);
         Vec3 delta = target.getEyePosition().subtract(muzzle);
         double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
         float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
         float pitch = (float) Math.toDegrees(-Math.atan2(delta.y, horizontal));
         setYRot(yaw);
         setXRot(pitch);
-        BallisticCombat.fire(level, this, gun.stats(), muzzle, yaw, pitch, SoundSource.BLOCKS);
+        BallisticCombat.fire(level, this, gun.stats(), gun.extras(), null, 0.0f, 1.0f, -1,
+                muzzle, yaw, pitch, SoundSource.BLOCKS, 1.0f);
         base.setLoadedRounds(base.loadedRounds() - 1);
         base.setFireTicks(gun.stats().fireCooldownTicks());
     }

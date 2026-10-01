@@ -24,4 +24,13 @@ public final class TGDataComponents {
             DATA_COMPONENTS.registerComponentType("ammo",
                     builder -> builder.persistent(com.mojang.serialization.Codec.INT)
                             .networkSynchronized(ByteBufCodecs.INT));
+
+    /**
+     * Loaded ammo variant id (e.g. {@code rocket_nuke} vs {@code rocket}).
+     * Set on reload from whichever variant was consumed; absent = default ammo.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> AMMO_VARIANT =
+            DATA_COMPONENTS.registerComponentType("ammo_variant",
+                    builder -> builder.persistent(com.mojang.serialization.Codec.STRING)
+                            .networkSynchronized(ByteBufCodecs.STRING_UTF8));
 }

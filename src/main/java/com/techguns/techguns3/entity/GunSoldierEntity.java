@@ -48,6 +48,9 @@ public abstract class GunSoldierEntity extends Monster implements RangedAttackMo
         targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
 
+    // Override-only API by design (vanilla mobs do the same); the deprecation
+    // targets external callers, which must go through EventHooks#finalizeMobSpawn.
+    @SuppressWarnings("deprecation")
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
                                         EntitySpawnReason reason, SpawnGroupData data) {
@@ -78,13 +81,14 @@ public abstract class GunSoldierEntity extends Monster implements RangedAttackMo
             return;
         }
         loadedRounds--;
-        Vec3 muzzle = getEyePosition().add(0, -0.1, 0);
+        Vec3 muzzle = com.techguns.techguns3.combat.GunServerLogic.muzzlePos(this);
         Vec3 targetPos = target.getEyePosition();
         Vec3 direction = targetPos.subtract(muzzle);
         double horizontal = Math.sqrt(direction.x * direction.x + direction.z * direction.z);
         float yaw = (float) Math.toDegrees(Math.atan2(-direction.x, direction.z));
         float pitch = (float) Math.toDegrees(-Math.atan2(direction.y, horizontal));
-        BallisticCombat.fire(serverLevel, this, defaultGun().stats(), muzzle, yaw, pitch, getSoundSource());
+        BallisticCombat.fire(serverLevel, this, defaultGun().stats(), defaultGun().extras(),
+                null, 0.0f, 1.0f, -1, muzzle, yaw, pitch, getSoundSource(), 1.0f);
     }
 
     @Override

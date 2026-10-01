@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone",
+    "E": "techguns3:energy_cell"
+  },
+  "pattern": [
+    "IIR",
+    "IER",
+    "IIR"
+  ],
+  "result": {
+    "id": "techguns3:gaussrifle"
+  }
+}

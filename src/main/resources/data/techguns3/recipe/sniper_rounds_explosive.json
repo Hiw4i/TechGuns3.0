@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "S": "techguns3:sniper_rounds",
+    "T": "minecraft:tnt"
+  },
+  "pattern": [
+    "ST"
+  ],
+  "result": {
+    "id": "techguns3:sniper_rounds_explosive"
+  }
+}

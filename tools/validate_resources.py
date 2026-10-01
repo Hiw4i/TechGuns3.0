@@ -29,7 +29,10 @@ for name in sorted(block_ids):
     if not (resources / "data/techguns3/loot_table/blocks" / f"{name}.json").exists():
         errors.append(f"missing block loot: {name}")
 
-for name in ("pistol", "ak47", "combat_shotgun", "minigun", "teslagun"):
+for name in ("pistol", "ak47", "combat_shotgun", "minigun", "teslagun",
+             "tfg", "nucleardeathray", "gaussrifle", "rocketlauncher",
+             "guidedmissilelauncher", "grimreaper", "sonicshotgun", "lasergun",
+             "laserpistol", "pulserifle", "vector", "pdw", "as50"):
     for path in (
         assets / "geckolib/models/item" / f"{name}.geo.json",
         assets / "geckolib/animations/item" / f"{name}.animation.json",

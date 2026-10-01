@@ -22,8 +22,10 @@ public final class TGKeyMappings {
     }
 
     private static final class Holder {
+        // Direct construction + RegisterKeyMappingsEvent#registerCategory is the
+        // current path; the static Category.register initializer is deprecated.
         static final KeyMapping.Category CATEGORY =
-                KeyMapping.Category.register(Identifier.fromNamespaceAndPath(TechGuns3.MODID, "guns"));
+                new KeyMapping.Category(Identifier.fromNamespaceAndPath(TechGuns3.MODID, "guns"));
         static final KeyMapping RELOAD = new KeyMapping("key.techguns3.reload",
                 InputConstants.Type.KEYBOARD, InputConstants.KEY_R, CATEGORY);
     }

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "M": "techguns3:smg_magazine"
+  },
+  "pattern": [
+    "IMI",
+    "MIM",
+    "IMI"
+  ],
+  "result": {
+    "id": "techguns3:vector"
+  }
+}

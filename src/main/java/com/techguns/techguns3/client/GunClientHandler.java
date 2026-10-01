@@ -36,6 +36,25 @@ public final class GunClientHandler {
     private static boolean zoomSent;
     private static long lastAutoFeedbackTick;
     private static ItemStack lastGun = ItemStack.EMPTY;
+    /** Client game-time when the current charge hold started (-1 = not charging). */
+    private static long chargeStartTick = -1;
+    /** Item id being charged (charge belongs to one gun; switching cancels). */
+    private static net.minecraft.resources.Identifier chargeGunId;
+
+    /**
+     * Local charge progress 0..1 for the charge HUD (-1 when not charging).
+     * Mirrors the server's charge math from our own FireStart timestamp.
+     */
+    public static float chargeProgress(ItemStack held) {
+        if (chargeStartTick < 0 || held.isEmpty()) return -1.0f;
+        if (!(held.getItem() instanceof GenericGunItem gun) || !gun.extras().hasCharge()) return -1.0f;
+        var id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(held.getItem());
+        if (!id.equals(chargeGunId)) return -1.0f;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return -1.0f;
+        long now = mc.level.getGameTime();
+        return Math.min(1.0f, (now - chargeStartTick) / (float) Math.max(1, gun.extras().chargeTicks()));
+    }
 
     @SubscribeEvent
     public static void onAttackMapping(InputEvent.InteractionKeyMappingTriggered event) {
@@ -75,6 +94,7 @@ public final class GunClientHandler {
         // every shot mutates the AMMO component, which must NOT look like a switch.
         if (held.getItem() != lastGun.getItem()) {
             lastGun = held.copy();
+            chargeStartTick = -1;
             if (lmbDown) {
                 lmbDown = false;
                 ClientPacketDistributor.sendToServer(new GunPackets.FireStop(true));
@@ -103,23 +123,38 @@ public final class GunClientHandler {
             if (down) {
                 onLmbPressed(player, held, (GenericGunItem) held.getItem(), zooming);
             } else {
+                chargeStartTick = -1;
                 ClientPacketDistributor.sendToServer(new GunPackets.FireStop(true));
             }
             return;
         }
         // Held trigger on an automatic: continuous local kick/flash at the gun's own rate.
         // Damage still comes from the server; this is visuals only.
+        // Sustained beams (NDR) get a gentle continuous tremor instead of kicks.
         if (down && !((GenericGunItem) held.getItem()).stats().semiAuto()) {
-            long now = player.level().getGameTime();
-            long period = Math.max(1, ((GenericGunItem) held.getItem()).stats().fireCooldownTicks());
-            if (now - lastAutoFeedbackTick >= period) {
-                lastAutoFeedbackTick = now;
-                predictShotFeedback(player, (GenericGunItem) held.getItem());
+            GenericGunItem gun = (GenericGunItem) held.getItem();
+            if (gun.extras().continuousBeam()) {
+                if (TGConfig.cameraRecoil()) {
+                    float jx = (player.getRandom().nextFloat() * 2.0f - 1.0f) * 0.12f;
+                    float jy = (player.getRandom().nextFloat() * 2.0f - 1.0f) * 0.12f;
+                    player.turn(jx, jy);
+                }
+            } else {
+                long now = player.level().getGameTime();
+                long period = Math.max(1, gun.stats().fireCooldownTicks());
+                if (now - lastAutoFeedbackTick >= period) {
+                    lastAutoFeedbackTick = now;
+                    predictShotFeedback(player, gun);
+                }
             }
         }
     }
 
     private static void onLmbPressed(LocalPlayer player, ItemStack held, GenericGunItem gun, boolean zooming) {
+        if (gun.extras().hasCharge() && !gun.extras().guided()) {
+            chargeStartTick = player.level().getGameTime();
+            chargeGunId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(held.getItem());
+        }
         if (gun.stats().semiAuto()) {
             // Rate-limit + reload-lock client-side so dead clicks give no phantom kick.
             if (player.getCooldowns().isOnCooldown(held)) return;
@@ -128,7 +163,10 @@ public final class GunClientHandler {
         } else {
             ClientPacketDistributor.sendToServer(new GunPackets.FireStart(true, zooming));
             lastAutoFeedbackTick = player.level().getGameTime();
-            predictShotFeedback(player, gun);
+            // Sustained beams start silently; the hold tick owns the tremor.
+            if (!gun.extras().continuousBeam()) {
+                predictShotFeedback(player, gun);
+            }
         }
     }
 
@@ -138,25 +176,88 @@ public final class GunClientHandler {
         ClientPacketDistributor.sendToServer(new GunPackets.ZoomState(zooming));
     }
 
-    /** Instant local kick so the shot lands physically before the server echo.
-     * Flash/tracer visuals arrive with the server's FX entities (~1 tick). */
+    private static long lastShotNanos;
+
+    /**
+     * Instant local kick + baked muzzle flare so the shot lands physically
+     * before the server echo. Server entities (~1 tick later) confirm it for
+     * third person and other viewers; this predict is deliberately compact so
+     * it can never become the head-sized blob.
+     */
     private static void predictShotFeedback(LocalPlayer player, GenericGunItem gun) {
         if (TGConfig.cameraRecoil()) {
             float yawJitter = (player.getRandom().nextFloat() * 2.0f - 1.0f) * gun.stats().recoilYawJitter();
             // Negative pitch kicks the muzzle up (XRot decreases looking up).
             player.turn(yawJitter, -gun.stats().recoilPitchDeg());
+            // Heavy guns thump the camera (decays in TGShake).
+            TGShake.addTrauma(Math.min(0.45f, gun.stats().recoilPitchDeg() * 0.12f));
+        }
+        lastShotNanos = System.nanoTime();
+        if (!TGConfig.cinematicFx()) return;
+        try {
+            // Same barrel tip the server fires from (single source of truth).
+            var tip = com.techguns.techguns3.combat.GunServerLogic.muzzlePos(player);
+            var look = player.getLookAngle();
+            var level = player.level();
+            var preset = com.techguns.techguns3.fx.GunFxPresets.forKind(
+                    gun.stats().projectileKind(), gun.stats().muzzleFlashScale());
+            if (gun.stats().projectileKind()
+                    == com.techguns.techguns3.item.GunStats.ProjectileKind.FIRE) {
+                // Flamethrower: tongues of textured flame blown forward, no smoke puff.
+                var rnd = player.getRandom();
+                for (int i = 0; i < 5; i++) {
+                    level.addParticle(new com.techguns.techguns3.registry.TGParticles.FlameOptions(
+                                    0xFFE9A8, 0xFF5A1A, 0.30f, 0.08f, 14, -0.015f, 0.94f),
+                            tip.x + look.x * 0.5, tip.y + look.y * 0.5, tip.z + look.z * 0.5,
+                            look.x * 2.2 + (rnd.nextDouble() - 0.5) * 0.7,
+                            look.y * 2.2 + (rnd.nextDouble() - 0.5) * 0.7,
+                            look.z * 2.2 + (rnd.nextDouble() - 0.5) * 0.7);
+                }
+            } else {
+                // Tiny hot flare + one forward-pushed puff at the tip.
+                level.addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
+                                0xFFFFFF, preset.flareColor(), 0.14f + 0.05f * gun.stats().muzzleFlashScale(),
+                                0.02f, 5, 0.0f, 1.0f),
+                        tip.x, tip.y, tip.z, look.x * 0.3, look.y * 0.3, look.z * 0.3);
+                level.addParticle(new com.techguns.techguns3.registry.TGParticles.PuffOptions(
+                                0x9A9A9A, 0x3A3A3A, 0.14f, 0.34f, 18, -0.012f, 0.97f),
+                        tip.x + look.x * 0.4, tip.y + look.y * 0.4, tip.z + look.z * 0.4,
+                        look.x * 0.7, 0.15, look.z * 0.7);
+            }
+        } catch (Exception ignored) {
         }
     }
+
+    /** Smoothed ADS zoom (modern transition instead of an instant FOV cut). */
+    private static float smoothedZoom = 1.0f;
 
     @SubscribeEvent
     public static void onFov(ComputeFovModifierEvent event) {
         if (!(event.getPlayer() instanceof LocalPlayer player)) return;
-        if (!player.isUsingItem()) return;
-        ItemStack using = player.getUseItem();
-        if (using.getItem() instanceof GenericGunItem gun
-                && gun.stats().canZoom()
-                && player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
-            event.setNewFovModifier(event.getFovModifier() * gun.stats().zoomFov());
+        float fov = event.getFovModifier();
+        float target = 1.0f;
+        if (player.isUsingItem()) {
+            ItemStack using = player.getUseItem();
+            if (using.getItem() instanceof GenericGunItem gun
+                    && gun.stats().canZoom()
+                    && player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
+                target = gun.stats().zoomFov();
+            }
         }
+        // Ease toward the target (~8 frames); instant when far off (weapon switch).
+        if (Math.abs(target - smoothedZoom) > 0.4f) {
+            smoothedZoom = target;
+        } else {
+            smoothedZoom += (target - smoothedZoom) * 0.25f;
+        }
+        fov *= smoothedZoom;
+        // TG2 scope-recoil feel: brief punch-out on every shot, then settle.
+        long dtMs = (System.nanoTime() - lastShotNanos) / 1_000_000L;
+        if (dtMs >= 0 && dtMs < 90
+                && player.getMainHandItem().getItem() instanceof GenericGunItem) {
+            float k = 1.0f - dtMs / 90.0f;
+            fov *= 1.0f + 0.025f * k;
+        }
+        event.setNewFovModifier(fov);
     }
 }

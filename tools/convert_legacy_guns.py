@@ -21,6 +21,21 @@ GUNS = {
     "combat_shotgun": ("ModelCombatShotgun", "combatshotgun.png"),
     "minigun": ("ModelMinigun", "minigun.png"),
     "teslagun": ("ModelTeslaGun", "teslagun.png"),
+    "biogun": ("ModelBiogun", "biogun.png"),
+    "flamethrower": ("ModelFlamethrower", "flamethrower.png"),
+    # Wave 2: 10 shooting guns (+3 near-free bonuses on shared systems).
+    "tfg": ("ModelTFG", "tfg.png"),
+    "nucleardeathray": ("ModelNDR", "ndr.png"),
+    "rocketlauncher": ("ModelRocketLauncher", "rocketlauncher.png"),
+    "guidedmissilelauncher": ("ModelGuidedMissileLauncher", "guidedmissilelauncher.png"),
+    "grimreaper": ("ModelGrimReaper", "grimreaper.png"),
+    "sonicshotgun": ("ModelSonicShotgun", "sonicshotgun.png"),
+    "lasergun": ("ModelLasergun", "lasergun.png"),
+    "laserpistol": ("ModelLaserPistol", "laser_pistol.png"),
+    "pulserifle": ("ModelPulseRifle", "pulserifle.png"),
+    "vector": ("ModelVector", "vector_texture.png"),
+    "pdw": ("ModelPDW", "pdw.png"),
+    "as50": ("ModelAS50", "as50texture.png"),
 }
 NUMBER = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[fFdD])?"
 
@@ -44,10 +59,14 @@ def convert(java: str, item_id: str, item_model: bool = False) -> dict:
         boxes = re.findall(rf"\b{re.escape(name)}\.addBox\(([^)]+)\)", java)
         point = re.search(rf"\b{re.escape(name)}\.setRotationPoint\(([^)]+)\)", java)
         rotation = re.search(rf"setRotation\({re.escape(name)},\s*([^)]+)\)", java)
-        if not boxes or not point or not rotation:
+        if not boxes or not point:
             raise ValueError(f"Missing geometry or transform for {item_id}:{name}")
         px, py, pz = arguments(point.group(1))
-        rx, ry, rz = arguments(rotation.group(1))
+        if rotation:
+            rx, ry, rz = arguments(rotation.group(1))
+        else:
+            # Many CE models leave static parts at zero rotation (no setRotation call).
+            rx, ry, rz = 0.0, 0.0, 0.0
         cubes = []
         for box in boxes:
             vals = arguments(box)
@@ -108,8 +127,11 @@ def move_y(geometry: dict, amount: float) -> None:
 
 def main() -> None:
     upstream = Path(sys.argv[1])
+    wanted = set(sys.argv[2:])
     out = Path(__file__).resolve().parents[1] / "src/main/resources/assets/techguns3"
     for item_id, (class_name, texture_name) in GUNS.items():
+        if wanted and item_id not in wanted:
+            continue
         java_path = upstream / f"src/main/java/techguns/client/models/guns/{class_name}.java"
         texture_path = upstream / f"src/main/resources/assets/techguns/textures/guns/{texture_name}"
         geometry = convert(java_path.read_text(encoding="utf-8"), item_id, item_model=True)
@@ -120,6 +142,9 @@ def main() -> None:
         target_texture.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(texture_path, target_texture)
         print(f"{item_id}: {len(geometry['minecraft:geometry'][0]['bones'])} bones")
+
+    if wanted:
+        return
 
     turret_source = upstream / "src/main/java/techguns/client/models/npcs/ModelTurret.java"
     turret_geometry = convert(turret_source.read_text(encoding="utf-8"), "turret_head")

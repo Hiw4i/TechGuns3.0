@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "U": "techguns3:uranium_ingot",
+    "G": "minecraft:glass",
+    "E": "techguns3:energy_cell"
+  },
+  "pattern": [
+    "UGU",
+    "GEG",
+    "UGU"
+  ],
+  "result": {
+    "id": "techguns3:nucleardeathray"
+  }
+}

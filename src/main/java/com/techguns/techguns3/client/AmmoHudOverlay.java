@@ -38,5 +38,21 @@ public final class AmmoHudOverlay {
             extractor.text(font, Component.translatable("hud.techguns3.reload_hint"), x - 70, y - 12, 0xFF5555);
         }
         extractor.text(font, text, x, y, color);
+        // TFG-style charge bar while LMB is held (purely local: the client sent
+        // FireStart itself, so progress = held time / full charge time).
+        if (gun.extras().hasCharge() && !gun.extras().guided()
+                && mc.options.keyAttack.isDown() && GunClientHandler.chargeProgress(held) >= 0.0f) {
+            float charge = GunClientHandler.chargeProgress(held);
+            int bw = 90;
+            int bx = extractor.guiWidth() - bw - 10;
+            int by = y - 14;
+            int fill = (int) (bw * Math.max(0.0f, Math.min(1.0f, charge)));
+            int barColor = charge >= 1.0f ? 0xFF39FF5E : 0xFF2A9A3A;
+            extractor.fill(bx - 1, by - 1, bx + bw + 1, by + 5, 0xFF101010);
+            extractor.fill(bx, by, bx + fill, by + 4, barColor);
+            if (charge >= 1.0f) {
+                extractor.text(font, Component.literal("MAX"), bx + bw + 4, by - 2, 0xFF39FF5E);
+            }
+        }
     }
 }

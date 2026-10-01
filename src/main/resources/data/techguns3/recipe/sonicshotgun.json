@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "E": "techguns3:energy_cell",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "IEI",
+    "RER",
+    "IEI"
+  ],
+  "result": {
+    "id": "techguns3:sonicshotgun"
+  }
+}

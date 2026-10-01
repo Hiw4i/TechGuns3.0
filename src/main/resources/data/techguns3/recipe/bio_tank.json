@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","category":"misc","group":"techguns3_ammo","key":{"I":"minecraft:iron_ingot","S":"minecraft:slime_ball","R":"minecraft:redstone"},"pattern":[" S ","RIR"," S "],"result":{"id":"techguns3:bio_tank"}}

@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","category":"misc","group":"techguns3_ammo","key":{"I":"minecraft:iron_ingot","B":"minecraft:blaze_powder","C":"minecraft:coal"},"pattern":[" B ","CIC"," B "],"result":{"id":"techguns3:fuel_tank"}}

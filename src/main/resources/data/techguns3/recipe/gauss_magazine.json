@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_ammo",
+  "key": {
+    "S": "techguns3:gauss_slugs",
+    "E": "techguns3:energy_cell"
+  },
+  "pattern": [
+    "SSS",
+    "SES",
+    "SSS"
+  ],
+  "result": {
+    "id": "techguns3:gauss_magazine"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "techguns3_gun",
+  "key": {
+    "G": "minecraft:glass",
+    "B": "techguns3:redstone_battery",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "GBG",
+    "IBI",
+    "GBG"
+  ],
+  "result": {
+    "id": "techguns3:laserpistol"
+  }
+}

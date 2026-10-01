@@ -23,7 +23,12 @@ public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
 
     public AnimatedGunItem(Item.Properties properties, GunStats stats,
                            Supplier<Item> ammoItem, String ammoId) {
-        super(properties, stats, ammoItem, ammoId);
+        this(properties, stats, ammoItem, ammoId, GunExtras.DEFAULT);
+    }
+
+    public AnimatedGunItem(Item.Properties properties, GunStats stats,
+                           Supplier<Item> ammoItem, String ammoId, GunExtras extras) {
+        super(properties, stats, ammoItem, ammoId, extras);
         GeoItem.registerSyncedAnimatable(this);
     }
 
@@ -31,7 +36,8 @@ public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<AnimatedGunItem>("action", 0, state -> PlayState.STOP)
                 .triggerableAnim("fire", RawAnimation.begin().thenPlay("fire"))
-                .triggerableAnim("reload", RawAnimation.begin().thenPlay("reload")));
+                .triggerableAnim("reload", RawAnimation.begin().thenPlay("reload"))
+                .triggerableAnim("charge", RawAnimation.begin().thenLoop("charge")));
         controllers.add(new AnimationController<AnimatedGunItem>("barrels", 0, state -> PlayState.STOP)
                 .triggerableAnim("spin", RawAnimation.begin().thenLoop("spin")));
     }
