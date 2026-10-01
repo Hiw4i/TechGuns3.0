@@ -94,4 +94,23 @@ public class TechGuns3 {
             com.techguns.techguns3.test.GunSelfTestCommand.runHeadless(event.getServer());
         }
     }
+
+    @SubscribeEvent
+    public void onAddReloadListeners(net.neoforged.neoforge.event.AddServerReloadListenersEvent event) {
+        event.addListener(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(MODID, "guns"),
+                new com.techguns.techguns3.resource.GunDataLoader());
+    }
+
+    @SubscribeEvent
+    public void onDatapackSync(net.neoforged.neoforge.event.OnDatapackSyncEvent event) {
+        var payload = com.techguns.techguns3.network.GunServerSync.encodeCurrent();
+        event.getRelevantPlayers().forEach(p -> {
+            try {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, payload);
+            } catch (Exception e) {
+                LOGGER.error("[TechGuns3] gun sync failed", e);
+            }
+        });
+    }
 }

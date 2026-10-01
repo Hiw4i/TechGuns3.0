@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:assault_rifle_magazine",
+  "empty_magazine": "techguns3:assault_rifle_magazine_empty",
+  "ballistic": {
+    "damage": 8.0,
+    "cooldown_ticks": 3,
+    "magazine": 30,
+    "reload_ticks": 45,
+    "range_ttl": 60,
+    "spread": 0.03,
+    "speed": 4.0,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 20.0,
+    "drop_end": 30.0,
+    "drop_min": 4.5,
+    "penetration": 0.5,
+    "semi_auto": false,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:ak47_fire",
+    "reload": "techguns3:ak47_reload"
+  },
+  "handling": {
+    "projectile": "BALLISTIC",
+    "can_zoom": true,
+    "zoom_fov": 0.7,
+    "zoom_spread_mult": 0.5,
+    "recoil_pitch": 0.9,
+    "recoil_yaw": 0.4,
+    "muzzle_scale": 0.8,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 1.0,
+    "muzzle_flash": 1,
+    "loop_ticks": 0,
+    "two_handed": true
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:rifle_rounds",
+  "ballistic": {
+    "damage": 30.0,
+    "cooldown_ticks": 25,
+    "magazine": 6,
+    "reload_ticks": 50,
+    "range_ttl": 90,
+    "spread": 0.05,
+    "speed": 6.5,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 40.0,
+    "drop_end": 60.0,
+    "drop_min": 20.0,
+    "penetration": 1.0,
+    "semi_auto": true,
+    "magazine_fed": false
+  },
+  "sounds": {
+    "fire": "techguns3:bolt_action_fire",
+    "reload": "techguns3:bolt_action_reload",
+    "action": "techguns3:bolt_action_rechamber",
+    "action_delay_ticks": 20
+  },
+  "handling": {
+    "projectile": "BALLISTIC",
+    "can_zoom": true,
+    "zoom_fov": 0.35,
+    "zoom_spread_mult": 0.25,
+    "recoil_pitch": 2.2,
+    "recoil_yaw": 0.5,
+    "muzzle_scale": 0.9,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 1.15,
+    "muzzle_flash": 2,
+    "loop_ticks": 0,
+    "two_handed": true
+  }
+}

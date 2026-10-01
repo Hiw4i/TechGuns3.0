@@ -3,9 +3,10 @@ package com.techguns.techguns3.item;
 import com.techguns.techguns3.TGConfig;
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.registry.TGDataComponents;
-import com.techguns.techguns3.registry.TGItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,60 +22,75 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * 26.3 firearm base.
+ * 26.3 firearm base — data-driven.
  *
  * <p>Controls (like the 1.12 original): <b>LMB = fire</b> (handled by the client
  * input handler + server-authoritative {@code GunServerLogic}, not by vanilla
  * attack), <b>RMB hold = aim/zoom</b> (vanilla {@code use} with the {@code BOW}
  * pose), <b>R = reload</b> (keybind + auto-reload on empty).</p>
  *
+ * <p>All tunables live in {@code data/<namespace>/guns/<gunId>.json} and are
+ * resolved per call via {@link GunDefProvider} so {@code /reload} applies to
+ * the next shot. The constructor only carries the gun id, the default ammo
+ * supplier (for empty-mag mapping) and emergency sound fallbacks used when a
+ * JSON entry is missing its sounds.</p>
+ *
  * <p>Loaded round count lives in the {@code AMMO} data component (was NBT {@code "ammo"}).
  * A stack without the component counts as a full magazine. Fire rate, ammo consumption
  * and projectiles are owned by the server; this class only describes the gun.</p>
  */
 public class GenericGunItem extends Item {
-    private final GunStats stats;
+    private final Identifier gunId;
     private final Supplier<Item> ammoItem;
     private final String ammoId;
-    private final GunExtras extras;
+    private final Supplier<SoundEvent> fallbackFireSound;
+    private final Supplier<SoundEvent> fallbackReloadSound;
 
-    public GenericGunItem(Properties properties, GunStats stats, Supplier<Item> ammoItem, String ammoId) {
-        this(properties, stats, ammoItem, ammoId, GunExtras.DEFAULT);
-    }
-
-    public GenericGunItem(Properties properties, GunStats stats, Supplier<Item> ammoItem, String ammoId,
-                          GunExtras extras) {
+    public GenericGunItem(Properties properties, Identifier gunId,
+                          Supplier<Item> ammoItem, String ammoId,
+                          Supplier<SoundEvent> fallbackFireSound,
+                          Supplier<SoundEvent> fallbackReloadSound) {
         super(properties.stacksTo(1));
-        this.stats = stats;
+        this.gunId = gunId;
         this.ammoItem = ammoItem;
         this.ammoId = ammoId;
-        this.extras = extras == null ? GunExtras.DEFAULT : extras;
+        this.fallbackFireSound = fallbackFireSound;
+        this.fallbackReloadSound = fallbackReloadSound;
     }
 
-    public GunStats stats() { return stats; }
+    public Identifier gunId() { return gunId; }
 
-    public GunExtras extras() { return extras; }
+    public GunDefinition def() { return GunDefProvider.get(gunId); }
+
+    public GunStats stats() { return def().toStats(fallbackFireSound, fallbackReloadSound); }
+
+    public GunExtras extras() { return def().toExtras(); }
 
     public Item ammoItem() { return ammoItem.get(); }
 
     public boolean isTwoHanded() {
-        return this != TGItems.PISTOL.get() && this != TGItems.REVOLVER.get()
-                && this != TGItems.LASERPISTOL.get();
+        return def().twoHanded();
     }
 
     public Item emptyMagazineItem() {
-        if (ammoItem.get() == TGItems.PISTOL_MAGAZINE.get()) return TGItems.PISTOL_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == TGItems.ASSAULT_RIFLE_MAGAZINE.get()) return TGItems.ASSAULT_RIFLE_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == TGItems.SMG_MAGAZINE.get()) return TGItems.SMG_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == TGItems.MINIGUN_DRUM.get()) return TGItems.MINIGUN_DRUM_EMPTY.get();
-        if (ammoItem.get() == TGItems.ENERGY_CELL.get()) return TGItems.ENERGY_CELL_EMPTY.get();
-        if (ammoItem.get() == TGItems.BIO_TANK.get()) return TGItems.BIO_TANK_EMPTY.get();
-        if (ammoItem.get() == TGItems.FUEL_TANK.get()) return TGItems.FUEL_TANK_EMPTY.get();
-        if (ammoItem.get() == TGItems.NUCLEAR_POWERCELL.get()) return TGItems.NUCLEAR_POWERCELL_EMPTY.get();
-        if (ammoItem.get() == TGItems.ADVANCED_MAGAZINE.get()) return TGItems.ADVANCED_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == TGItems.AS50_MAGAZINE.get()) return TGItems.AS50_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == TGItems.GAUSS_MAGAZINE.get()) return TGItems.GAUSS_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == TGItems.REDSTONE_BATTERY.get()) return TGItems.REDSTONE_BATTERY_EMPTY.get();
+        var emptyId = def().emptyMagazine();
+        if (emptyId.isPresent()) {
+            Item resolved = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(emptyId.get());
+            if (resolved != null && resolved != net.minecraft.world.item.Items.AIR) return resolved;
+        }
+        // Legacy family mapping (kept as fallback when JSON omits empty_magazine).
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.PISTOL_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.PISTOL_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.ASSAULT_RIFLE_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.ASSAULT_RIFLE_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.SMG_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.SMG_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.MINIGUN_DRUM.get()) return com.techguns.techguns3.registry.TGItems.MINIGUN_DRUM_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.ENERGY_CELL.get()) return com.techguns.techguns3.registry.TGItems.ENERGY_CELL_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.BIO_TANK.get()) return com.techguns.techguns3.registry.TGItems.BIO_TANK_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.FUEL_TANK.get()) return com.techguns.techguns3.registry.TGItems.FUEL_TANK_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.NUCLEAR_POWERCELL.get()) return com.techguns.techguns3.registry.TGItems.NUCLEAR_POWERCELL_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.ADVANCED_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.ADVANCED_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.AS50_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.AS50_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.GAUSS_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.GAUSS_MAGAZINE_EMPTY.get();
+        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.REDSTONE_BATTERY.get()) return com.techguns.techguns3.registry.TGItems.REDSTONE_BATTERY_EMPTY.get();
         return null;
     }
 
@@ -85,27 +101,31 @@ public class GenericGunItem extends Item {
     public java.util.List<Item> acceptedAmmoItems() {
         java.util.List<Item> out = new java.util.ArrayList<>();
         out.add(ammoItem());
-        if (extras().hasExtraAmmo()) {
-            for (String id : extras().extraAmmoIds()) {
+        GunExtras ex = extras();
+        if (ex.hasExtraAmmo()) {
+            for (String id : ex.extraAmmoIds()) {
                 try {
-                    var loc = net.minecraft.resources.Identifier.fromNamespaceAndPath(
-                            com.techguns.techguns3.TechGuns3.MODID, id);
+                    var loc = Identifier.fromNamespaceAndPath(
+                            TechGuns3.MODID, id);
                     var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(loc);
                     if (item != null && item != net.minecraft.world.item.Items.AIR && !out.contains(item)) {
                         out.add(item);
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    TechGuns3.LOGGER.debug("[TechGuns3] skipping unknown extra ammo {} for {}",
+                            id, gunId, e);
+                }
             }
         }
         return out;
     }
 
     public float effectiveDamage() {
-        return (float) (stats.baseDamage() * TGConfig.gunDamageMultiplier());
+        return (float) (def().damage() * TGConfig.gunDamageMultiplier());
     }
 
     public int loadedRounds(ItemStack gun) {
-        return gun.getOrDefault(TGDataComponents.AMMO.get(), stats.magazineSize());
+        return gun.getOrDefault(TGDataComponents.AMMO.get(), def().magazine());
     }
 
     public boolean isReloading(Player player, ItemStack gun) {
@@ -116,7 +136,7 @@ public class GenericGunItem extends Item {
 
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        if (!stats.canZoom()) {
+        if (!def().canZoom()) {
             return InteractionResult.PASS;
         }
         player.startUsingItem(hand);
@@ -143,15 +163,21 @@ public class GenericGunItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
             Consumer<Component> tooltip, TooltipFlag flag) {
+        // Single definition lookup: stats()/effectiveDamage()/loadedRounds() each
+        // resolve it again, so derive everything from this one copy.
+        GunDefinition d = def();
+        float dmg = (float) (d.damage() * TGConfig.gunDamageMultiplier());
+        int mag = d.magazine();
+        int loaded = stack.getOrDefault(TGDataComponents.AMMO.get(), mag);
+        boolean electric = "ELECTRIC".equals(d.projectile());
         tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.damage",
-                String.format("%.1f", effectiveDamage())).withStyle(ChatFormatting.RED));
+                String.format("%.1f", dmg)).withStyle(ChatFormatting.RED));
         tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.magazine",
-                stats.magazineSize(), ammoId).withStyle(ChatFormatting.GRAY));
+                mag, ammoId).withStyle(ChatFormatting.GRAY));
         tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.loaded",
-                loadedRounds(stack), stats.magazineSize()).withStyle(ChatFormatting.YELLOW));
+                loaded, mag).withStyle(ChatFormatting.YELLOW));
         tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.range",
-                stats.projectileKind() == GunStats.ProjectileKind.ELECTRIC
-                        ? stats.maxRange() : Math.round(stats.maxRange() * stats.bulletSpeed()))
+                electric ? d.rangeTtl() : Math.round(d.rangeTtl() * d.speed()))
                 .withStyle(ChatFormatting.DARK_GRAY));
         tooltip.accept(Component.translatable("tooltip." + TechGuns3.MODID + ".gun.controls")
                 .withStyle(ChatFormatting.DARK_GRAY));
@@ -160,17 +186,20 @@ public class GenericGunItem extends Item {
 
     @Override
     public boolean isBarVisible(ItemStack stack) {
-        return loadedRounds(stack) < stats.magazineSize();
+        int mag = def().magazine();
+        return stack.getOrDefault(TGDataComponents.AMMO.get(), mag) < mag;
     }
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        return Math.round(13.0f * loadedRounds(stack) / (float) stats.magazineSize());
+        int mag = def().magazine();
+        return Math.round(13.0f * stack.getOrDefault(TGDataComponents.AMMO.get(), mag) / (float) mag);
     }
 
     @Override
     public int getBarColor(ItemStack stack) {
-        float fraction = loadedRounds(stack) / (float) stats.magazineSize();
+        int mag = def().magazine();
+        float fraction = stack.getOrDefault(TGDataComponents.AMMO.get(), mag) / (float) mag;
         return fraction > 0.5f ? 0x55FF55 : fraction > 0.2f ? 0xFFAA00 : 0xFF5555;
     }
 }

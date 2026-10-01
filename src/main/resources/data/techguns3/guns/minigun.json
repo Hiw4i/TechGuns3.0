@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:minigun_drum",
+  "empty_magazine": "techguns3:minigun_drum_empty",
+  "ballistic": {
+    "damage": 12.0,
+    "cooldown_ticks": 1,
+    "magazine": 200,
+    "reload_ticks": 100,
+    "range_ttl": 75,
+    "spread": 0.025,
+    "speed": 3.0,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 30.0,
+    "drop_end": 50.0,
+    "drop_min": 7.0,
+    "penetration": 0.5,
+    "semi_auto": false,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:minigun_fire",
+    "reload": "techguns3:minigun_reload"
+  },
+  "handling": {
+    "projectile": "BALLISTIC",
+    "can_zoom": true,
+    "zoom_fov": 0.85,
+    "zoom_spread_mult": 0.6,
+    "recoil_pitch": 0.3,
+    "recoil_yaw": 0.2,
+    "muzzle_scale": 0.8,
+    "spins_barrels": true,
+    "slime_per_hit": 0.0,
+    "bulk": 1.05,
+    "muzzle_flash": 3,
+    "loop_ticks": 0,
+    "two_handed": true
+  }
+}

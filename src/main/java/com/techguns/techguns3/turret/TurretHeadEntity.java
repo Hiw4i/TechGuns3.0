@@ -73,8 +73,9 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
         if (target == null) return;
         if (base.loadedRounds() <= 0) {
             if (!reload(base, gun)) return;
-            base.setReloadTicks(gun.stats().reloadTimeTicks());
-            level.playSound(null, getX(), getY(), getZ(), gun.stats().reloadSound().get(), SoundSource.BLOCKS, 1, 1);
+            var reloadStats = gun.stats();
+            base.setReloadTicks(reloadStats.reloadTimeTicks());
+            level.playSound(null, getX(), getY(), getZ(), reloadStats.reloadSound().get(), SoundSource.BLOCKS, 1, 1);
             return;
         }
         // Barrel tip ahead of the housing: never spawn the flash inside the head.
@@ -85,10 +86,12 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
         float pitch = (float) Math.toDegrees(-Math.atan2(delta.y, horizontal));
         setYRot(yaw);
         setXRot(pitch);
-        BallisticCombat.fire(level, this, gun.stats(), gun.extras(), null, 0.0f, 1.0f, -1,
+        var fireStats = gun.stats();
+        var fireExtras = gun.extras();
+        BallisticCombat.fire(level, this, fireStats, fireExtras, null, 0.0f, 1.0f, -1,
                 muzzle, yaw, pitch, SoundSource.BLOCKS, 1.0f);
         base.setLoadedRounds(base.loadedRounds() - 1);
-        base.setFireTicks(gun.stats().fireCooldownTicks());
+        base.setFireTicks(fireStats.fireCooldownTicks());
     }
 
     private LivingEntity findTarget(ServerLevel level, TurretBaseBlockEntity base) {
@@ -118,9 +121,10 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
     }
 
     private static boolean reload(TurretBaseBlockEntity base, GenericGunItem gun) {
+        var stats = gun.stats();
         Item empty = gun.emptyMagazineItem();
-        if (gun.stats().magazineFed() && empty != null && !base.canStoreOutput(empty)) return false;
-        int wanted = gun.stats().magazineFed() ? 1 : gun.stats().magazineSize();
+        if (stats.magazineFed() && empty != null && !base.canStoreOutput(empty)) return false;
+        int wanted = stats.magazineFed() ? 1 : stats.magazineSize();
         int loaded = 0;
         for (int i = 0; i < TurretBaseBlockEntity.INPUT_END && loaded < wanted; i++) {
             ItemStack stack = base.getItem(i);
@@ -131,8 +135,8 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
             }
         }
         if (loaded == 0) return false;
-        if (gun.stats().magazineFed() && empty != null) base.storeOutput(empty);
-        base.setLoadedRounds(gun.stats().magazineFed() ? gun.stats().magazineSize() : loaded);
+        if (stats.magazineFed() && empty != null) base.storeOutput(empty);
+        base.setLoadedRounds(stats.magazineFed() ? stats.magazineSize() : loaded);
         return true;
     }
 

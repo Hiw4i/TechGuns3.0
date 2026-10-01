@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:nuclear_powercell",
+  "empty_magazine": "techguns3:nuclear_powercell_empty",
+  "ballistic": {
+    "damage": 5.0,
+    "cooldown_ticks": 5,
+    "magazine": 20,
+    "reload_ticks": 50,
+    "range_ttl": 100,
+    "spread": 0.0,
+    "speed": 1.0,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 11.0,
+    "drop_end": 11.0,
+    "drop_min": 5.0,
+    "penetration": 1.0,
+    "semi_auto": false,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:ndr_fire",
+    "reload": "techguns3:ndr_reload",
+    "extra": "techguns3:ndr_start"
+  },
+  "handling": {
+    "projectile": "BEAM",
+    "can_zoom": true,
+    "zoom_fov": 0.8,
+    "zoom_spread_mult": 0.5,
+    "recoil_pitch": 0.4,
+    "recoil_yaw": 0.1,
+    "muzzle_scale": 0.8,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 1.0,
+    "muzzle_flash": 8,
+    "loop_ticks": 10,
+    "two_handed": true
+  },
+  "extras": {
+    "beam": true,
+    "radiation_ticks": 40,
+    "continuous_beam": true
+  }
+}

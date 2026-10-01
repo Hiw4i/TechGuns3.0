@@ -66,7 +66,8 @@ public final class TGShake {
             if (radius >= 4.0f) {
                 addFlash(k * Math.min(0.8f, radius * 0.06f));
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            com.techguns.techguns3.TechGuns3.LOGGER.debug("[TechGuns3] blast shake failed", e);
         }
     }
 

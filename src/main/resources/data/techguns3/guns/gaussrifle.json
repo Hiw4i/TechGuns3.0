@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:gauss_magazine",
+  "empty_magazine": "techguns3:gauss_magazine_empty",
+  "ballistic": {
+    "damage": 90.0,
+    "cooldown_ticks": 30,
+    "magazine": 8,
+    "reload_ticks": 60,
+    "range_ttl": 18,
+    "spread": 0.025,
+    "speed": 5.0,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 90.0,
+    "drop_end": 90.0,
+    "drop_min": 90.0,
+    "penetration": 3.5,
+    "semi_auto": true,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:gauss_fire",
+    "reload": "techguns3:gauss_reload",
+    "action": "techguns3:gauss_rechamber",
+    "action_delay_ticks": 12
+  },
+  "handling": {
+    "projectile": "GAUSS",
+    "can_zoom": true,
+    "zoom_fov": 0.35,
+    "zoom_spread_mult": 0.0,
+    "recoil_pitch": 2.4,
+    "recoil_yaw": 0.5,
+    "muzzle_scale": 0.9,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 1.1,
+    "muzzle_flash": 7,
+    "loop_ticks": 0,
+    "two_handed": true
+  }
+}

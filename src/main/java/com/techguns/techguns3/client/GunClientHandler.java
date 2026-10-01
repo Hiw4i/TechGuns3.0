@@ -47,13 +47,15 @@ public final class GunClientHandler {
      */
     public static float chargeProgress(ItemStack held) {
         if (chargeStartTick < 0 || held.isEmpty()) return -1.0f;
-        if (!(held.getItem() instanceof GenericGunItem gun) || !gun.extras().hasCharge()) return -1.0f;
+        if (!(held.getItem() instanceof GenericGunItem gun)) return -1.0f;
+        var extras = gun.extras();
+        if (!extras.hasCharge()) return -1.0f;
         var id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(held.getItem());
         if (!id.equals(chargeGunId)) return -1.0f;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return -1.0f;
         long now = mc.level.getGameTime();
-        return Math.min(1.0f, (now - chargeStartTick) / (float) Math.max(1, gun.extras().chargeTicks()));
+        return Math.min(1.0f, (now - chargeStartTick) / (float) Math.max(1, extras.chargeTicks()));
     }
 
     @SubscribeEvent
@@ -133,7 +135,8 @@ public final class GunClientHandler {
         // Sustained beams (NDR) get a gentle continuous tremor instead of kicks.
         if (down && !((GenericGunItem) held.getItem()).stats().semiAuto()) {
             GenericGunItem gun = (GenericGunItem) held.getItem();
-            if (gun.extras().continuousBeam()) {
+            var extras = gun.extras();
+            if (extras.continuousBeam()) {
                 if (TGConfig.cameraRecoil()) {
                     float jx = (player.getRandom().nextFloat() * 2.0f - 1.0f) * 0.12f;
                     float jy = (player.getRandom().nextFloat() * 2.0f - 1.0f) * 0.12f;
@@ -141,31 +144,35 @@ public final class GunClientHandler {
                 }
             } else {
                 long now = player.level().getGameTime();
-                long period = Math.max(1, gun.stats().fireCooldownTicks());
+                // Hoisted: stats() builds a fresh record per call.
+                var stats = gun.stats();
+                long period = Math.max(1, stats.fireCooldownTicks());
                 if (now - lastAutoFeedbackTick >= period) {
                     lastAutoFeedbackTick = now;
-                    predictShotFeedback(player, gun);
+                    predictShotFeedback(player, gun, stats, extras);
                 }
             }
         }
     }
 
     private static void onLmbPressed(LocalPlayer player, ItemStack held, GenericGunItem gun, boolean zooming) {
-        if (gun.extras().hasCharge() && !gun.extras().guided()) {
+        var extras = gun.extras();
+        if (extras.hasCharge() && !extras.guided()) {
             chargeStartTick = player.level().getGameTime();
             chargeGunId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(held.getItem());
         }
-        if (gun.stats().semiAuto()) {
+        var stats = gun.stats();
+        if (stats.semiAuto()) {
             // Rate-limit + reload-lock client-side so dead clicks give no phantom kick.
             if (player.getCooldowns().isOnCooldown(held)) return;
             ClientPacketDistributor.sendToServer(new GunPackets.FirePressed(true, zooming));
-            predictShotFeedback(player, gun);
+            predictShotFeedback(player, gun, stats, extras);
         } else {
             ClientPacketDistributor.sendToServer(new GunPackets.FireStart(true, zooming));
             lastAutoFeedbackTick = player.level().getGameTime();
             // Sustained beams start silently; the hold tick owns the tremor.
-            if (!gun.extras().continuousBeam()) {
-                predictShotFeedback(player, gun);
+            if (!extras.continuousBeam()) {
+                predictShotFeedback(player, gun, stats, extras);
             }
         }
     }
@@ -183,14 +190,18 @@ public final class GunClientHandler {
      * before the server echo. Server entities (~1 tick later) confirm it for
      * third person and other viewers; this predict is deliberately compact so
      * it can never become the head-sized blob.
+     *
+     * <p>Takes pre-resolved stats/extras: both build fresh records per call.</p>
      */
-    private static void predictShotFeedback(LocalPlayer player, GenericGunItem gun) {
+    private static void predictShotFeedback(LocalPlayer player, GenericGunItem gun,
+                                            com.techguns.techguns3.item.GunStats stats,
+                                            com.techguns.techguns3.item.GunExtras extras) {
         if (TGConfig.cameraRecoil()) {
-            float yawJitter = (player.getRandom().nextFloat() * 2.0f - 1.0f) * gun.stats().recoilYawJitter();
+            float yawJitter = (player.getRandom().nextFloat() * 2.0f - 1.0f) * stats.recoilYawJitter();
             // Negative pitch kicks the muzzle up (XRot decreases looking up).
-            player.turn(yawJitter, -gun.stats().recoilPitchDeg());
+            player.turn(yawJitter, -stats.recoilPitchDeg());
             // Heavy guns thump the camera (decays in TGShake).
-            TGShake.addTrauma(Math.min(0.45f, gun.stats().recoilPitchDeg() * 0.12f));
+            TGShake.addTrauma(Math.min(0.45f, stats.recoilPitchDeg() * 0.12f));
         }
         lastShotNanos = System.nanoTime();
         if (!TGConfig.cinematicFx()) return;
@@ -200,8 +211,8 @@ public final class GunClientHandler {
             var look = player.getLookAngle();
             var level = player.level();
             var preset = com.techguns.techguns3.fx.GunFxPresets.forKind(
-                    gun.stats().projectileKind(), gun.stats().muzzleFlashScale());
-            if (gun.stats().projectileKind()
+                    stats.projectileKind(), stats.muzzleFlashScale());
+            if (stats.projectileKind()
                     == com.techguns.techguns3.item.GunStats.ProjectileKind.FIRE) {
                 // Flamethrower: tongues of textured flame blown forward, no smoke puff.
                 var rnd = player.getRandom();
@@ -216,7 +227,7 @@ public final class GunClientHandler {
             } else {
                 // Tiny hot flare + one forward-pushed puff at the tip.
                 level.addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
-                                0xFFFFFF, preset.flareColor(), 0.14f + 0.05f * gun.stats().muzzleFlashScale(),
+                                0xFFFFFF, preset.flareColor(), 0.14f + 0.05f * stats.muzzleFlashScale(),
                                 0.02f, 5, 0.0f, 1.0f),
                         tip.x, tip.y, tip.z, look.x * 0.3, look.y * 0.3, look.z * 0.3);
                 level.addParticle(new com.techguns.techguns3.registry.TGParticles.PuffOptions(
@@ -224,7 +235,9 @@ public final class GunClientHandler {
                         tip.x + look.x * 0.4, tip.y + look.y * 0.4, tip.z + look.z * 0.4,
                         look.x * 0.7, 0.15, look.z * 0.7);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            com.techguns.techguns3.TechGuns3.LOGGER.debug("[TechGuns3] predict FX failed for {}",
+                    gun, e);
         }
     }
 
@@ -239,9 +252,11 @@ public final class GunClientHandler {
         if (player.isUsingItem()) {
             ItemStack using = player.getUseItem();
             if (using.getItem() instanceof GenericGunItem gun
-                    && gun.stats().canZoom()
                     && player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
-                target = gun.stats().zoomFov();
+                var stats = gun.stats();
+                if (stats.canZoom()) {
+                    target = stats.zoomFov();
+                }
             }
         }
         // Ease toward the target (~8 frames); instant when far off (weapon switch).

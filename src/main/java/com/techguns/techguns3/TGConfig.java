@@ -77,22 +77,23 @@ public final class TGConfig {
     static final ModConfigSpec COMMON_SPEC = COMMON.build();
     static final ModConfigSpec CLIENT_SPEC = CLIENT.build();
 
-    private static double gunDamageMultiplier = 1.0;
-    private static double fxDensity = 1.0;
-    private static boolean bloodOnHit = true;
-    private static boolean enableGore = true;
-    private static double goreChanceMultiplier = 1.0;
-    private static int maxGibs = 10;
-    private static boolean generateCopper = true;
-    private static boolean generateTin = true;
-    private static boolean generateLead = true;
-    private static boolean generateUranium = true;
-    private static boolean generateTitanium = true;
-    private static boolean explosionsDamageBlocks = true;
-    private static boolean ammoHud = true;
-    private static boolean cameraRecoil = true;
-    private static boolean cinematicFx = true;
-    private static boolean shellCasings = true;
+    // Volatile: reloaded on the config thread, read from gameplay/render threads.
+    private static volatile double gunDamageMultiplier = 1.0;
+    private static volatile double fxDensity = 1.0;
+    private static volatile boolean bloodOnHit = true;
+    private static volatile boolean enableGore = true;
+    private static volatile double goreChanceMultiplier = 1.0;
+    private static volatile int maxGibs = 10;
+    private static volatile boolean generateCopper = true;
+    private static volatile boolean generateTin = true;
+    private static volatile boolean generateLead = true;
+    private static volatile boolean generateUranium = true;
+    private static volatile boolean generateTitanium = true;
+    private static volatile boolean explosionsDamageBlocks = true;
+    private static volatile boolean ammoHud = true;
+    private static volatile boolean cameraRecoil = true;
+    private static volatile boolean cinematicFx = true;
+    private static volatile boolean shellCasings = true;
 
     public static double gunDamageMultiplier() { return gunDamageMultiplier; }
     public static double fxDensity() { return fxDensity; }

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:pistol_magazine",
+  "empty_magazine": "techguns3:pistol_magazine_empty",
+  "ballistic": {
+    "damage": 8.0,
+    "cooldown_ticks": 4,
+    "magazine": 18,
+    "reload_ticks": 35,
+    "range_ttl": 40,
+    "spread": 0.025,
+    "speed": 2.0,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 18.0,
+    "drop_end": 25.0,
+    "drop_min": 5.0,
+    "penetration": 0.0,
+    "semi_auto": true,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:pistol_fire",
+    "reload": "techguns3:pistol_reload"
+  },
+  "handling": {
+    "projectile": "BALLISTIC",
+    "can_zoom": true,
+    "zoom_fov": 0.85,
+    "zoom_spread_mult": 0.5,
+    "recoil_pitch": 0.7,
+    "recoil_yaw": 0.3,
+    "muzzle_scale": 0.55,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 0.85,
+    "muzzle_flash": 2,
+    "loop_ticks": 0,
+    "two_handed": false
+  }
+}

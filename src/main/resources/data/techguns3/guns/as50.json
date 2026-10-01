@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:as50_magazine",
+  "empty_magazine": "techguns3:as50_magazine_empty",
+  "ballistic": {
+    "damage": 45.0,
+    "cooldown_ticks": 10,
+    "magazine": 10,
+    "reload_ticks": 80,
+    "range_ttl": 14,
+    "spread": 0.0625,
+    "speed": 6.5,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 40.0,
+    "drop_end": 60.0,
+    "drop_min": 35.0,
+    "penetration": 2.0,
+    "semi_auto": true,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:as50_fire",
+    "reload": "techguns3:as50_reload"
+  },
+  "handling": {
+    "projectile": "BALLISTIC",
+    "can_zoom": true,
+    "zoom_fov": 0.35,
+    "zoom_spread_mult": 0.125,
+    "recoil_pitch": 2.2,
+    "recoil_yaw": 0.5,
+    "muzzle_scale": 0.9,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 1.15,
+    "muzzle_flash": 1,
+    "loop_ticks": 0,
+    "two_handed": true
+  },
+  "extras": {
+    "extra_ammo": [
+      "techguns3:as50_magazine_explosive",
+      "techguns3:as50_magazine_incendiary"
+    ]
+  }
+}

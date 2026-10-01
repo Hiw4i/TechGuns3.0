@@ -181,7 +181,8 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
         if (level().isClientSide()) {
             try {
                 trailSprite(to);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                com.techguns.techguns3.TechGuns3.LOGGER.debug("[TechGuns3] bullet trail failed", e);
             }
         }
 
@@ -433,7 +434,8 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.FIRE.defaultBlockState());
                 return;
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            com.techguns.techguns3.TechGuns3.LOGGER.debug("[TechGuns3] bullet ignite failed", e);
         }
     }
 

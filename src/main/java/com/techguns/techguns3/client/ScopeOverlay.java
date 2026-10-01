@@ -31,7 +31,8 @@ public final class ScopeOverlay {
         if (!mc.player.isUsingItem() || mc.player.getUsedItemHand() != InteractionHand.MAIN_HAND) return;
         ItemStack using = mc.player.getUseItem();
         if (!(using.getItem() instanceof GenericGunItem gun)) return;
-        if (!gun.stats().canZoom() || gun.stats().zoomFov() > SCOPE_ZOOM_FOV) return;
+        var stats = gun.stats();
+        if (!stats.canZoom() || stats.zoomFov() > SCOPE_ZOOM_FOV) return;
 
         int w = extractor.guiWidth();
         int h = extractor.guiHeight();

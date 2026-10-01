@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:energy_cell",
+  "empty_magazine": "techguns3:energy_cell_empty",
+  "ballistic": {
+    "damage": 9.0,
+    "cooldown_ticks": 8,
+    "magazine": 25,
+    "reload_ticks": 45,
+    "range_ttl": 60,
+    "spread": 0.0,
+    "speed": 80.0,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 0.0,
+    "drop_end": 0.0,
+    "drop_min": 9.0,
+    "penetration": 0.0,
+    "semi_auto": false,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:teslagun_fire",
+    "reload": "techguns3:teslagun_reload"
+  },
+  "handling": {
+    "projectile": "ELECTRIC",
+    "can_zoom": true,
+    "zoom_fov": 0.8,
+    "zoom_spread_mult": 0.5,
+    "recoil_pitch": 0.4,
+    "recoil_yaw": 0.1,
+    "muzzle_scale": 0.6,
+    "spins_barrels": false,
+    "slime_per_hit": 0.09,
+    "bulk": 1.0,
+    "muzzle_flash": 6,
+    "loop_ticks": 0,
+    "two_handed": true
+  }
+}

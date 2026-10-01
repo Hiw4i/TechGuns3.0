@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:bio_tank",
+  "empty_magazine": "techguns3:bio_tank_empty",
+  "ballistic": {
+    "damage": 25.0,
+    "cooldown_ticks": 6,
+    "magazine": 30,
+    "reload_ticks": 45,
+    "range_ttl": 40,
+    "spread": 0.015,
+    "speed": 1.0,
+    "gravity": 0.01,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 8.0,
+    "drop_end": 15.0,
+    "drop_min": 20.0,
+    "penetration": 0.5,
+    "semi_auto": false,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:biogun_fire",
+    "reload": "techguns3:biogun_reload"
+  },
+  "handling": {
+    "projectile": "BIO",
+    "can_zoom": true,
+    "zoom_fov": 0.8,
+    "zoom_spread_mult": 0.5,
+    "recoil_pitch": 0.8,
+    "recoil_yaw": 0.3,
+    "muzzle_scale": 0.7,
+    "spins_barrels": false,
+    "slime_per_hit": 0.34,
+    "bulk": 1.6,
+    "muzzle_flash": 11,
+    "loop_ticks": 0,
+    "two_handed": true
+  }
+}

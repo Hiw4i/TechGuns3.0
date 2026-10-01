@@ -74,10 +74,11 @@ public abstract class GunSoldierEntity extends Monster implements RangedAttackMo
         if (!(level() instanceof ServerLevel serverLevel) || reloadTicks > 0 || !hasLineOfSight(target)) {
             return;
         }
+        var stats = defaultGun().stats();
         if (loadedRounds <= 0) {
-            reloadTicks = defaultGun().stats().reloadTimeTicks();
+            reloadTicks = stats.reloadTimeTicks();
             serverLevel.playSound(null, getX(), getY(), getZ(),
-                    defaultGun().stats().reloadSound().get(), getSoundSource(), 1.0f, 1.0f);
+                    stats.reloadSound().get(), getSoundSource(), 1.0f, 1.0f);
             return;
         }
         loadedRounds--;
@@ -87,7 +88,7 @@ public abstract class GunSoldierEntity extends Monster implements RangedAttackMo
         double horizontal = Math.sqrt(direction.x * direction.x + direction.z * direction.z);
         float yaw = (float) Math.toDegrees(Math.atan2(-direction.x, direction.z));
         float pitch = (float) Math.toDegrees(-Math.atan2(direction.y, horizontal));
-        BallisticCombat.fire(serverLevel, this, defaultGun().stats(), defaultGun().extras(),
+        BallisticCombat.fire(serverLevel, this, stats, defaultGun().extras(),
                 null, 0.0f, 1.0f, -1, muzzle, yaw, pitch, getSoundSource(), 1.0f);
     }
 

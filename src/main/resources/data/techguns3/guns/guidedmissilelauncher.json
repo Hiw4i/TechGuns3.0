@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:rocket",
+  "ballistic": {
+    "damage": 60.0,
+    "cooldown_ticks": 10,
+    "magazine": 1,
+    "reload_ticks": 40,
+    "range_ttl": 100,
+    "spread": 0.05,
+    "speed": 1.0,
+    "gravity": 0.01,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 2.0,
+    "drop_end": 4.0,
+    "drop_min": 50.0,
+    "penetration": 0.0,
+    "semi_auto": true,
+    "magazine_fed": false
+  },
+  "sounds": {
+    "fire": "techguns3:guided_fire",
+    "reload": "techguns3:rocket_reload"
+  },
+  "handling": {
+    "projectile": "EXPLOSIVE",
+    "can_zoom": true,
+    "zoom_fov": 0.8,
+    "zoom_spread_mult": 0.6,
+    "recoil_pitch": 2.0,
+    "recoil_yaw": 0.5,
+    "muzzle_scale": 1.0,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 2.2,
+    "muzzle_flash": 2,
+    "loop_ticks": 0,
+    "two_handed": true
+  },
+  "extras": {
+    "explosive": {
+      "max": 60.0,
+      "min": 50.0,
+      "r1": 2.0,
+      "r2": 4.0,
+      "block": 0.25,
+      "nuke": false
+    },
+    "knockback": 2.0,
+    "homing_turn": 0.16,
+    "guided": true,
+    "lock_time": 20,
+    "lock_persist": 80,
+    "lock_range": 150.0,
+    "extra_ammo": [
+      "techguns3:rocket_hv"
+    ]
+  }
+}

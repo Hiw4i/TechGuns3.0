@@ -1,5 +1,7 @@
 package com.techguns.techguns3.item;
 
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.Item;
 import org.jetbrains.annotations.Nullable;
 import com.geckolib.animatable.GeoItem;
@@ -17,18 +19,16 @@ import java.util.function.Supplier;
 
 /** GeckoLib visual shell for animated Techguns firearms. Fire/reload/spin are
  * triggered server-side (synced animatable); spin runs while LMB is held on
- * guns whose {@code GunStats.spinsBarrels()} is true. */
+ * guns whose definition has {@code spins_barrels} true. Stats come from the
+ * datapack (see {@link GenericGunItem}); this class only adds animation. */
 public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
 
-    public AnimatedGunItem(Item.Properties properties, GunStats stats,
-                           Supplier<Item> ammoItem, String ammoId) {
-        this(properties, stats, ammoItem, ammoId, GunExtras.DEFAULT);
-    }
-
-    public AnimatedGunItem(Item.Properties properties, GunStats stats,
-                           Supplier<Item> ammoItem, String ammoId, GunExtras extras) {
-        super(properties, stats, ammoItem, ammoId, extras);
+    public AnimatedGunItem(Item.Properties properties, Identifier gunId,
+                           Supplier<Item> ammoItem, String ammoId,
+                           Supplier<SoundEvent> fallbackFireSound,
+                           Supplier<SoundEvent> fallbackReloadSound) {
+        super(properties, gunId, ammoItem, ammoId, fallbackFireSound, fallbackReloadSound);
         GeoItem.registerSyncedAnimatable(this);
     }
 

@@ -27,8 +27,9 @@ public final class AmmoHudOverlay {
         if (mc.player == null || mc.gui.hud.isHidden()) return;
         ItemStack held = mc.player.getMainHandItem();
         if (!(held.getItem() instanceof GenericGunItem gun)) return;
+        var def = gun.def();
         int loaded = gun.loadedRounds(held);
-        int mag = gun.stats().magazineSize();
+        int mag = def.magazine();
         int color = loaded == 0 ? 0xFF5555 : loaded * 2 <= mag ? 0xFFAA00 : 0xFFFFFF;
         String text = loaded + " / " + mag;
         var font = mc.font;
@@ -40,7 +41,8 @@ public final class AmmoHudOverlay {
         extractor.text(font, text, x, y, color);
         // TFG-style charge bar while LMB is held (purely local: the client sent
         // FireStart itself, so progress = held time / full charge time).
-        if (gun.extras().hasCharge() && !gun.extras().guided()
+        var extras = gun.extras();
+        if (extras.hasCharge() && !extras.guided()
                 && mc.options.keyAttack.isDown() && GunClientHandler.chargeProgress(held) >= 0.0f) {
             float charge = GunClientHandler.chargeProgress(held);
             int bw = 90;

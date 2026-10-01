@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "ammo": "techguns3:redstone_battery",
+  "empty_magazine": "techguns3:redstone_battery_empty",
+  "ballistic": {
+    "damage": 9.0,
+    "cooldown_ticks": 6,
+    "magazine": 20,
+    "reload_ticks": 40,
+    "range_ttl": 90,
+    "spread": 0.025,
+    "speed": 1.0,
+    "gravity": 0.0,
+    "pellets": 1,
+    "pellet_spread": 0.0,
+    "drop_start": 90.0,
+    "drop_end": 90.0,
+    "drop_min": 9.0,
+    "penetration": 0.0,
+    "semi_auto": false,
+    "magazine_fed": true
+  },
+  "sounds": {
+    "fire": "techguns3:laserpistol_fire",
+    "reload": "techguns3:laserpistol_reload"
+  },
+  "handling": {
+    "projectile": "LASER",
+    "can_zoom": true,
+    "zoom_fov": 0.8,
+    "zoom_spread_mult": 0.5,
+    "recoil_pitch": 0.5,
+    "recoil_yaw": 0.2,
+    "muzzle_scale": 0.6,
+    "spins_barrels": false,
+    "slime_per_hit": 0.0,
+    "bulk": 0.9,
+    "muzzle_flash": 5,
+    "loop_ticks": 0,
+    "two_handed": false
+  },
+  "extras": {
+    "beam": true
+  }
+}

@@ -127,6 +127,31 @@ public final class GunPackets {
         }
     }
 
+    /**
+     * Server -&gt; client gun definition sync. Carries definitions as JSON text
+     * (encoded with the same {@code GunDefinition.CODEC} the datapack uses) so
+     * the network schema never drifts from the file schema when fields change.
+     */
+    public record GunSync(java.util.Map<Identifier, String> gunsJson) implements CustomPacketPayload {
+        public static final Type<GunSync> TYPE =
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(TechGuns3.MODID, "gun_sync"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, GunSync> CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.map(i -> new java.util.HashMap<Identifier, String>(),
+                                Identifier.STREAM_CODEC,
+                                ByteBufCodecs.STRING_UTF8),
+                        GunSync::gunsJson, GunSync::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handle(GunSync msg, IPayloadContext ctx) {
+            ctx.enqueueWork(() -> com.techguns.techguns3.client.GunSyncHandler.apply(msg));
+        }
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("1");
         registrar.playToServer(FireStart.TYPE, FireStart.CODEC, FireStart::handle);
@@ -134,5 +159,6 @@ public final class GunPackets {
         registrar.playToServer(FirePressed.TYPE, FirePressed.CODEC, FirePressed::handle);
         registrar.playToServer(ReloadRequest.TYPE, ReloadRequest.CODEC, ReloadRequest::handle);
         registrar.playToServer(ZoomState.TYPE, ZoomState.CODEC, ZoomState::handle);
+        registrar.playToClient(GunSync.TYPE, GunSync.CODEC, GunSync::handle);
     }
 }

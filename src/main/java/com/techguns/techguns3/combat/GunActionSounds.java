@@ -52,7 +52,9 @@ public final class GunActionSounds {
             try {
                 level.playSound(null, head.pos().x, head.pos().y, head.pos().z,
                         head.sound().get(), head.source(), 1.0f, 1.0f);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                com.techguns.techguns3.TechGuns3.LOGGER.debug(
+                        "[TechGuns3] delayed action sound failed", e);
             }
         }
     }
