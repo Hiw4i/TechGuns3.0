@@ -42,10 +42,14 @@ public final class GunAimHandler {
         boolean offHand = event.getHand() == InteractionHand.OFF_HAND;
         boolean offHandHasGun = offHand && stack.getItem() instanceof GenericGunItem;
 
-        // The off hand has its own offset, so the main hand one is undone
-        // first. When the off hand is empty the main hand offset stays, the
-        // support arm then follows the weapon.
-        if (offHandHasGun && (appliedX != 0.0f || appliedY != 0.0f)) {
+        if (!offHand) {
+            // The main hand is rendered first, it owns the offset.
+            appliedX = 0.0f;
+            appliedY = 0.0f;
+        } else if (offHandHasGun && (appliedX != 0.0f || appliedY != 0.0f)) {
+            // The off hand has its own offset, so the main hand one is undone
+            // first. When the off hand is empty the main hand offset stays, the
+            // support arm then follows the weapon.
             event.getPoseStack().translate(-appliedX, -appliedY, 0.0f);
             appliedX = 0.0f;
             appliedY = 0.0f;
@@ -58,13 +62,23 @@ public final class GunAimHandler {
         if (aim <= 0.001f) {
             return;
         }
-        List<Float> offset = offHand ? gun.def().adsOffsetLeft() : gun.def().adsOffset();
-        if (offset.size() < 2) {
-            return;
+        // The real position of the sight is measured by the renderer while the
+        // weapon is at the hip, that is exact. The datapack offset is only the
+        // fallback for the very first frames.
+        float[] hip = GunSightAlignment.hip(gun, offHand);
+        float x;
+        float y;
+        if (hip != null) {
+            x = Mth.clamp(-hip[0], -2.5f, 2.5f) * aim;
+            y = Mth.clamp(-hip[1], -1.5f, 1.5f) * aim;
+        } else {
+            List<Float> offset = offHand ? gun.def().adsOffsetLeft() : gun.def().adsOffset();
+            if (offset.size() < 2) {
+                return;
+            }
+            x = Mth.clamp(offset.get(0), -2.5f, 2.5f) * aim;
+            y = Mth.clamp(offset.get(1), -1.5f, 1.5f) * aim;
         }
-        // Clamped, a broken datapack entry must not throw the weapon off screen.
-        float x = Mth.clamp(offset.get(0), -2.5f, 2.5f) * aim;
-        float y = Mth.clamp(offset.get(1), -1.5f, 1.5f) * aim;
         event.getPoseStack().translate(x, y, 0.0f);
         if (!offHand) {
             appliedX = x;

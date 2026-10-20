@@ -5,6 +5,8 @@ import com.geckolib.renderer.base.GeoRenderState;
 import com.geckolib.renderer.base.RenderPassInfo;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.world.item.ItemDisplayContext;
 import com.techguns.techguns3.TGConfig;
 import com.techguns.techguns3.item.AnimatedGunItem;
 
@@ -26,9 +28,33 @@ import com.techguns.techguns3.item.AnimatedGunItem;
  * <p>All of it is client side and purely visual.</p>
  */
 public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunItem> {
+    private final AnimatedGunItem item;
+
     public TechGunsGeoItemRenderer(AnimatedGunItem item) {
         super(item);
+        this.item = item;
         withRenderLayer(new MuzzleFlashLayer(this));
+    }
+
+    @Override
+    public void preRenderPass(RenderPassInfo<GeoRenderState> renderPassInfo, SubmitNodeCollector tasks) {
+        super.preRenderPass(renderPassInfo, tasks);
+        ItemDisplayContext perspective = perspective(renderPassInfo);
+        if (perspective == null || !perspective.firstPerson()) {
+            return;
+        }
+        // Only the hip pose is measured: while aiming the weapon is already
+        // moved, so its sight would report the aimed position instead.
+        if (GunFeel.get().aimProgress() > 0.02f) {
+            return;
+        }
+        renderPassInfo.addBonePositionListener("aim", (world, model, local) -> {
+            if (local == null) {
+                return;
+            }
+            GunSightAlignment.record(item, perspective == ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
+                    (float) local.x, (float) local.y);
+        });
     }
 
     @Override
@@ -56,9 +82,12 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
         }
 
         // Mouse sway: the model keeps following the camera for a moment.
+        // Aiming steadies the weapon, otherwise the sights would wander off
+        // the crosshair.
         if (sway > 0.0f) {
-            poseStack.rotateDegrees(Axis.XP, (float) Math.toDegrees(feel.swayPitch()) * sway);
-            poseStack.rotateDegrees(Axis.YP, (float) Math.toDegrees(feel.swayYaw()) * sway);
+            float steady = 1.0f - 0.7f * feel.aimProgress();
+            poseStack.rotateDegrees(Axis.XP, (float) Math.toDegrees(feel.swayPitch()) * sway * steady);
+            poseStack.rotateDegrees(Axis.YP, (float) Math.toDegrees(feel.swayYaw()) * sway * steady);
         }
 
         // Walk bob: a slow figure of eight that fades out while aiming.
@@ -81,8 +110,12 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
     }
 
     private static boolean isFirstPerson(RenderPassInfo<GeoRenderState> info) {
-        var perspective = info.renderState().getGeckolibData(
-                com.geckolib.constant.DataTickets.ITEM_RENDER_PERSPECTIVE);
+        ItemDisplayContext perspective = perspective(info);
         return perspective != null && perspective.firstPerson();
+    }
+
+    private static ItemDisplayContext perspective(RenderPassInfo<GeoRenderState> info) {
+        return info.renderState().getGeckolibData(
+                com.geckolib.constant.DataTickets.ITEM_RENDER_PERSPECTIVE);
     }
 }

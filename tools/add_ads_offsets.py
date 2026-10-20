@@ -157,7 +157,9 @@ def screen_position(point, trans, rot, s, hand_x):
 def main():
     for geo_path in sorted(models.glob("*.geo.json")):
         stem = geo_path.name[: -len(".geo.json")]
-        geo = json.loads(geo_path.read_text(encoding="utf-8"))
+        text = geo_path.read_text(encoding="utf-8")
+        compact = "\n" not in text.strip()
+        geo = json.loads(text)
         bones = geo["minecraft:geometry"][0].get("bones", [])
         corners = []
         collect(bones, None, IDENT, corners)
@@ -195,6 +197,16 @@ def main():
         handling["ads_offset"] = [round(offset[0], 4), round(offset[1], 4)]
         handling["ads_offset_left"] = [round(offset_left[0], 4), round(offset_left[1], 4)]
         gun_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+        # The same point as a cube-less anchor bone: the renderer reads the
+        # real screen position of it while the weapon is at the hip, which is
+        # exact no matter how the model or the display transform look.
+        bones[:] = [b for b in bones if b.get("name") != "aim"]
+        root_bone = next(b for b in bones if "parent" not in b)
+        bones.append({"name": "aim", "parent": root_bone["name"], "pivot": point})
+        geo_path.write_text(json.dumps(geo, separators=(",", ":")) if compact
+                            else json.dumps(geo, indent=2) + "\n", encoding="utf-8")
+
         print(f"{stem:<24} sight={source:<10} point={point} "
               f"right=({right[0]:.3f},{right[1]:.3f}) offset=({offset[0]:.3f},{offset[1]:.3f}) "
               f"left_offset=({offset_left[0]:.3f},{offset_left[1]:.3f})")

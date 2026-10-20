@@ -218,7 +218,7 @@ def check_animation(anim_path: Path, geo_path: Path, required_animations, requir
 for geo_path in sorted((assets / "geckolib/models/item").glob("*.geo.json")):
     anim_path = assets / "geckolib/animations/item" / geo_path.name.replace(".geo.json", ".animation.json")
     check_animation(anim_path, geo_path, required_animations=("fire", "reload"),
-                    required_locators=("muzzle",))
+                    required_locators=("muzzle", "aim"))
 
 for kind in ("block", "entity"):
     for geo_path in sorted((assets / "geckolib/models" / kind).glob("*.geo.json")):
