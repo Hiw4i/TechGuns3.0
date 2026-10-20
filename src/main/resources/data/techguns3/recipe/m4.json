@@ -7,8 +7,8 @@
     "W": "minecraft:oak_planks"
   },
   "pattern": [
-    " III",
-    "  WI",
+    "III",
+    " WI",
     "W  "
   ],
   "result": {

@@ -248,6 +248,24 @@ for path in sorted(guns_dir.glob("*.json")):
         errors.append(f"{anim_path.relative_to(root)}: reload length {actual}s does not match "
                       f"{name}.json ballistic.reload_ticks ({expected}s)")
 
+# --- crafting recipes ---
+for path in sorted((resources / "data/techguns3/recipe").glob("*.json")):
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("type") != "minecraft:crafting_shaped":
+        continue
+    pattern = data.get("pattern", [])
+    if not pattern:
+        continue
+    width = max(len(row) for row in pattern)
+    if width > 3 or len(pattern) > 3:
+        errors.append(f"{path.relative_to(root)}: crafting pattern is {width}x{len(pattern)}, "
+                      "the maximum is 3x3")
+    keys = set(data.get("key", {}).keys())
+    used = {c for row in pattern for c in row if c != " "}
+    missing = used - keys
+    if missing:
+        errors.append(f"{path.relative_to(root)}: pattern uses undefined keys {sorted(missing)}")
+
 if errors:
     raise SystemExit("\n".join(errors))
 print(f"Validated {len(list(resources.rglob('*.json')))} JSON files and checkpoint assets")

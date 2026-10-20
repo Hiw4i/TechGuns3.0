@@ -7,9 +7,9 @@
     "W": "minecraft:oak_planks"
   },
   "pattern": [
-    " IIII",
-    " W  I",
-    "W   "
+    "III",
+    " W ",
+    "W  "
   ],
   "result": {
     "id": "techguns3:bolt_action",
