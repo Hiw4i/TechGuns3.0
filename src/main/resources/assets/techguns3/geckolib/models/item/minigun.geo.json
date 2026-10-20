@@ -2367,6 +2367,15 @@
             }
           ],
           "parent": "barrels"
+        },
+        {
+          "name": "muzzle",
+          "pivot": [
+            36.5,
+            -0.0,
+            0.0
+          ],
+          "parent": "gun"
         }
       ]
     }

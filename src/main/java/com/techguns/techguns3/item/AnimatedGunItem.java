@@ -13,32 +13,57 @@ import com.geckolib.animation.RawAnimation;
 import com.geckolib.animation.object.PlayState;
 import com.geckolib.renderer.GeoItemRenderer;
 import com.geckolib.util.GeckoLibUtil;
+import com.techguns.techguns3.client.TechGunsGeoItemRenderer;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-/** GeckoLib visual shell for animated Techguns firearms. Fire/reload/spin are
- * triggered server-side (synced animatable); spin runs while LMB is held on
- * guns whose definition has {@code spins_barrels} true. Stats come from the
- * datapack (see {@link GenericGunItem}); this class only adds animation. */
+/**
+ * GeckoLib visual shell for animated Techguns firearms.
+ *
+ * <p>Fire, reload, charge and the barrel spin live in separate controllers so
+ * they never fight over the same bones and each one can use the transition
+ * length it needs:</p>
+ * <ul>
+ *   <li>{@code fire} - no transition at all. A weapon that is being fired has
+ *       to snap: a blend would smear the kick of an automatic into the next
+ *       shot.</li>
+ *   <li>{@code reload} - a short blend, so the weapon eases into the reload
+ *       pose instead of popping into it.</li>
+ *   <li>{@code charge} - additive, so the charging tilt is added on top of
+ *       whatever the weapon is doing instead of replacing it.</li>
+ *   <li>{@code barrels} - the spinning barrel cluster of the minigun.</li>
+ * </ul>
+ *
+ * <p>Stats come from the datapack (see {@link GenericGunItem}); this class
+ * only adds animation.</p>
+ */
 public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
+    public static final String CONTROLLER_FIRE = "fire";
+    public static final String CONTROLLER_RELOAD = "reload";
+    public static final String CONTROLLER_CHARGE = "charge";
+    public static final String CONTROLLER_BARRELS = "barrels";
+
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
 
     public AnimatedGunItem(Item.Properties properties, Identifier gunId,
-                           Supplier<Item> ammoItem, String ammoId,
-                           Supplier<SoundEvent> fallbackFireSound,
-                           Supplier<SoundEvent> fallbackReloadSound) {
+                            Supplier<Item> ammoItem, String ammoId,
+                            Supplier<SoundEvent> fallbackFireSound,
+                            Supplier<SoundEvent> fallbackReloadSound) {
         super(properties, gunId, ammoItem, ammoId, fallbackFireSound, fallbackReloadSound);
         GeoItem.registerSyncedAnimatable(this);
     }
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<AnimatedGunItem>("action", 0, state -> PlayState.STOP)
-                .triggerableAnim("fire", RawAnimation.begin().thenPlay("fire"))
-                .triggerableAnim("reload", RawAnimation.begin().thenPlay("reload"))
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_FIRE, 0, state -> PlayState.STOP)
+                .triggerableAnim("fire", RawAnimation.begin().thenPlay("fire")));
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_RELOAD, 4, state -> PlayState.STOP)
+                .triggerableAnim("reload", RawAnimation.begin().thenPlay("reload")));
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_CHARGE, 4, state -> PlayState.STOP)
+                .additiveAnimations()
                 .triggerableAnim("charge", RawAnimation.begin().thenLoop("charge")));
-        controllers.add(new AnimationController<AnimatedGunItem>("barrels", 0, state -> PlayState.STOP)
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_BARRELS, 0, state -> PlayState.STOP)
                 .triggerableAnim("spin", RawAnimation.begin().thenLoop("spin")));
     }
 
@@ -54,7 +79,7 @@ public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
 
             @Override
             public @Nullable GeoItemRenderer<AnimatedGunItem> getGeoItemRenderer() {
-                if (renderer == null) renderer = new GeoItemRenderer<>(AnimatedGunItem.this);
+                if (renderer == null) renderer = new TechGunsGeoItemRenderer(AnimatedGunItem.this);
                 return renderer;
             }
         });

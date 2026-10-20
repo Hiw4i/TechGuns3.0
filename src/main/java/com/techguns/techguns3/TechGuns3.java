@@ -52,7 +52,7 @@ public class TechGuns3 {
         TGParticles.TYPES.register(modEventBus);
         TGTabs.CREATIVE_MODE_TABS.register(modEventBus);
 
-        modContainer.registerConfig(ModConfig.Type.COMMON, TGConfig.COMMON_SPEC);
+        modContainer.registerConfig(ModConfig.Type.LOCAL, TGConfig.COMMON_SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, TGConfig.CLIENT_SPEC);
 
         modEventBus.addListener(GunPackets::register);

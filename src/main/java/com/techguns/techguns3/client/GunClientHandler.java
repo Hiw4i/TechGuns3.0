@@ -118,6 +118,8 @@ public final class GunClientHandler {
                 && player.getUsedItemHand() == InteractionHand.MAIN_HAND
                 && player.getUseItem().getItem() instanceof GenericGunItem;
         syncZoom(player, zooming);
+        GunFeel.get().setAiming(zooming && held.getItem() instanceof GenericGunItem);
+        GunFeel.get().setSprinting(player.isSprinting());
 
         boolean down = mc.options.keyAttack.isDown();
         if (down != lmbDown) {
@@ -147,9 +149,11 @@ public final class GunClientHandler {
                 // Hoisted: stats() builds a fresh record per call.
                 var stats = gun.stats();
                 long period = Math.max(1, stats.fireCooldownTicks());
-                if (now - lastAutoFeedbackTick >= period) {
+                // An empty magazine is the server's business; predicting a shot
+                // here would kick the weapon for nothing.
+                if (now - lastAutoFeedbackTick >= period && gun.loadedRounds(held) > 0) {
                     lastAutoFeedbackTick = now;
-                    predictShotFeedback(player, gun, stats, extras);
+                    predictShotFeedback(player, held, gun, stats, extras);
                 }
             }
         }
@@ -166,13 +170,13 @@ public final class GunClientHandler {
             // Rate-limit + reload-lock client-side so dead clicks give no phantom kick.
             if (player.getCooldowns().isOnCooldown(held)) return;
             ClientPacketDistributor.sendToServer(new GunPackets.FirePressed(true, zooming));
-            predictShotFeedback(player, gun, stats, extras);
+            predictShotFeedback(player, held, gun, stats, extras);
         } else {
             ClientPacketDistributor.sendToServer(new GunPackets.FireStart(true, zooming));
             lastAutoFeedbackTick = player.level().getGameTime();
             // Sustained beams start silently; the hold tick owns the tremor.
             if (!extras.continuousBeam()) {
-                predictShotFeedback(player, gun, stats, extras);
+                predictShotFeedback(player, held, gun, stats, extras);
             }
         }
     }
@@ -186,23 +190,33 @@ public final class GunClientHandler {
     private static long lastShotNanos;
 
     /**
-     * Instant local kick + baked muzzle flare so the shot lands physically
-     * before the server echo. Server entities (~1 tick later) confirm it for
-     * third person and other viewers; this predict is deliberately compact so
-     * it can never become the head-sized blob.
+     * Instant local feedback for a predicted shot: the weapon animation, the
+     * view-model muzzle flash, the weapon recoil spring and the camera kick.
+     *
+     * <p>The muzzle flash is drawn on the weapon model, so it stays glued to
+     * the barrel instead of hovering at a fixed point in the world. Damage,
+     * ammo and the authoritative flash for everybody else stay on the
+     * server.</p>
      *
      * <p>Takes pre-resolved stats/extras: both build fresh records per call.</p>
      */
-    private static void predictShotFeedback(LocalPlayer player, GenericGunItem gun,
+    private static void predictShotFeedback(LocalPlayer player, ItemStack held, GenericGunItem gun,
                                             com.techguns.techguns3.item.GunStats stats,
                                             com.techguns.techguns3.item.GunExtras extras) {
+        // The weapon reacts on the same frame as the trigger pull; the server
+        // broadcast skips the shooter for exactly this reason.
+        com.techguns.techguns3.combat.GunAnimSync.triggerLocal(
+                held, com.techguns.techguns3.item.AnimatedGunItem.CONTROLLER_FIRE, "fire");
+
+        float yawJitter = (player.getRandom().nextFloat() * 2.0f - 1.0f) * stats.recoilYawJitter();
         if (TGConfig.cameraRecoil()) {
-            float yawJitter = (player.getRandom().nextFloat() * 2.0f - 1.0f) * stats.recoilYawJitter();
             // Negative pitch kicks the muzzle up (XRot decreases looking up).
             player.turn(yawJitter, -stats.recoilPitchDeg());
             // Heavy guns thump the camera (decays in TGShake).
             TGShake.addTrauma(Math.min(0.45f, stats.recoilPitchDeg() * 0.12f));
         }
+        // The weapon itself kicks back and settles on its own.
+        GunFeel.get().kick(stats.recoilPitchDeg(), yawJitter * 2.0f, 1.0f);
         lastShotNanos = System.nanoTime();
         if (!TGConfig.cinematicFx()) return;
         try {
@@ -212,6 +226,11 @@ public final class GunClientHandler {
             var level = player.level();
             var preset = com.techguns.techguns3.fx.GunFxPresets.forKind(
                     stats.projectileKind(), stats.muzzleFlashScale());
+            // View model flash: glued to the barrel of the held weapon.
+            MuzzleFlashFx.trigger(
+                    com.techguns.techguns3.fx.GunFxPresets.muzzleTexture(stats, extras),
+                    preset.muzzleColor(),
+                    0.22f + 0.18f * stats.muzzleFlashScale());
             if (stats.projectileKind()
                     == com.techguns.techguns3.item.GunStats.ProjectileKind.FIRE) {
                 // Flamethrower: tongues of textured flame blown forward, no smoke puff.
@@ -247,6 +266,8 @@ public final class GunClientHandler {
     @SubscribeEvent
     public static void onFov(ComputeFovModifierEvent event) {
         if (!(event.getPlayer() instanceof LocalPlayer player)) return;
+        // Every spring of the weapon feel advances once per rendered frame.
+        GunFeel.get().update();
         float fov = event.getFovModifier();
         float target = 1.0f;
         if (player.isUsingItem()) {
@@ -267,11 +288,9 @@ public final class GunClientHandler {
         }
         fov *= smoothedZoom;
         // TG2 scope-recoil feel: brief punch-out on every shot, then settle.
-        long dtMs = (System.nanoTime() - lastShotNanos) / 1_000_000L;
-        if (dtMs >= 0 && dtMs < 90
-                && player.getMainHandItem().getItem() instanceof GenericGunItem) {
-            float k = 1.0f - dtMs / 90.0f;
-            fov *= 1.0f + 0.025f * k;
+        // The punch is a spring, so it eases back instead of cutting off.
+        if (player.getMainHandItem().getItem() instanceof GenericGunItem) {
+            fov *= 1.0f + 0.35f * GunFeel.get().fovPunch();
         }
         event.setNewFovModifier(fov);
     }

@@ -59,7 +59,7 @@ for sound in sounds.values():
         if name.startswith("techguns3:"):
             path = assets / "sounds" / (name.split(":", 1)[1] + ".ogg")
             if not path.exists():
-                errors.append(f"missing sound: {path.relative_to(root)}")
+                errors.append(f"missing sound: {name}")
 
 # --- gun datapack definitions (data-driven GunStats) ---
 guns_dir = resources / "data/techguns3/guns"
@@ -114,6 +114,135 @@ else:
                     ammo_name = ammo_ref.split(":",1)[1]
                     if ammo_name not in item_ids:
                         errors.append(f"{path.name}: unknown item {ammo_ref}")
+
+# --- GeckoLib geo/animation cross-checks -------------------------------------
+# GeckoLib silently ignores animations that reference a bone the model does not
+# have, so a typo there is invisible in game: the bone simply never moves.
+# These checks turn that into a build failure.
+
+# Easing names accepted by GeckoLib's EasingType registry (see
+# com.geckolib.animation.object.EasingType). "linear"/"none" are aliases.
+VALID_EASING = {
+    "linear", "none", "step",
+    "easeinsine", "easeoutsine", "easeinoutsine",
+    "easeinquad", "easeoutquad", "easeinoutquad",
+    "easeincubic", "easeoutcubic", "easeinoutcubic",
+    "easeinquart", "easeoutquart", "easeinoutquart",
+    "easeinquint", "easeoutquint", "easeinoutquint",
+    "easeinexpo", "easeoutexpo", "easeinoutexpo",
+    "easeincirc", "easeoutcirc", "easeinoutcirc",
+    "easeinback", "easeoutback", "easeinoutback",
+    "easeinelastic", "easeoutelastic", "easeinoutelastic",
+    "easeinbounce", "easeoutbounce", "easeinoutbounce",
+    "catmullrom",
+}
+VALID_LERP_MODES = {"linear", "catmullrom", "step"}
+
+
+def geo_bones(geo: dict) -> set:
+    names = set()
+    for geometry in geo.get("minecraft:geometry", []):
+        for bone in geometry.get("bones", []):
+            if "name" in bone:
+                names.add(bone["name"])
+    return names
+
+
+def geo_locators(geo: dict) -> set:
+    names = set()
+    for geometry in geo.get("minecraft:geometry", []):
+        names.update(geometry.get("locators", {}).keys())
+    return names
+
+
+def anchor_bones(geo: dict) -> set:
+    """Cube-less anchor bones the renderer hangs first-person FX off."""
+    names = set()
+    for geometry in geo.get("minecraft:geometry", []):
+        for bone in geometry.get("bones", []):
+            if bone.get("name") and not bone.get("cubes"):
+                names.add(bone["name"])
+    return names
+
+
+def walk_keyframes(node, path, out):
+    """Collect (bone, time, easing) triples from an animation track tree."""
+    if not isinstance(node, dict):
+        return
+    for key, value in node.items():
+        if isinstance(value, dict):
+            if "easing" in value and isinstance(value["easing"], str):
+                out.append((path, key, value["easing"]))
+            if "lerp_mode" in value and isinstance(value["lerp_mode"], str):
+                out.append((path, key, value["lerp_mode"]))
+            walk_keyframes(value, path, out)
+
+
+def check_animation(anim_path: Path, geo_path: Path, required_animations, required_locators):
+    rel = anim_path.relative_to(root)
+    if not geo_path.exists():
+        return
+    try:
+        anim = json.loads(anim_path.read_text(encoding="utf-8"))
+        geo = json.loads(geo_path.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        errors.append(f"{rel}: {exc}")
+        return
+
+    bones = geo_bones(geo)
+    anchors = anchor_bones(geo)
+    animations = anim.get("animations", {})
+
+    for name in sorted(required_animations):
+        if name not in animations:
+            errors.append(f"{rel}: missing animation '{name}'")
+
+    for name, track in sorted(animations.items()):
+        for bone in sorted(track.get("bones", {}).keys()):
+            if bone not in bones:
+                errors.append(f"{rel}: animation '{name}' drives unknown bone '{bone}'")
+        easing_hits = []
+        walk_keyframes(track.get("bones", {}), name, easing_hits)
+        for bone, time, value in easing_hits:
+            if value.lower() not in VALID_EASING and value.lower() not in VALID_LERP_MODES:
+                errors.append(f"{rel}: animation '{name}' bone '{bone}' t={time} "
+                              f"uses unknown easing/lerp_mode '{value}'")
+
+    for name in sorted(required_locators):
+        if name not in anchors:
+            errors.append(f"{geo_path.relative_to(root)}: missing anchor bone '{name}'")
+
+
+# Every gun that has a GeckoLib model needs a muzzle anchor bone so the
+# first-person muzzle flash can be attached to the barrel.
+for geo_path in sorted((assets / "geckolib/models/item").glob("*.geo.json")):
+    anim_path = assets / "geckolib/animations/item" / geo_path.name.replace(".geo.json", ".animation.json")
+    check_animation(anim_path, geo_path, required_animations=("fire", "reload"),
+                    required_locators=("muzzle",))
+
+for kind in ("block", "entity"):
+    for geo_path in sorted((assets / "geckolib/models" / kind).glob("*.geo.json")):
+        anim_path = assets / "geckolib/animations" / kind / geo_path.name.replace(".geo.json", ".animation.json")
+        check_animation(anim_path, geo_path, required_animations=(),
+                        required_locators=())
+
+# Reload animation length must match the server-side reload time, otherwise the
+# weapon is still moving after the magazine is already in.
+for path in sorted(guns_dir.glob("*.json")):
+    data = json.loads(path.read_text(encoding="utf-8"))
+    name = path.stem
+    anim_path = assets / "geckolib/animations/item" / f"{name}.animation.json"
+    if not anim_path.exists():
+        continue
+    anim = json.loads(anim_path.read_text(encoding="utf-8"))
+    reload_anim = anim.get("animations", {}).get("reload")
+    if not reload_anim:
+        continue
+    expected = data.get("ballistic", {}).get("reload_ticks", 0) / 20.0
+    actual = reload_anim.get("animation_length", 0)
+    if expected > 0 and abs(actual - expected) > 0.051:
+        errors.append(f"{anim_path.relative_to(root)}: reload length {actual}s does not match "
+                      f"{name}.json ballistic.reload_ticks ({expected}s)")
 
 if errors:
     raise SystemExit("\n".join(errors))

@@ -405,9 +405,11 @@ public final class GunServerLogic {
         }
         setState(player, stateOf(player).withNextShot(now + Math.max(1, stats.fireCooldownTicks())));
         player.getCooldowns().addCooldown(gunStack, Math.max(1, stats.fireCooldownTicks()));
-        if (gun instanceof AnimatedGunItem animated && player.level() instanceof ServerLevel server) {
-            animated.triggerAnim(player, com.geckolib.animatable.GeoItem.getOrAssignId(gunStack, server),
-                    "action", "fire");
+        if (gun instanceof AnimatedGunItem animated) {
+            // The shooter predicts the kick locally, so the broadcast skips
+            // them: otherwise the weapon would kick twice.
+            GunAnimSync.triggerForOthers(player, gunStack, animated,
+                    AnimatedGunItem.CONTROLLER_FIRE, "fire");
         }
         boolean zoomed = zooming && stats.canZoom();
         float spreadMult = zoomed ? stats.zoomSpreadMult() : 1.0f;
@@ -535,7 +537,7 @@ public final class GunServerLogic {
     private static void playReloadAnim(ServerPlayer player, ItemStack gunStack, GenericGunItem gun) {
         if (gun instanceof AnimatedGunItem animated && player.level() instanceof ServerLevel server) {
             animated.triggerAnim(player, com.geckolib.animatable.GeoItem.getOrAssignId(gunStack, server),
-                    "action", "reload");
+                    AnimatedGunItem.CONTROLLER_RELOAD, "reload");
         }
     }
 
@@ -574,7 +576,7 @@ public final class GunServerLogic {
         if (gun instanceof AnimatedGunItem animated && player.level() instanceof ServerLevel server) {
             try {
                 animated.triggerAnim(player, com.geckolib.animatable.GeoItem.getOrAssignId(gunStack, server),
-                        "action", "charge");
+                        AnimatedGunItem.CONTROLLER_CHARGE, "charge");
             } catch (Exception e) {
                 LOG.debug("[TechGuns3] charge anim failed for {}", gunStack.getItem(), e);
             }
@@ -586,7 +588,7 @@ public final class GunServerLogic {
             try {
                 long id = com.geckolib.animatable.GeoItem.getOrAssignId(gunStack,
                         (ServerLevel) player.level());
-                animated.stopTriggeredAnim(player, id, "action", "charge");
+                animated.stopTriggeredAnim(player, id, AnimatedGunItem.CONTROLLER_CHARGE, "charge");
             } catch (Exception e) {
                 LOG.debug("[TechGuns3] stop charge anim failed for {}", gunStack.getItem(), e);
             }

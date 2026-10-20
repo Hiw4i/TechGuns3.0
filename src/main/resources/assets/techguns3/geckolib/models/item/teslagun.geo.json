@@ -2038,6 +2038,15 @@
             }
           ],
           "parent": "gun"
+        },
+        {
+          "name": "muzzle",
+          "pivot": [
+            20.5,
+            -0.5,
+            0.5
+          ],
+          "parent": "gun"
         }
       ]
     }

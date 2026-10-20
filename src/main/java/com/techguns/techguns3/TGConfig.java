@@ -73,6 +73,17 @@ public final class TGConfig {
     private static final ModConfigSpec.BooleanValue SHELL_CASINGS = CLIENT
             .comment("Eject brass shell casings on every shot (visual only).")
             .define("shellCasings", true);
+    private static final ModConfigSpec.DoubleValue ADS_POSE = CLIENT
+            .comment("How far the weapon comes up to the shoulder while aiming (RMB). "
+                    + "0 disables the aim pose, 1 is the default, 2 is a very high mount.")
+            .defineInRange("adsPose", 1.0, 0.0, 2.0);
+    private static final ModConfigSpec.DoubleValue WEAPON_SWAY = CLIENT
+            .comment("Mouse sway of the held weapon: the model keeps following the camera for "
+                    + "a moment after the mouse moved. 0 disables it.")
+            .defineInRange("weaponSway", 1.0, 0.0, 3.0);
+    private static final ModConfigSpec.DoubleValue WEAPON_BOB = CLIENT
+            .comment("Walk bob of the held weapon. 0 disables it.")
+            .defineInRange("weaponBob", 1.0, 0.0, 3.0);
 
     static final ModConfigSpec COMMON_SPEC = COMMON.build();
     static final ModConfigSpec CLIENT_SPEC = CLIENT.build();
@@ -94,6 +105,9 @@ public final class TGConfig {
     private static volatile boolean cameraRecoil = true;
     private static volatile boolean cinematicFx = true;
     private static volatile boolean shellCasings = true;
+    private static volatile double adsPose = 1.0;
+    private static volatile double weaponSway = 1.0;
+    private static volatile double weaponBob = 1.0;
 
     public static double gunDamageMultiplier() { return gunDamageMultiplier; }
     public static double fxDensity() { return fxDensity; }
@@ -111,6 +125,9 @@ public final class TGConfig {
     public static boolean cameraRecoil() { return cameraRecoil; }
     public static boolean cinematicFx() { return cinematicFx; }
     public static boolean shellCasings() { return shellCasings; }
+    public static double adsPose() { return adsPose; }
+    public static double weaponSway() { return weaponSway; }
+    public static double weaponBob() { return weaponBob; }
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -132,6 +149,9 @@ public final class TGConfig {
             cameraRecoil = CAMERA_RECOIL.get();
             cinematicFx = CINEMATIC_FX.get();
             shellCasings = SHELL_CASINGS.get();
+            adsPose = ADS_POSE.get();
+            weaponSway = WEAPON_SWAY.get();
+            weaponBob = WEAPON_BOB.get();
         }
     }
 }
