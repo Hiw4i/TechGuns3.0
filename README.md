@@ -29,6 +29,7 @@ The held weapon is a view model with its own animation state, not a static prop:
 - The weapon reacts on the **same frame** as the trigger pull: the shooter predicts the fire animation locally and the server broadcast skips them, so an automatic never lags behind the mouse.
 - Recoil is a **spring**, not a snap: the weapon is pushed back and up and settles on its own. The camera kick and the zoom punch ride on the same springs.
 - The weapon has **weight**: mouse sway, walk bob, a sprint pose that drops it out of the way and an aim pose that brings it up to the shoulder.
+- **Aiming is aligned to the sights.** Every gun definition carries the offset that puts its rear sight (or the eyepiece of a scope) exactly on the crosshair. The offset is computed offline from the sight position in the model, the item display transform and the first person hand placement of the game (`tools/add_ads_offsets.py`), so it stays correct when a model or a display transform changes.
 - All animation tracks have **easing curves** - the recoil rises fast and settles slowly, reloads ease in and out, mechanical parts (slide, bolt, pump, magazine) stay linear and the barrel spin stays linear so it does not stutter.
 - Every effect is drawn through a **custom additive render pipeline** (`techguns3:pipeline/fx_additive`), built on the vanilla core shaders, so flashes, beams, tracers, tesla arcs and blasts read as light instead of flat translucent stickers.
 

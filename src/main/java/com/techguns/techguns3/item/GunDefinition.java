@@ -98,7 +98,8 @@ public record GunDefinition(
     public record Handling(
             String projectile, boolean canZoom, float zoomFov, float zoomSpreadMult,
             float recoilPitch, float recoilYaw, float muzzleScale, boolean spinsBarrels,
-            float slimePerHit, float bulk, int muzzleFlash, int loopTicks, boolean twoHanded
+            float slimePerHit, float bulk, int muzzleFlash, int loopTicks, boolean twoHanded,
+            List<Float> adsOffset, List<Float> adsOffsetLeft
     ) {
         public static final Codec<Handling> CODEC = RecordCodecBuilder.create(inst -> inst.group(
                 Codec.STRING.optionalFieldOf("projectile", "BALLISTIC").forGetter(Handling::projectile),
@@ -113,7 +114,9 @@ public record GunDefinition(
                 Codec.FLOAT.optionalFieldOf("bulk", 1.0f).forGetter(Handling::bulk),
                 Codec.INT.optionalFieldOf("muzzle_flash", 0).forGetter(Handling::muzzleFlash),
                 Codec.INT.optionalFieldOf("loop_ticks", 0).forGetter(Handling::loopTicks),
-                Codec.BOOL.optionalFieldOf("two_handed", true).forGetter(Handling::twoHanded)
+                Codec.BOOL.optionalFieldOf("two_handed", true).forGetter(Handling::twoHanded),
+                Codec.FLOAT.listOf().optionalFieldOf("ads_offset", List.of()).forGetter(Handling::adsOffset),
+                Codec.FLOAT.listOf().optionalFieldOf("ads_offset_left", List.of()).forGetter(Handling::adsOffsetLeft)
         ).apply(inst, Handling::new));
     }
 
@@ -157,7 +160,8 @@ public record GunDefinition(
                     Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 0))
                     .forGetter(GunDefinition::sounds),
             Handling.CODEC.optionalFieldOf("handling", new Handling(
-                    "BALLISTIC", true, 0.8f, 0.5f, 0.8f, 0.3f, 0.7f, false, 0.0f, 1.0f, 0, 0, true))
+                    "BALLISTIC", true, 0.8f, 0.5f, 0.8f, 0.3f, 0.7f, false, 0.0f, 1.0f, 0, 0, true,
+                    List.of(), List.of()))
                     .forGetter(GunDefinition::handling),
             Extras.CODEC.optionalFieldOf("extras", new Extras(
                     Optional.empty(), false, 0, 1, 1, 0.0f, false, 0.0f,
@@ -200,6 +204,10 @@ public record GunDefinition(
     public int muzzleFlash() { return handling.muzzleFlash(); }
     public int loopTicks() { return handling.loopTicks(); }
     public boolean twoHanded() { return handling.twoHanded(); }
+    /** Camera space offset that puts the rear sight on the crosshair (right hand). */
+    public List<Float> adsOffset() { return handling.adsOffset(); }
+    /** Same for the off hand, which the game mirrors on X. */
+    public List<Float> adsOffsetLeft() { return handling.adsOffsetLeft(); }
 
     /** Basic sanity: returns error string or null when valid. */
     public String validate() {
@@ -346,7 +354,7 @@ public record GunDefinition(
                 new SoundSet(snd.apply(fireSound), snd.apply(reloadSound), snd.apply(extraSound),
                         snd.apply(actionSound), actionDelay),
                 new Handling(projectile, canZoom, zoomFov, zoomSpread, recoilPitch, recoilYaw,
-                        muzzle, spin, slime, bulk, flash, loop, true),
+                        muzzle, spin, slime, bulk, flash, loop, true, List.of(), List.of()),
                 new Extras(Optional.ofNullable(explosive), beam, charge, ammoBase, ammoFull,
                         knockback, ignoreIframes, homing, guided, lockTime, lockPersist, lockRange,
                         radiation, extrasAmmo, continuous));
@@ -358,7 +366,8 @@ public record GunDefinition(
         return new GunDefinition(schemaVersion, ammo, emptyMagazine, ballistic, sounds,
                 new Handling(h.projectile(), h.canZoom(), h.zoomFov(), h.zoomSpreadMult(),
                         h.recoilPitch(), h.recoilYaw(), h.muzzleScale(), h.spinsBarrels(),
-                        h.slimePerHit(), h.bulk(), h.muzzleFlash(), h.loopTicks(), twoHanded),
+                        h.slimePerHit(), h.bulk(), h.muzzleFlash(), h.loopTicks(), twoHanded,
+                        h.adsOffset(), h.adsOffsetLeft()),
                 extras);
     }
 }

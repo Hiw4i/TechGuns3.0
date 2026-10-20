@@ -41,17 +41,12 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
         PoseStack poseStack = renderPassInfo.poseStack();
         GunFeel feel = GunFeel.get();
 
-        float aim = feel.aimProgress() * (float) TGConfig.adsPose();
         float sprint = feel.sprintProgress();
         float sway = (float) TGConfig.weaponSway();
         float bob = (float) TGConfig.weaponBob();
-
-        // Aim: raise the weapon towards the sight line and pull it in.
-        if (aim > 0.0f) {
-            poseStack.translate(-0.22f * aim, 0.20f * aim, -0.30f * aim);
-            poseStack.rotateDegrees(Axis.ZP, -4.0f * aim);
-            poseStack.rotateDegrees(Axis.XP, -2.0f * aim);
-        }
+        // The aim pose itself (sliding the weapon so the sights line up with
+        // the crosshair) is applied in camera space by GunAimHandler, this
+        // is only what happens around it.
 
         // Sprint: the weapon drops and rolls inwards.
         if (sprint > 0.0f) {
