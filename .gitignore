@@ -30,3 +30,6 @@ Thumbs.db
 
 # Publishing repo
 repo/
+
+# Cached copies of the original 1.12 model sources, fetched on demand.
+tools/.legacy-cache/
