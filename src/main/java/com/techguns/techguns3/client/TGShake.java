@@ -73,15 +73,19 @@ public final class TGShake {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        // ~1.6/s decay, frame-rate independent enough at fixed client ticks.
-        trauma = Math.max(0.0f, trauma - 0.032f);
+        // Trauma falls off fast at the beginning and slowly at the end, the
+        // amplitude is trauma squared, so the shake dies away quickly.
+        trauma = Math.max(0.0f, trauma - (0.02f + 0.03f * trauma));
         flash = Math.max(0.0f, flash - 0.06f);
     }
 
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         if (trauma <= 0.003f) return;
-        float t = trauma * trauma;
+        // Aiming steadies the weapon, so the camera shakes less while the
+        // sights are on the target.
+        float steady = 1.0f - 0.45f * GunFeel.get().aimProgress();
+        float t = trauma * trauma * steady;
         long time = System.nanoTime() / 1_000_000L;
         float n1 = noise(time * 0.043f) * t * 3.2f;
         float n2 = noise(time * 0.037f + 40.0f) * t * 3.2f;

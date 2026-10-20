@@ -70,6 +70,7 @@ public final class ElectricCombat {
             hit.add(primary.getUUID());
             Vec3 killDir = targetEye.subtract(tip).normalize();
             primary.hurtServer(level, level.damageSources().indirectMagic(shooter, shooter), damage);
+            HitFeedback.hit(level, shooter, primary);
             if (!primary.isAlive()) {
                 com.techguns.techguns3.damagesystem.GoreHandler.onKill(level, primary, killDir,
                         com.techguns.techguns3.damagesystem.GoreHandler.TESLA_GORE_CHANCE,

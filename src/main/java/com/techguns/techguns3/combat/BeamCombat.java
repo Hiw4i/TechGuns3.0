@@ -101,6 +101,7 @@ public final class BeamCombat {
                                   LivingEntity victim, Vec3 beamEnd, Vec3 dir) {
         float dmg = (float) (stats.baseDamage() * TGConfig.gunDamageMultiplier());
         victim.hurtServer(level, level.damageSources().indirectMagic(shooter, shooter), dmg);
+        HitFeedback.hit(level, shooter, victim);
         if (extras.radiationTicks() > 0) {
             victim.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                     com.techguns.techguns3.registry.TGEffects.RADIATION,

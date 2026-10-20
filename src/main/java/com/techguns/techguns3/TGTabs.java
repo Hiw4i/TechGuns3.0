@@ -27,7 +27,11 @@ public final class TGTabs {
                     .displayItems((parameters, output) -> {
                         // Wave-1 guns
                         output.accept(TGItems.PISTOL.get());
+                        output.accept(TGItems.REVOLVER.get());
                         output.accept(TGItems.AK47.get());
+                        output.accept(TGItems.M4.get());
+                        output.accept(TGItems.THOMPSON.get());
+                        output.accept(TGItems.BOLT_ACTION.get());
                         output.accept(TGItems.COMBAT_SHOTGUN.get());
                         output.accept(TGItems.MINIGUN.get());
                         output.accept(TGItems.TESLAGUN.get());

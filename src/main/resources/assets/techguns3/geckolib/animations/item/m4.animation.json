@@ -1,0 +1,279 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "fire": {
+      "animation_length": 0.15,
+      "bones": {
+        "gun": {
+          "rotation": {
+            "0.0": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeoutcubic"
+            },
+            "0.03": {
+              "vector": [
+                4.5,
+                0,
+                0
+              ],
+              "easing": "easeoutquad"
+            },
+            "0.075": {
+              "vector": [
+                2.475,
+                0,
+                0
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "0.112": {
+              "vector": [
+                0.9,
+                0,
+                0
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "0.15": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeoutcubic"
+            }
+          },
+          "position": {
+            "0.0": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeoutcubic"
+            },
+            "0.03": {
+              "vector": [
+                0,
+                0.1,
+                -0.6
+              ],
+              "easing": "easeoutquad"
+            },
+            "0.075": {
+              "vector": [
+                0,
+                0.05,
+                -0.3
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "0.15": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeoutcubic"
+            }
+          }
+        },
+        "Bolt03": {
+          "position": {
+            "0.0": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "linear"
+            },
+            "0.05": {
+              "vector": [
+                0,
+                0,
+                1.2
+              ],
+              "easing": "easeoutquad"
+            },
+            "0.09": {
+              "vector": [
+                0,
+                0,
+                1.2
+              ],
+              "easing": "linear"
+            },
+            "0.14": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeoutcubic"
+            }
+          }
+        }
+      }
+    },
+    "reload": {
+      "animation_length": 2.25,
+      "bones": {
+        "gun": {
+          "rotation": {
+            "0.0": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "0.405": {
+              "vector": [
+                -20.0,
+                0,
+                10.0
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "1.845": {
+              "vector": [
+                -20.0,
+                0,
+                10.0
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "2.25": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeinoutcubic"
+            }
+          },
+          "position": {
+            "0.0": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "1.125": {
+              "vector": [
+                0,
+                -0.35,
+                0.35
+              ],
+              "easing": "easeinoutcubic"
+            },
+            "2.25": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeinoutcubic"
+            }
+          }
+        },
+        "Magazine02": {
+          "position": {
+            "0.0": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "linear"
+            },
+            "0.5": {
+              "vector": [
+                0,
+                -4,
+                0
+              ],
+              "easing": "linear"
+            },
+            "1.3": {
+              "vector": [
+                0,
+                -4,
+                0
+              ],
+              "easing": "linear"
+            },
+            "1.5": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "linear"
+            },
+            "2.25": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "linear"
+            }
+          }
+        },
+        "Bolt03": {
+          "position": {
+            "0.0": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "linear"
+            },
+            "1.2": {
+              "vector": [
+                0,
+                0,
+                1.2
+              ],
+              "easing": "easeoutquad"
+            },
+            "1.5": {
+              "vector": [
+                0,
+                0,
+                1.2
+              ],
+              "easing": "linear"
+            },
+            "1.7": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "easeoutcubic"
+            },
+            "2.25": {
+              "vector": [
+                0,
+                0,
+                0
+              ],
+              "easing": "linear"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -315,6 +315,9 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                     livingTarget.damageCooldownTime = 0;
                 }
                 target.hurtServer(serverLevel, source, dmg);
+                if (target instanceof LivingEntity livingVictim && owner instanceof LivingEntity livingShooter) {
+                    com.techguns.techguns3.combat.HitFeedback.hit(serverLevel, livingShooter, livingVictim);
+                }
                 if (spec.knockback() > 0.0f && target instanceof LivingEntity livingKb) {
                     Vec3 push = getDeltaMovement().normalize().scale(spec.knockback() * 0.6);
                     livingKb.push(push.x, push.y + spec.knockback() * 0.15, push.z);

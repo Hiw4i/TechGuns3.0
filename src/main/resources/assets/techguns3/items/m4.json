@@ -1,6 +1,1 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "techguns3:item/m4"
-  }
-}
+{"model":{"type":"minecraft:special","base":"techguns3:item/m4","model":{"type":"geckolib:geckolib"}}}

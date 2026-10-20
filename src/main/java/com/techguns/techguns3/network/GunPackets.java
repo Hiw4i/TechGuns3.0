@@ -152,6 +152,26 @@ public final class GunPackets {
         }
     }
 
+    /**
+     * Server -&gt; client: a shot of the player hit something. Purely visual
+     * feedback, the hit marker in the crosshair.
+     */
+    public record HitConfirm(boolean killed) implements CustomPacketPayload {
+        public static final Type<HitConfirm> TYPE =
+                new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(TechGuns3.MODID, "gun_hit"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, HitConfirm> CODEC =
+                StreamCodec.composite(ByteBufCodecs.BOOL, HitConfirm::killed, HitConfirm::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+
+        public static void handle(HitConfirm msg, IPayloadContext ctx) {
+            ctx.enqueueWork(() -> com.techguns.techguns3.client.GunCrosshairOverlay.onHit(msg.killed()));
+        }
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("1");
         registrar.playToServer(FireStart.TYPE, FireStart.CODEC, FireStart::handle);
@@ -160,5 +180,6 @@ public final class GunPackets {
         registrar.playToServer(ReloadRequest.TYPE, ReloadRequest.CODEC, ReloadRequest::handle);
         registrar.playToServer(ZoomState.TYPE, ZoomState.CODEC, ZoomState::handle);
         registrar.playToClient(GunSync.TYPE, GunSync.CODEC, GunSync::handle);
+        registrar.playToClient(HitConfirm.TYPE, HitConfirm.CODEC, HitConfirm::handle);
     }
 }

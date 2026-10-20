@@ -80,20 +80,20 @@ public final class TGItems {
             props -> new AnimatedGunItem(props, gunId("pistol"),
                     PISTOL_MAGAZINE::get, "pistol_magazine",
                     TGSounds.PISTOL_FIRE::get, TGSounds.PISTOL_RELOAD::get));
-    public static final DeferredItem<GenericGunItem> REVOLVER = ITEMS.registerItem("revolver",
-            props -> new GenericGunItem(props, gunId("revolver"),
+    public static final DeferredItem<AnimatedGunItem> REVOLVER = ITEMS.registerItem("revolver",
+            props -> new AnimatedGunItem(props, gunId("revolver"),
                     PISTOL_ROUNDS::get, "pistol_rounds",
                     TGSounds.REVOLVER_FIRE::get, TGSounds.REVOLVER_RELOAD::get));
     public static final DeferredItem<AnimatedGunItem> AK47 = ITEMS.registerItem("ak47",
             props -> new AnimatedGunItem(props, gunId("ak47"),
                     ASSAULT_RIFLE_MAGAZINE::get, "assault_rifle_magazine",
                     TGSounds.AK47_FIRE::get, TGSounds.AK47_RELOAD::get));
-    public static final DeferredItem<GenericGunItem> M4 = ITEMS.registerItem("m4",
-            props -> new GenericGunItem(props, gunId("m4"),
+    public static final DeferredItem<AnimatedGunItem> M4 = ITEMS.registerItem("m4",
+            props -> new AnimatedGunItem(props, gunId("m4"),
                     ASSAULT_RIFLE_MAGAZINE::get, "assault_rifle_magazine",
                     TGSounds.M4_FIRE::get, TGSounds.M4_RELOAD::get));
-    public static final DeferredItem<GenericGunItem> THOMPSON = ITEMS.registerItem("thompson",
-            props -> new GenericGunItem(props, gunId("thompson"),
+    public static final DeferredItem<AnimatedGunItem> THOMPSON = ITEMS.registerItem("thompson",
+            props -> new AnimatedGunItem(props, gunId("thompson"),
                     SMG_MAGAZINE::get, "smg_magazine",
                     TGSounds.THOMPSON_FIRE::get, TGSounds.THOMPSON_RELOAD::get));
     public static final DeferredItem<AnimatedGunItem> COMBAT_SHOTGUN = ITEMS.registerItem("combat_shotgun",
@@ -108,8 +108,8 @@ public final class TGItems {
             props -> new AnimatedGunItem(props, gunId("teslagun"),
                     ENERGY_CELL::get, "energy_cell",
                     TGSounds.TESLAGUN_FIRE::get, TGSounds.TESLAGUN_RELOAD::get));
-    public static final DeferredItem<GenericGunItem> BOLT_ACTION = ITEMS.registerItem("bolt_action",
-            props -> new GenericGunItem(props, gunId("bolt_action"),
+    public static final DeferredItem<AnimatedGunItem> BOLT_ACTION = ITEMS.registerItem("bolt_action",
+            props -> new AnimatedGunItem(props, gunId("bolt_action"),
                     RIFLE_ROUNDS::get, "rifle_rounds",
                     TGSounds.BOLT_ACTION_FIRE::get, TGSounds.BOLT_ACTION_RELOAD::get));
     public static final DeferredItem<AnimatedGunItem> BIOGUN = ITEMS.registerItem("biogun",

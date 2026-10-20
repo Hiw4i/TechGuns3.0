@@ -47,7 +47,8 @@ public final class TGClientSetup {
 
     @SubscribeEvent
     public static void registerLayers(RegisterGuiLayersEvent event) {
-        event.registerAboveAll(AmmoHudOverlay.LAYER_ID, AmmoHudOverlay::render);
+        event.registerAboveAll(GunHudOverlay.LAYER_ID, GunHudOverlay::render);
+        event.registerAboveAll(GunCrosshairOverlay.LAYER_ID, GunCrosshairOverlay::render);
         event.registerAboveAll(ScopeOverlay.LAYER_ID, ScopeOverlay::render);
         event.registerAboveAll(BlastFlashOverlay.LAYER_ID, BlastFlashOverlay::render);
     }

@@ -29,17 +29,21 @@ for name in sorted(block_ids):
     if not (resources / "data/techguns3/loot_table/blocks" / f"{name}.json").exists():
         errors.append(f"missing block loot: {name}")
 
-for name in ("pistol", "ak47", "combat_shotgun", "minigun", "teslagun",
-             "tfg", "nucleardeathray", "gaussrifle", "rocketlauncher",
+for name in ("pistol", "revolver", "ak47", "m4", "thompson", "bolt_action", "combat_shotgun", "minigun",
+             "teslagun", "tfg", "nucleardeathray", "gaussrifle", "rocketlauncher",
              "guidedmissilelauncher", "grimreaper", "sonicshotgun", "lasergun",
              "laserpistol", "pulserifle", "vector", "pdw", "as50"):
+    texture = assets / "textures/item" / f"{name}.png"
+    if not texture.exists():
+        texture = assets / "textures/item/guns" / f"{name}.png"
     for path in (
         assets / "geckolib/models/item" / f"{name}.geo.json",
         assets / "geckolib/animations/item" / f"{name}.animation.json",
-        assets / "textures/item" / f"{name}.png",
     ):
         if not path.exists():
             errors.append(f"missing gun asset: {path.relative_to(root)}")
+    if not texture.exists():
+        errors.append(f"missing gun texture: {name}.png")
 for name, subtype in (("turret_base", "block"), ("turret_head", "entity")):
     for path in (
         assets / "geckolib/models" / subtype / f"{name}.geo.json",
