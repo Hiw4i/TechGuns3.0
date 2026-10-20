@@ -12,19 +12,10 @@ public final class Spring {
     private float value;
     private float velocity;
     private float target;
-    private float stiffness;
-    private float damping;
-
-    public Spring() {
-        this(90.0f, 14.0f);
-    }
+    private final float stiffness;
+    private final float damping;
 
     public Spring(float stiffness, float damping) {
-        this.stiffness = stiffness;
-        this.damping = damping;
-    }
-
-    public void configure(float stiffness, float damping) {
         this.stiffness = stiffness;
         this.damping = damping;
     }
@@ -39,13 +30,6 @@ public final class Spring {
         this.target = target;
     }
 
-    /** Hard set, used when a state is toggled rather than physically reached. */
-    public void set(float value) {
-        this.value = value;
-        this.target = value;
-        velocity = 0.0f;
-    }
-
     public void update(float dt) {
         if (dt <= 0.0f) return;
         // Clamp the step so a lag spike cannot launch the spring.
@@ -57,13 +41,5 @@ public final class Spring {
 
     public float value() {
         return value;
-    }
-
-    public float velocity() {
-        return velocity;
-    }
-
-    public boolean isSettled() {
-        return Math.abs(value - target) < 1.0e-4f && Math.abs(velocity) < 1.0e-4f;
     }
 }

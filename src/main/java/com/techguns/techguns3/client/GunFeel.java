@@ -121,11 +121,6 @@ public final class GunFeel {
         fovPunch.kick(1.0f * scale);
     }
 
-    /** Punch the zoom FOV without moving the weapon (light weapons). */
-    public void punchFov(float amount) {
-        fovPunch.kick(amount);
-    }
-
     /** Advance every spring. Call once per rendered frame. */
     public void update() {
         long now = System.nanoTime();

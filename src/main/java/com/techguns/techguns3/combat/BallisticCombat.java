@@ -170,7 +170,10 @@ public final class BallisticCombat {
         // Right vector on the ground plane + up kick.
         Vec3 right = new Vec3(-Math.cos(yawRad), 0, -Math.sin(yawRad));
         Vec3 eye = shooter.getEyePosition();
-        Vec3 at = eye.add(right.scale(0.25)).add(0, -0.05, 0);
+        // Far enough out of the shooter's own face, but still next to the gun.
+        Vec3 at = eye.add(right.scale(0.32))
+                .add(shooter.getLookAngle().scale(0.2))
+                .add(0, -0.08, 0);
         Vec3 vel = right.scale(0.9 + level.getRandom().nextDouble() * 0.5)
                 .add(0, 1.1 + level.getRandom().nextDouble() * 0.5, 0)
                 .add(shooter.getDeltaMovement().scale(0.3));

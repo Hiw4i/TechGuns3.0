@@ -3,7 +3,6 @@ package com.techguns.techguns3.combat;
 import com.geckolib.animatable.GeoItem;
 import com.geckolib.cache.SyncedSingletonAnimatableCache;
 import com.geckolib.network.packet.singleton.SingletonAnimTriggerPacket;
-import com.geckolib.network.packet.singleton.StopTriggeredSingletonAnimPacket;
 import com.techguns.techguns3.item.AnimatedGunItem;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,18 +33,6 @@ public final class GunAnimSync {
         String syncableId = SyncedSingletonAnimatableCache.getOrCreateId(gun);
         PacketDistributor.sendToPlayersTrackingEntity(player, new SingletonAnimTriggerPacket(
                 syncableId, instanceId, Optional.of(controller), anim));
-    }
-
-    /** Stops a triggered animation on every client that watches the shooter. */
-    public static void stopForOthers(ServerPlayer player, ItemStack stack,
-                                     AnimatedGunItem gun, String controller, String anim) {
-        if (!(player.level() instanceof ServerLevel server)) {
-            return;
-        }
-        long instanceId = GeoItem.getOrAssignId(stack, server);
-        String syncableId = SyncedSingletonAnimatableCache.getOrCreateId(gun);
-        PacketDistributor.sendToPlayersTrackingEntity(player, new StopTriggeredSingletonAnimPacket(
-                syncableId, instanceId, Optional.of(controller), Optional.of(anim)));
     }
 
     /**

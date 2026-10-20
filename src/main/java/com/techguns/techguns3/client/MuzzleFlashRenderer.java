@@ -205,7 +205,14 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
                 0, 0, 1, 0, 1, 1, 0, 1, r, g, b, a, FxGeometry.FULLBRIGHT);
     }
 
-    /** 1 far away, ->0 when the viewer stands inside the flash. */
+    /**
+     * 1 far away, 0 when the viewer stands inside the flash.
+     *
+     * <p>A weapon with a 3D model draws its own flash on the barrel, so the
+     * world flash of the shooter is hidden completely - it would only be a
+     * blob in the player's face. Flat weapons without a model keep the world
+     * flash, faded down so it does not fill the screen.</p>
+     */
     private static float firstPersonGuard(State state) {
         try {
             var mc = Minecraft.getInstance();
@@ -215,9 +222,15 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
             double dy = cam.y - state.wy;
             double dz = cam.z - state.wz;
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist >= 1.6) return 1.0f;
+            if (dist >= 1.8) return 1.0f;
+            boolean modelled = mc.player.getMainHandItem().getItem()
+                    instanceof com.techguns.techguns3.item.AnimatedGunItem;
+            if (modelled) {
+                // The model draws the flash itself.
+                return dist <= 0.8 ? 0.0f : (float) (dist - 0.8);
+            }
             if (dist <= 0.35) return 0.12f;
-            return (float) ((dist - 0.35) / (1.6 - 0.35) * 0.88 + 0.12);
+            return (float) ((dist - 0.35) / (1.45) * 0.88 + 0.12);
         } catch (Exception e) {
             return 1.0f;
         }

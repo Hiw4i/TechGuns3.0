@@ -21,6 +21,25 @@ Wave-2 exotics (all in the same tab): `tfg` (hold LMB to charge up to 3s — gro
 
 Visuals are ported from the original assets: per-gun muzzle flashes (`muzzleflashnew_add`, minigun, blue, laserflare, teslaflare, sonicwave, nukebeamflare, tfg_flare, flamethrower), textured projectiles (`fireball`, `bioblob`, `bullet_blue`, animated `tfg_flare`, `rocket`/`rocket_nuke`/`rocket_hv` by variant), scrolling textured laser (`laser3`) and 17-frame NDR (`nukebeam`) beams, sonic shockwave rings, 16-frame explosion billboards, CE recoil curves per gun, and looped flamethrower/beam sounds with a persistent flame tongue while the flamethrower trigger is held.
 
+## Weapon feel and effects
+
+The held weapon is a view model with its own animation state, not a static prop:
+
+- The muzzle flash is drawn **on the weapon model** (every gun model carries a `muzzle` anchor bone), turned into a camera facing billboard with a white hot core and a random roll per shot. It travels with the barrel while the weapon recoils. The world flash is only used for everybody watching the shooter.
+- The weapon reacts on the **same frame** as the trigger pull: the shooter predicts the fire animation locally and the server broadcast skips them, so an automatic never lags behind the mouse.
+- Recoil is a **spring**, not a snap: the weapon is pushed back and up and settles on its own. The camera kick and the zoom punch ride on the same springs.
+- The weapon has **weight**: mouse sway, walk bob, a sprint pose that drops it out of the way and an aim pose that brings it up to the shoulder.
+- All animation tracks have **easing curves** - the recoil rises fast and settles slowly, reloads ease in and out, mechanical parts (slide, bolt, pump, magazine) stay linear and the barrel spin stays linear so it does not stutter.
+- Every effect is drawn through a **custom additive render pipeline** (`techguns3:pipeline/fx_additive`), built on the vanilla core shaders, so flashes, beams, tracers, tesla arcs and blasts read as light instead of flat translucent stickers.
+
+Three client settings let you tune the feel without touching the code (see `config/techguns3-client.toml`):
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `adsPose` | 1.0 | How far the weapon comes up to the shoulder while aiming. 0 disables the aim pose. |
+| `weaponSway` | 1.0 | Mouse sway of the held weapon. 0 disables it. |
+| `weaponBob` | 1.0 | Walk bob of the held weapon. 0 disables it. |
+
 Spawn the two enemies with `/summon techguns3:zombie_soldier` and `/summon techguns3:bandit`. They also spawn naturally in the overworld. Place `techguns3:turret_base` and right-click it to open its control screen. The left 3x3 slots take matching loaded magazines or loose shells; the right 3x3 slots receive empty magazines. The middle slots take a gun and optional `techguns3:turret_armor_iron`. The screen shows loaded rounds, head health and redstone status, with buttons for PvP and animal targeting. The turret attacks permitted targets within 32 blocks. A redstone signal disables firing. An iron ingot used on the base repairs the damaged head. The turret never uses energy.
 
 ## Test feedback to collect

@@ -118,7 +118,7 @@ public final class GunClientHandler {
                 && player.getUsedItemHand() == InteractionHand.MAIN_HAND
                 && player.getUseItem().getItem() instanceof GenericGunItem;
         syncZoom(player, zooming);
-        GunFeel.get().setAiming(zooming && held.getItem() instanceof GenericGunItem);
+        GunFeel.get().setAiming(zooming);
         GunFeel.get().setSprinting(player.isSprinting());
 
         boolean down = mc.options.keyAttack.isDown();
@@ -241,11 +241,9 @@ public final class GunClientHandler {
                             look.z * 2.2 + (rnd.nextDouble() - 0.5) * 0.7);
                 }
             } else {
-                // Tiny hot flare + one forward-pushed puff at the tip.
-                level.addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
-                                0xFFFFFF, preset.flareColor(), 0.14f + 0.05f * stats.muzzleFlashScale(),
-                                0.02f, 5, 0.0f, 1.0f),
-                        tip.x, tip.y, tip.z, look.x * 0.3, look.y * 0.3, look.z * 0.3);
+                // Hot air at the muzzle. The flash itself is drawn on the
+                // weapon model, a world glow would only be a blob in the
+                // player's face.
                 level.addParticle(new com.techguns.techguns3.registry.TGParticles.PuffOptions(
                                 0x9A9A9A, 0x3A3A3A, 0.14f, 0.34f, 18, -0.012f, 0.97f),
                         tip.x + look.x * 0.4, tip.y + look.y * 0.4, tip.z + look.z * 0.4,
