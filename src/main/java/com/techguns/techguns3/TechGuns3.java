@@ -52,7 +52,9 @@ public class TechGuns3 {
         TGParticles.TYPES.register(modEventBus);
         TGTabs.CREATIVE_MODE_TABS.register(modEventBus);
 
-        modContainer.registerConfig(ModConfig.Type.LOCAL, TGConfig.COMMON_SPEC);
+        // SYNCED, not LOCAL: the common options (damage, gore, fx density) are
+        // read on the client as well, so the server has to push them.
+        modContainer.registerConfig(ModConfig.Type.SYNCED, TGConfig.COMMON_SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, TGConfig.CLIENT_SPEC);
 
         modEventBus.addListener(GunPackets::register);

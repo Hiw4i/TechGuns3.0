@@ -40,6 +40,8 @@ public final class GunClientHandler {
     private static long chargeStartTick = -1;
     /** Item id being charged (charge belongs to one gun; switching cancels). */
     private static net.minecraft.resources.Identifier chargeGunId;
+    /** Game time the last reload was asked for, -1 when none is running. */
+    private static long reloadStartTick = -1;
 
     /**
      * Local charge progress 0..1 for the charge HUD (-1 when not charging).
@@ -56,6 +58,27 @@ public final class GunClientHandler {
         if (mc.player == null || mc.level == null) return -1.0f;
         long now = mc.level.getGameTime();
         return Math.min(1.0f, (now - chargeStartTick) / (float) Math.max(1, extras.chargeTicks()));
+    }
+
+    /**
+     * Local reload progress 0..1 for the HUD (-1 when no reload is running).
+     *
+     * <p>The fire cooldown and the reload share the item cooldown of the
+     * weapon, so the cooldown alone cannot tell them apart. The client
+     * therefore tracks the reload itself, from the moment it asks for one.</p>
+     */
+    public static float reloadProgress(ItemStack held) {
+        if (reloadStartTick < 0 || held.isEmpty()) return -1.0f;
+        if (!(held.getItem() instanceof GenericGunItem gun)) return -1.0f;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return -1.0f;
+        long now = mc.level.getGameTime();
+        int ticks = Math.max(1, gun.stats().reloadTimeTicks());
+        if (now - reloadStartTick >= ticks) {
+            reloadStartTick = -1;
+            return -1.0f;
+        }
+        return (now - reloadStartTick) / (float) ticks;
     }
 
     @SubscribeEvent
@@ -75,6 +98,9 @@ public final class GunClientHandler {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.gui.screen() != null) {
+            // The weapon feel must not keep the aim pose of a gun that is gone.
+            GunFeel.get().setAiming(false);
+            GunFeel.get().setSprinting(false);
             if (player != null) {
                 lmbDown = false;
                 syncZoom(player, false);
@@ -85,6 +111,8 @@ public final class GunClientHandler {
             return;
         }
         if (player.isSpectator() || !player.isAlive()) {
+            GunFeel.get().setAiming(false);
+            GunFeel.get().setSprinting(false);
             lmbDown = false;
             syncZoom(player, false);
             return;
@@ -106,11 +134,14 @@ public final class GunClientHandler {
         if (!holding) {
             lmbDown = false;
             syncZoom(player, false);
+            GunFeel.get().setAiming(false);
+            GunFeel.get().setSprinting(false);
             return;
         }
 
         // Reload key (edge-triggered by vanilla).
         if (TGKeyMappings.reload().consumeClick()) {
+            reloadStartTick = player.level().getGameTime();
             ClientPacketDistributor.sendToServer(new GunPackets.ReloadRequest(true));
         }
 
@@ -170,6 +201,10 @@ public final class GunClientHandler {
             // Rate-limit + reload-lock client-side so dead clicks give no phantom kick.
             if (player.getCooldowns().isOnCooldown(held)) return;
             ClientPacketDistributor.sendToServer(new GunPackets.FirePressed(true, zooming));
+            if (gun.loadedRounds(held) <= 0) {
+                // Empty magazine: the server starts an automatic reload.
+                reloadStartTick = player.level().getGameTime();
+            }
             predictShotFeedback(player, held, gun, stats, extras);
         } else {
             ClientPacketDistributor.sendToServer(new GunPackets.FireStart(true, zooming));

@@ -51,7 +51,9 @@ public final class ElectricCombat {
         // CE tesla muzzle flare (muzzleFlashLightning) at the barrel tip.
         level.addFreshEntity(new MuzzleFlashEntity(level, muzzle.x, muzzle.y, muzzle.z,
                 MuzzleFlashEntity.CYAN, stats.muzzleFlashScale(),
-                com.techguns.techguns3.item.GunExtras.FLASH_LIGHTNING));
+                level.getRandom().nextInt(),
+                com.techguns.techguns3.item.GunExtras.FLASH_LIGHTNING,
+                com.techguns.techguns3.fx.GunFxPresets.drawsOwnFlash(shooter)));
         if (primaries.isEmpty()) {
             drawArc(level, tip, wallEnd);
             if (wall instanceof net.minecraft.world.phys.BlockHitResult block

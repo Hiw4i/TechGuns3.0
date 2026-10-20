@@ -41,11 +41,14 @@ GECKO_CENTRE = (0.5, 0.51, 0.5)
 BLOCK_CENTRE = (0.5, 0.5, 0.5)
 
 # Models with a named sight bone: the aim point is given in model pixels.
+# The second value is the height of the notch of the sight, None for the
+# centre of the sight (a red dot for example).
 SIGHT_BONES = {
     "ak47": ("ISTop", 7.0),
     "as50": ("Scope01", None),
     "gaussrifle": ("Scope", None),
     "pistol": ("IS1", 0.5),
+    "m4": ("RedDot", None),
 }
 
 

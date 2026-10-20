@@ -55,6 +55,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
         public int seed;
         public float fade = 1.0f;
         public int texture;
+        public boolean modelled;
         public double wx;
         public double wy;
         public double wz;
@@ -72,6 +73,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
         state.scale = entity.scale();
         state.seed = entity.seed();
         state.texture = entity.texture();
+        state.modelled = entity.modelled();
         // Interpolate the pop between ticks so slow clients still see a decay.
         float life = entity.lifeLeft() - partialTick;
         state.fade = Math.max(0.0f, Math.min(1.0f, life / MuzzleFlashEntity.MAX_LIFE));
@@ -223,10 +225,9 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
             double dz = cam.z - state.wz;
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (dist >= 1.8) return 1.0f;
-            boolean modelled = mc.player.getMainHandItem().getItem()
-                    instanceof com.techguns.techguns3.item.AnimatedGunItem;
-            if (modelled) {
-                // The model draws the flash itself.
+            if (state.modelled) {
+                // The shooter draws the flash on the weapon model itself, the
+                // world flash would only be a blob in their face.
                 return dist <= 0.8 ? 0.0f : (float) (dist - 0.8);
             }
             if (dist <= 0.35) return 0.12f;

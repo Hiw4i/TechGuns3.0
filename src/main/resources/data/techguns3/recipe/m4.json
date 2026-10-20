@@ -4,10 +4,11 @@
   "group": "techguns3_gun",
   "key": {
     "I": "minecraft:iron_ingot",
-    "W": "minecraft:oak_planks"
+    "W": "minecraft:oak_planks",
+    "D": "minecraft:redstone"
   },
   "pattern": [
-    "III",
+    "IID",
     " WI",
     "W  "
   ],

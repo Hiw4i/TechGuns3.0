@@ -22,37 +22,57 @@ def track(keys):
     return {str(time): kf(vector, easing) for time, vector, easing in keys}
 
 
-def body_kick(length, pitch, back, ease="easeoutcubic"):
-    """The whole weapon kicks up and back, then settles."""
+def body_kick(length, pitch, back, axis="z"):
+    """The whole weapon kicks up and back, then settles.
+
+    ``axis`` is the bore axis of the model: ``z`` for the weapons whose barrel
+    points along -Z, ``x`` for the ones whose barrel points along +X. The
+    weapon is pushed against the bore, the same way the already ported guns
+    do it.
+    """
+    if axis == "x":
+        push = [-back, 0.1, 0]
+    else:
+        push = [0, 0.1, -back]
     return {
         "rotation": track([
-            (0.0, [0, 0, 0], ease),
+            (0.0, [0, 0, 0], "easeoutcubic"),
             (round(length * 0.2, 3), [pitch, 0, 0], "easeoutquad"),
             (round(length * 0.5, 3), [round(pitch * 0.55, 3), 0, 0], "easeinoutcubic"),
             (round(length * 0.75, 3), [round(pitch * 0.2, 3), 0, 0], "easeinoutcubic"),
             (length, [0, 0, 0], "easeoutcubic"),
         ]),
         "position": track([
-            (0.0, [0, 0, 0], ease),
-            (round(length * 0.2, 3), [0, 0.1, -back], "easeoutquad"),
-            (round(length * 0.5, 3), [0, 0.05, -round(back * 0.5, 3)], "easeinoutcubic"),
+            (0.0, [0, 0, 0], "easeoutcubic"),
+            (round(length * 0.2, 3), push, "easeoutquad"),
+            (round(length * 0.5, 3), [v * 0.5 for v in push], "easeinoutcubic"),
             (length, [0, 0, 0], "easeoutcubic"),
         ]),
     }
 
 
-def reload_pose(length, pitch=-20.0, roll=10.0, drop=0.35):
-    """The weapon is tipped over, held, and brought back up."""
+def reload_pose(length, pitch=-20.0, roll=10.0, drop=0.35, axis="z"):
+    """The weapon is tipped over, held, and brought back up.
+
+    ``axis`` is the bore axis of the model, so the muzzle always tips down and
+    the weapon always moves towards the shooter.
+    """
+    if axis == "x":
+        rotation = [0.0, 0.0, -pitch]
+        position = [0.0, -drop, 0.0]
+    else:
+        rotation = [pitch, 0.0, roll]
+        position = [0.0, -drop, 0.0]
     return {
         "rotation": track([
             (0.0, [0, 0, 0], "easeinoutcubic"),
-            (round(length * 0.18, 3), [pitch, 0, roll], "easeinoutcubic"),
-            (round(length * 0.82, 3), [pitch, 0, roll], "easeinoutcubic"),
+            (round(length * 0.18, 3), rotation, "easeinoutcubic"),
+            (round(length * 0.82, 3), rotation, "easeinoutcubic"),
             (length, [0, 0, 0], "easeinoutcubic"),
         ]),
         "position": track([
             (0.0, [0, 0, 0], "easeinoutcubic"),
-            (round(length * 0.5, 3), [0, -drop, drop], "easeinoutcubic"),
+            (round(length * 0.5, 3), position, "easeinoutcubic"),
             (length, [0, 0, 0], "easeinoutcubic"),
         ]),
     }
@@ -61,12 +81,12 @@ def reload_pose(length, pitch=-20.0, roll=10.0, drop=0.35):
 ANIMATIONS = {
     # Revolver: heavy single shot, the cylinder is part of the body.
     "revolver": {
-        "fire": {"animation_length": 0.3, "bones": {"gun": body_kick(0.3, 7.0, 0.9)}},
+        "fire": {"animation_length": 0.3, "bones": {"gun": body_kick(0.3, 7.0, 1.2, "x")}},
         "reload": {"animation_length": 2.25, "bones": {"gun": reload_pose(2.25, -22.0, 12.0, 0.4)}},
     },
     # Thompson: hose, fast rounds.
     "thompson": {
-        "fire": {"animation_length": 0.15, "bones": {"gun": body_kick(0.15, 3.0, 0.45)}},
+        "fire": {"animation_length": 0.15, "bones": {"gun": body_kick(0.15, 3.0, 0.7, "x")}},
         "reload": {"animation_length": 2.0, "bones": {"gun": reload_pose(2.0, -20.0, 10.0, 0.35)}},
     },
     # M4: charging handle cycles after every shot, the magazine drops on reload.
@@ -74,7 +94,7 @@ ANIMATIONS = {
         "fire": {
             "animation_length": 0.15,
             "bones": {
-                "gun": body_kick(0.15, 4.5, 0.6),
+                "gun": body_kick(0.15, 4.5, 0.8, "z"),
                 "Bolt03": {
                     "position": track([
                         (0.0, [0, 0, 0], "linear"),
@@ -110,17 +130,17 @@ ANIMATIONS = {
             },
         },
     },
-    # Bolt action: the bolt is cycled after the shot.
+    # Bolt action: the bolt is cycled after the shot, the lever swings with it.
     "bolt_action": {
         "fire": {
             "animation_length": 1.25,
             "bones": {
-                "gun": body_kick(1.25, 6.0, 0.8),
+                "gun": body_kick(1.25, 6.0, 1.0, "x"),
                 "Bolt": {
                     "position": track([
                         (0.0, [0, 0, 0], "linear"),
-                        (0.35, [0, 0, 4.0], "easeinoutcubic"),
-                        (0.75, [0, 0, 4.0], "easeinoutcubic"),
+                        (0.35, [-4.0, 0, 0], "easeinoutcubic"),
+                        (0.75, [-4.0, 0, 0], "easeinoutcubic"),
                         (1.15, [0, 0, 0], "easeoutcubic"),
                         (1.25, [0, 0, 0], "linear"),
                     ]),
@@ -128,8 +148,8 @@ ANIMATIONS = {
                 "Lever": {
                     "rotation": track([
                         (0.0, [0, 0, 0], "linear"),
-                        (0.3, [0, 0, 35.0], "easeinoutcubic"),
-                        (0.75, [0, 0, 35.0], "easeinoutcubic"),
+                        (0.3, [-35.0, 0, 0], "easeinoutcubic"),
+                        (0.75, [-35.0, 0, 0], "easeinoutcubic"),
                         (1.15, [0, 0, 0], "easeoutcubic"),
                         (1.25, [0, 0, 0], "linear"),
                     ]),
@@ -143,8 +163,8 @@ ANIMATIONS = {
                 "Bolt": {
                     "position": track([
                         (0.0, [0, 0, 0], "linear"),
-                        (0.6, [0, 0, 4.0], "easeinoutcubic"),
-                        (1.9, [0, 0, 4.0], "easeinoutcubic"),
+                        (0.6, [-4.0, 0, 0], "easeinoutcubic"),
+                        (1.9, [-4.0, 0, 0], "easeinoutcubic"),
                         (2.2, [0, 0, 0], "easeoutcubic"),
                         (2.5, [0, 0, 0], "linear"),
                     ]),

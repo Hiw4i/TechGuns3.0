@@ -3,8 +3,11 @@ package com.techguns.techguns3.client;
 import com.techguns.techguns3.TGConfig;
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.item.GenericGunItem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -40,16 +43,14 @@ public final class GunAimHandler {
     public static void onRenderHand(RenderHandEvent event) {
         ItemStack stack = event.getItemStack();
         boolean offHand = event.getHand() == InteractionHand.OFF_HAND;
-        boolean offHandHasGun = offHand && stack.getItem() instanceof GenericGunItem;
 
         if (!offHand) {
             // The main hand is rendered first, it owns the offset.
             appliedX = 0.0f;
             appliedY = 0.0f;
-        } else if (offHandHasGun && (appliedX != 0.0f || appliedY != 0.0f)) {
+        } else if (appliedX != 0.0f || appliedY != 0.0f) {
             // The off hand has its own offset, so the main hand one is undone
-            // first. When the off hand is empty the main hand offset stays, the
-            // support arm then follows the weapon.
+            // first. It would otherwise drag a torch or a block along.
             event.getPoseStack().translate(-appliedX, -appliedY, 0.0f);
             appliedX = 0.0f;
             appliedY = 0.0f;
@@ -65,7 +66,7 @@ public final class GunAimHandler {
         // The real position of the sight is measured by the renderer while the
         // weapon is at the hip, that is exact. The datapack offset is only the
         // fallback for the very first frames.
-        float[] hip = GunSightAlignment.hip(gun, offHand);
+        float[] hip = GunSightAlignment.hip(gun, perspective(event, offHand));
         float x;
         float y;
         if (hip != null) {
@@ -84,5 +85,13 @@ public final class GunAimHandler {
             appliedX = x;
             appliedY = y;
         }
+    }
+
+    /** The display context a hand is drawn with, the same rule the game uses. */
+    private static ItemDisplayContext perspective(RenderHandEvent event, boolean offHand) {
+        var player = Minecraft.getInstance().player;
+        boolean mainHandRight = player == null || player.getMainArm() == HumanoidArm.RIGHT;
+        boolean right = offHand ? !mainHandRight : mainHandRight;
+        return right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
     }
 }

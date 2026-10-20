@@ -28,7 +28,7 @@ public final class BeamCombat {
                             Vec3 muzzle, float yaw, float pitch,
                             com.techguns.techguns3.item.GunExtras extras) {
         Trace trace = trace(level, shooter, stats, extras, muzzle, yaw, pitch);
-        drawBeam(level, muzzle, trace.beamEnd, extras);
+        drawBeam(level, shooter, muzzle, trace.beamEnd, extras);
         if (trace.victim != null) {
             hitVictim(level, shooter, stats, extras, trace.victim, trace.beamEnd,
                     trace.beamEnd.subtract(muzzle).normalize());
@@ -79,7 +79,7 @@ public final class BeamCombat {
                 : com.techguns.techguns3.fx.GunFxPresets.TRACER_LASER;
     }
 
-    private static void drawBeam(ServerLevel level, Vec3 muzzle, Vec3 beamEnd,
+    private static void drawBeam(ServerLevel level, LivingEntity shooter, Vec3 muzzle, Vec3 beamEnd,
                                  com.techguns.techguns3.item.GunExtras extras) {
         int color = beamColor(extras);
         boolean ndr = extras.radiationTicks() > 0;
@@ -89,7 +89,8 @@ public final class BeamCombat {
                         : com.techguns.techguns3.item.GunExtras.FLASH_LASER);
         level.addFreshEntity(new BeamEntity(level, muzzle, beamEnd, color));
         level.addFreshEntity(new MuzzleFlashEntity(level, muzzle.x, muzzle.y, muzzle.z,
-                color, 0.65f, flash));
+                color, 0.65f, level.getRandom().nextInt(), flash,
+                com.techguns.techguns3.fx.GunFxPresets.drawsOwnFlash(shooter)));
         level.addFreshEntity(new MuzzleFlashEntity(level, beamEnd.x, beamEnd.y, beamEnd.z,
                 MuzzleFlashEntity.WHITE, 0.22f));
         FxParticles.glow(level, beamEnd.x, beamEnd.y, beamEnd.z, 4,

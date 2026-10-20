@@ -55,11 +55,6 @@ public final class MuzzleFlashFx {
         return Math.min(1.0f, (System.nanoTime() - startedAt) / (float) DURATION_NANOS);
     }
 
-    public static void clear() {
-        flashId = 0;
-        startedAt = 0L;
-    }
-
     /**
      * Draw the flash at the current pose (the muzzle anchor bone).
      *

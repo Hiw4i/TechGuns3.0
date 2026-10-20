@@ -125,7 +125,9 @@ public final class BallisticCombat {
         float flashScale = stats.muzzleFlashScale() * (charge01 > 0.0f ? (0.6f + charge01) : 1.0f);
         level.addFreshEntity(new MuzzleFlashEntity(level, muzzle.x, muzzle.y, muzzle.z,
                 preset.muzzleColor(), flashScale,
-                GunFxPresets.muzzleTexture(stats, extras)));
+                level.getRandom().nextInt(),
+                GunFxPresets.muzzleTexture(stats, extras),
+                GunFxPresets.drawsOwnFlash(shooter)));
         FxParticles.muzzleFlare(level, muzzle, preset.flareColor(), 0.7f + 0.3f * stats.muzzleFlashScale());
         if (preset.smokeCount() > 0) {
             FxParticles.muzzleSmoke(level, muzzle.add(look.scale(0.4)), look, preset.smokeCount());

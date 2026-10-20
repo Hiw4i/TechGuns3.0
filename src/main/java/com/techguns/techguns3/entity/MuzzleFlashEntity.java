@@ -36,6 +36,13 @@ public class MuzzleFlashEntity extends Entity {
      */
     private static final EntityDataAccessor<Integer> TEXTURE =
             SynchedEntityData.defineId(MuzzleFlashEntity.class, EntityDataSerializers.INT);
+    /**
+     * True when the shooter holds a weapon with a 3D model. Such a weapon draws
+     * its own flash on the barrel, so the world flash has to stay out of the
+     * shooter's eyes. It is a property of the shooter, not of the viewer.
+     */
+    private static final EntityDataAccessor<Boolean> MODELLED =
+            SynchedEntityData.defineId(MuzzleFlashEntity.class, EntityDataSerializers.BOOLEAN);
 
     private int life = MAX_LIFE;
 
@@ -54,12 +61,19 @@ public class MuzzleFlashEntity extends Entity {
     }
 
     public MuzzleFlashEntity(Level level, double x, double y, double z, int color, float scale, int seed, int texture) {
+        this(level, x, y, z, color, scale, seed, texture, false);
+    }
+
+    /** Muzzle flash of a shooter whose weapon has (or has not) a 3D model. */
+    public MuzzleFlashEntity(Level level, double x, double y, double z, int color, float scale,
+                             int seed, int texture, boolean modelled) {
         this(TGEntities.MUZZLE_FLASH.get(), level);
         setPos(x, y, z);
         entityData.set(COLOR, color);
         entityData.set(SCALE, scale);
         entityData.set(SEED, seed);
         entityData.set(TEXTURE, texture);
+        entityData.set(MODELLED, modelled);
     }
 
     public int color() {
@@ -76,6 +90,11 @@ public class MuzzleFlashEntity extends Entity {
 
     public int texture() {
         return entityData.get(TEXTURE);
+    }
+
+    /** True when the shooter draws the flash on the weapon model itself. */
+    public boolean modelled() {
+        return entityData.get(MODELLED);
     }
 
     /** 0..life remaining; renderers derive pop scale + alpha from this. */
@@ -111,6 +130,7 @@ public class MuzzleFlashEntity extends Entity {
         builder.define(SCALE, 0.5f);
         builder.define(SEED, 0);
         builder.define(TEXTURE, 0);
+        builder.define(MODELLED, false);
     }
 
     @Override
@@ -120,6 +140,7 @@ public class MuzzleFlashEntity extends Entity {
         entityData.set(SCALE, input.getFloatOr("Scale", 0.5f));
         entityData.set(SEED, input.getIntOr("Seed", 0));
         entityData.set(TEXTURE, input.getIntOr("MuzzleTexture", 0));
+        entityData.set(MODELLED, input.getBooleanOr("Modelled", false));
     }
 
     @Override
@@ -129,5 +150,6 @@ public class MuzzleFlashEntity extends Entity {
         output.putFloat("Scale", scale());
         output.putInt("Seed", seed());
         output.putInt("MuzzleTexture", texture());
+        output.putBoolean("Modelled", modelled());
     }
 }

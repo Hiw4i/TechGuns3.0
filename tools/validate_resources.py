@@ -34,8 +34,6 @@ for name in ("pistol", "revolver", "ak47", "m4", "thompson", "bolt_action", "com
              "guidedmissilelauncher", "grimreaper", "sonicshotgun", "lasergun",
              "laserpistol", "pulserifle", "vector", "pdw", "as50"):
     texture = assets / "textures/item" / f"{name}.png"
-    if not texture.exists():
-        texture = assets / "textures/item/guns" / f"{name}.png"
     for path in (
         assets / "geckolib/models/item" / f"{name}.geo.json",
         assets / "geckolib/animations/item" / f"{name}.animation.json",
@@ -43,7 +41,9 @@ for name in ("pistol", "revolver", "ak47", "m4", "thompson", "bolt_action", "com
         if not path.exists():
             errors.append(f"missing gun asset: {path.relative_to(root)}")
     if not texture.exists():
-        errors.append(f"missing gun texture: {name}.png")
+        # GeckoLib resolves the texture of an item model itself, it always
+        # looks at textures/item/<item>.png and ignores layer0/particle.
+        errors.append(f"missing gun texture: {texture.relative_to(root)}")
 for name, subtype in (("turret_base", "block"), ("turret_head", "entity")):
     for path in (
         assets / "geckolib/models" / subtype / f"{name}.geo.json",
@@ -196,6 +196,15 @@ def check_animation(anim_path: Path, geo_path: Path, required_animations, requir
     bones = geo_bones(geo)
     anchors = anchor_bones(geo)
     animations = anim.get("animations", {})
+
+    # Every part of a weapon has to hang off another bone. A bone without a
+    # parent is a second root and would not follow the animation of the weapon.
+    if geo_path.parent.name == "item":
+        for geometry in geo.get("minecraft:geometry", []):
+            roots = [b.get("name") for b in geometry.get("bones", []) if "parent" not in b]
+            if len(roots) > 1:
+                errors.append(f"{geo_path.relative_to(root)}: more than one root bone "
+                              f"{roots}, the parts would not follow the weapon")
 
     for name in sorted(required_animations):
         if name not in animations:

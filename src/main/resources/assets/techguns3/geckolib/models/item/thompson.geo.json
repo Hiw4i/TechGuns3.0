@@ -52,7 +52,8 @@
                 0
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape2",
@@ -83,7 +84,8 @@
                 0
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape4",
@@ -114,7 +116,8 @@
                 1
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape5",
@@ -145,7 +148,8 @@
                 2
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape6",
@@ -176,7 +180,8 @@
                 0
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape7",
@@ -207,7 +212,8 @@
                 15
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape8",
@@ -238,7 +244,8 @@
                 15
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape9",
@@ -269,7 +276,8 @@
                 39
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape10",
@@ -300,7 +308,8 @@
                 14
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape11",
@@ -331,7 +340,8 @@
                 4
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape12",
@@ -362,7 +372,8 @@
                 28
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape13",
@@ -393,7 +404,8 @@
                 20
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape14",
@@ -424,7 +436,8 @@
                 20
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape15",
@@ -455,7 +468,8 @@
                 0
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape16",
@@ -486,7 +500,8 @@
                 15
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape17",
@@ -517,7 +532,8 @@
                 10
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape18",
@@ -548,7 +564,8 @@
                 33
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape19",
@@ -579,7 +596,8 @@
                 23
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape20",
@@ -610,7 +628,8 @@
                 28
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape21",
@@ -641,7 +660,8 @@
                 28
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape22",
@@ -672,7 +692,8 @@
                 39
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape23",
@@ -703,7 +724,8 @@
                 33
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape24",
@@ -734,7 +756,8 @@
                 33
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "Shape25",
@@ -765,7 +788,8 @@
                 24
               ]
             }
-          ]
+          ],
+          "parent": "gun"
         },
         {
           "name": "muzzle",

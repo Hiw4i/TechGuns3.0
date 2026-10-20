@@ -548,7 +548,7 @@ public final class GunServerLogic {
         long id = com.geckolib.animatable.GeoItem.getOrAssignId(gunStack, server);
         setState(player, state.withSpinId(id));
         if (gun instanceof AnimatedGunItem animated) {
-            animated.triggerAnim(player, id, "barrels", "spin");
+            animated.triggerAnim(player, id, AnimatedGunItem.CONTROLLER_BARRELS, "spin");
         }
     }
 
@@ -558,7 +558,7 @@ public final class GunServerLogic {
         if (state.spinId() == 0) return;
         setState(player, stateOf(player).withSpinId(0));
         if (player.level() instanceof ServerLevel && TGItems.MINIGUN.get() instanceof AnimatedGunItem minigun) {
-            minigun.stopTriggeredAnim(player, state.spinId(), "barrels", "spin");
+            minigun.stopTriggeredAnim(player, state.spinId(), AnimatedGunItem.CONTROLLER_BARRELS, "spin");
         }
     }
 

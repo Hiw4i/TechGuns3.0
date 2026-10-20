@@ -51,4 +51,13 @@ public final class GunFxPresets {
         }
         return forKind(stats.projectileKind(), stats.muzzleFlashScale()).muzzleTexture();
     }
+
+    /**
+     * True when the shooter holds a weapon that draws its own muzzle flash on
+     * the model. The world flash then has to stay out of the shooter's eyes.
+     */
+    public static boolean drawsOwnFlash(net.minecraft.world.entity.LivingEntity shooter) {
+        return shooter != null && shooter.getMainHandItem().getItem()
+                instanceof com.techguns.techguns3.item.AnimatedGunItem;
+    }
 }

@@ -9,8 +9,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Ammo readout of the held weapon.
@@ -20,7 +18,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * ammunition and the progress of a running reload. The charge bar of the
  * plasma gun is drawn on top of it.</p>
  */
-@EventBusSubscriber(value = Dist.CLIENT)
 public final class GunHudOverlay {
     private GunHudOverlay() {}
 
@@ -72,7 +69,7 @@ public final class GunHudOverlay {
         }
 
         // Reload progress.
-        float reload = reloadProgress(mc, held);
+        float reload = GunClientHandler.reloadProgress(held);
         if (reload > 0.0f) {
             int barX = x + 12;
             int barY = y + PANEL_H - 9;
@@ -98,15 +95,6 @@ public final class GunHudOverlay {
                 }
             }
         }
-    }
-
-    /** 0..1 progress of the reload of the weapon, 0 when it is not reloading. */
-    private static float reloadProgress(Minecraft mc, ItemStack held) {
-        var player = mc.player;
-        if (player == null) return 0.0f;
-        if (!player.getCooldowns().isOnCooldown(held)) return 0.0f;
-        // getCooldownPercent counts down, the bar has to fill up.
-        return 1.0f - player.getCooldowns().getCooldownPercent(held, 1.0f);
     }
 
     /** Rounds of the matching ammunition in the inventory, without the gun itself. */

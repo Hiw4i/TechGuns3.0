@@ -52,8 +52,7 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
             if (local == null) {
                 return;
             }
-            GunSightAlignment.record(item, perspective == ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
-                    (float) local.x, (float) local.y);
+            GunSightAlignment.record(item, perspective, (float) local.x, (float) local.y);
         });
     }
 

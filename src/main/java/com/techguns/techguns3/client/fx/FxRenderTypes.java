@@ -8,7 +8,6 @@ import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.TextureTransform;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -68,20 +67,11 @@ public final class FxRenderTypes {
                 "techguns3_fx_additive",
                 RenderSetup.builder(ADDITIVE_TEXTURED)
                         .withTexture("Sampler0", tex)
-                        .setTextureTransform(TextureTransform.DEFAULT_TEXTURING)
+                        .setTextureTransform(net.minecraft.client.renderer.rendertype.TextureTransform.DEFAULT_TEXTURING)
                         .sortOnUpload()
                         .createRenderSetup()));
     }
 
-    /** Additive textured render type with a scrolling UV offset. */
-    public static RenderType additive(Identifier texture, float uOffset, float vOffset) {
-        return RenderType.create("techguns3_fx_additive_scroll",
-                RenderSetup.builder(ADDITIVE_TEXTURED)
-                        .withTexture("Sampler0", texture)
-                        .setTextureTransform(new TextureTransform.OffsetTextureTransform(uOffset, vOffset))
-                        .sortOnUpload()
-                        .createRenderSetup());
-    }
 
     private static RenderType additiveColor;
 

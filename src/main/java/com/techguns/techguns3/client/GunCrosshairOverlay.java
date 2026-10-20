@@ -7,8 +7,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Crosshair of the held weapon.
@@ -17,7 +15,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * while the weapon is inaccurate and closes while aiming. A hit marker is
  * drawn for a moment when a shot of the player hits something.</p>
  */
-@EventBusSubscriber(value = Dist.CLIENT)
 public final class GunCrosshairOverlay {
     private GunCrosshairOverlay() {}
 

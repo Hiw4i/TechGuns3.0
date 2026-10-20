@@ -85,6 +85,9 @@ def convert(name: str, source: str):
                 "size": [round(size_x, 4), round(size_y, 4), round(size_z, 4)],
                 "uv": [u, v],
             }],
+            # Every part hangs off the root bone, so the animation of the root
+            # moves the whole weapon.
+            "parent": "gun",
         }
         bones.append(bone)
     return {
