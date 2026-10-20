@@ -62,7 +62,9 @@ public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
                 .triggerableAnim("reload", RawAnimation.begin().thenPlay("reload")));
         controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_CHARGE, 4, state -> PlayState.STOP)
                 .additiveAnimations()
-                .triggerableAnim("charge", RawAnimation.begin().thenLoop("charge")));
+                // Plays once and holds the last frame: a looping charge track
+                // would snap back to the start pose every few seconds.
+                .triggerableAnim("charge", RawAnimation.begin().thenPlayAndHold("charge")));
         controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_BARRELS, 0, state -> PlayState.STOP)
                 .triggerableAnim("spin", RawAnimation.begin().thenLoop("spin")));
     }

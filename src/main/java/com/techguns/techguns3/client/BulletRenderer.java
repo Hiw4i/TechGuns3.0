@@ -2,13 +2,13 @@ package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.client.fx.FxGeometry;
+import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.BulletProjectile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import org.joml.Vector3f;
 
@@ -44,6 +44,12 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
         super(context);
         shadowRadius = 0.0f;
     }
+
+    // Scratch vectors, the tracer is redrawn every frame for every bullet.
+    private static final Vector3f DIR = new Vector3f();
+    private static final Vector3f UP = new Vector3f();
+    private static final Vector3f SIDE_U = new Vector3f();
+    private static final Vector3f SIDE_W = new Vector3f();
 
     public static final class State extends EntityRenderState {
         public final Vector3f motion = new Vector3f(0, 0, -1);
@@ -136,12 +142,12 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
     @Override
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
-        Vector3f dir = new Vector3f(state.motion).normalize();
+        Vector3f dir = DIR.set(state.motion).normalize();
         float speed = state.motion.length();
 
-        Vector3f up = Math.abs(dir.y) > 0.94f ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0);
-        Vector3f u = new Vector3f(dir).cross(up).normalize();
-        Vector3f w = new Vector3f(dir).cross(u).normalize();
+        Vector3f up = Math.abs(dir.y) > 0.94f ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
+        Vector3f u = SIDE_U.set(dir).cross(up).normalize();
+        Vector3f w = SIDE_W.set(dir).cross(u).normalize();
 
         Trail trail = state.uuid == null ? null : TRAILS.get(state.uuid);
         float[] trailPts = trail == null ? null : clampTrail(trail.points);
@@ -206,11 +212,15 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             final net.minecraft.resources.Identifier tex = bodyTex;
             final float bs = bodySize * bodyScale;
             final float fau0 = bodyU0, fav0 = bodyV0, fau1 = bodyU1, fav1 = bodyV1;
+            // The camera axes are read now: the geometry is submitted and
+            // drawn later, by which time the shared buffer has moved on.
             final float[] axes = FxGeometry.cameraAxes();
-            collector.submitCustomGeometry(poseStack, RenderTypes.eyes(tex), (pose, consumer) -> {
+            final float ax0 = axes[0], ax1 = axes[1], ax2 = axes[2];
+            final float ax3 = axes[3], ax4 = axes[4], ax5 = axes[5];
+            collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(tex), (pose, consumer) -> {
                 var matrix = pose.pose();
                 FxGeometry.cameraBillboard(matrix, consumer, 0, 0, 0,
-                        axes[0], axes[1], axes[2], axes[3], axes[4], axes[5],
+                        ax0, ax1, ax2, ax3, ax4, ax5,
                         bs, fau0, fav0, fau1, fav1, 1, 1, 1, 1, FxGeometry.FULLBRIGHT);
             });
             submitTrail(state, poseStack, collector, trailPts, trailAlpha, u, w, cr, cg, cb);
@@ -235,8 +245,11 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
         float ch = 0.55f;
         float cfx = dir.x * nose * ch, cfy = dir.y * nose * ch, cfz = dir.z * nose * ch;
         float ctx = -dir.x * (blen - nose) * ch, cty = -dir.y * (blen - nose) * ch, ctz = -dir.z * (blen - nose) * ch;
+        // Copy the axes now, the geometry is drawn after this call returns.
+        final float ux = u.x, uy = u.y, uz = u.z;
+        final float wx = w.x, wy = w.y, wz = w.z;
 
-        collector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additiveColor(), (pose, consumer) -> {
             var matrix = pose.pose();
             if (trailPts != null && trailAlpha > 0.0f) {
                 int n = trailPts.length / 3;
@@ -247,29 +260,32 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
                     FxGeometry.ribbon(matrix, consumer,
                             trailPts[i * 3] - state.px, trailPts[i * 3 + 1] - state.py, trailPts[i * 3 + 2] - state.pz,
                             trailPts[i * 3 + 3] - state.px, trailPts[i * 3 + 4] - state.py, trailPts[i * 3 + 5] - state.pz,
-                            u.x, u.y, u.z, thw, cr, cg, cb, a);
+                            ux, uy, uz, thw, cr, cg, cb, a);
                     FxGeometry.ribbon(matrix, consumer,
                             trailPts[i * 3] - state.px, trailPts[i * 3 + 1] - state.py, trailPts[i * 3 + 2] - state.pz,
                             trailPts[i * 3 + 3] - state.px, trailPts[i * 3 + 4] - state.py, trailPts[i * 3 + 5] - state.pz,
-                            w.x, w.y, w.z, thw, cr, cg, cb, a);
+                            wx, wy, wz, thw, cr, cg, cb, a);
                 }
             }
             // Tinted shell volume.
             FxGeometry.orientedBox(matrix, consumer, fx, fy, fz, tx, ty, tz,
-                    u.x, u.y, u.z, bhw, w.x, w.y, w.z, bhw, cr, cg, cb, outerAlpha);
+                    ux, uy, uz, bhw, wx, wy, wz, bhw, cr, cg, cb, outerAlpha);
             // Near-white hot heart volume.
             FxGeometry.orientedBox(matrix, consumer, cfx, cfy, cfz, ctx, cty, ctz,
-                    u.x, u.y, u.z, bhw * ch, w.x, w.y, w.z, bhw * ch,
+                    ux, uy, uz, bhw * ch, wx, wy, wz, bhw * ch,
                     coreR, coreG, coreB, 1.0f);
         });
     }
 
-    /** Shared fading ribbon trail (lightning pipeline, untextured). */
+    /** Shared fading ribbon trail (untextured additive). */
     private static void submitTrail(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                                     SubmitNodeCollector collector, float[] trailPts, float alpha,
                                     Vector3f u, Vector3f w, float cr, float cg, float cb) {
         if (trailPts == null || alpha <= 0.0f) return;
-        collector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, consumer) -> {
+        // Copy the axes now, the geometry is drawn after this call returns.
+        final float ux = u.x, uy = u.y, uz = u.z;
+        final float wx = w.x, wy = w.y, wz = w.z;
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additiveColor(), (pose, consumer) -> {
             var matrix = pose.pose();
             int n = trailPts.length / 3;
             for (int i = 0; i < n - 1; i++) {
@@ -279,11 +295,11 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
                 FxGeometry.ribbon(matrix, consumer,
                         trailPts[i * 3] - state.px, trailPts[i * 3 + 1] - state.py, trailPts[i * 3 + 2] - state.pz,
                         trailPts[i * 3 + 3] - state.px, trailPts[i * 3 + 4] - state.py, trailPts[i * 3 + 5] - state.pz,
-                        u.x, u.y, u.z, thw, cr, cg, cb, a);
+                        ux, uy, uz, thw, cr, cg, cb, a);
                 FxGeometry.ribbon(matrix, consumer,
                         trailPts[i * 3] - state.px, trailPts[i * 3 + 1] - state.py, trailPts[i * 3 + 2] - state.pz,
                         trailPts[i * 3 + 3] - state.px, trailPts[i * 3 + 4] - state.py, trailPts[i * 3 + 5] - state.pz,
-                        w.x, w.y, w.z, thw, cr, cg, cb, a);
+                        wx, wy, wz, thw, cr, cg, cb, a);
             }
         });
     }
@@ -303,7 +319,11 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
         double d = age * 0.3;
         java.util.Random rand = new java.util.Random(0x50C1);
         final float fa = opacity;
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(TEX_SHOCKWAVE), (pose, consumer) -> {
+        // Copy the axes now, the geometry is drawn after this call returns.
+        final float ux = u.x, uy = u.y, uz = u.z;
+        final float wx = w.x, wy = w.y, wz = w.z;
+        final float dx = dir.x, dy = dir.y, dz = dir.z;
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(TEX_SHOCKWAVE), (pose, consumer) -> {
             var matrix = pose.pose();
             for (int i = 0; i <= 5; i++) {
                 float r = fa * rand.nextFloat();
@@ -312,15 +332,15 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
                 double offset = 2.5 - i;
                 float size = (float) (d * (0.5 + rand.nextDouble()));
                 if (size < 0.05f) continue;
-                float cx = (float) (-dir.x * offset);
-                float cy = (float) (-dir.y * offset);
-                float cz = (float) (-dir.z * offset);
+                float cx = (float) (-dx * offset);
+                float cy = (float) (-dy * offset);
+                float cz = (float) (-dz * offset);
                 // Ring quad in the plane perpendicular to flight.
                 FxGeometry.uvQuad(matrix, consumer,
-                        cx - u.x * size - w.x * size, cy - u.y * size - w.y * size, cz - u.z * size - w.z * size,
-                        cx + u.x * size - w.x * size, cy + u.y * size - w.y * size, cz + u.z * size - w.z * size,
-                        cx + u.x * size + w.x * size, cy + u.y * size + w.y * size, cz + u.z * size + w.z * size,
-                        cx - u.x * size + w.x * size, cy - u.y * size + w.y * size, cz - u.z * size + w.z * size,
+                        cx - ux * size - wx * size, cy - uy * size - wy * size, cz - uz * size - wz * size,
+                        cx + ux * size - wx * size, cy + uy * size - wy * size, cz + uz * size - wz * size,
+                        cx + ux * size + wx * size, cy + uy * size + wy * size, cz + uz * size + wz * size,
+                        cx - ux * size + wx * size, cy - uy * size + wy * size, cz - uz * size + wz * size,
                         0, 0, 1, 0, 1, 1, 0, 1, r, g, b, fa, FxGeometry.FULLBRIGHT);
             }
         });

@@ -63,6 +63,10 @@ public final class MuzzleFlashFx {
     /**
      * Draw the flash at the current pose (the muzzle anchor bone).
      *
+     * <p>The sprite is turned into a billboard: the pose stack is inverted to
+     * find the camera axes in the space of the weapon model, so the flash
+     * always faces the player no matter how the weapon is oriented.</p>
+     *
      * @param size how big the flash is in model units
      */
     public static void submit(PoseStack poseStack, SubmitNodeCollector collector, float size) {
@@ -88,8 +92,21 @@ public final class MuzzleFlashFx {
         float u1 = u0 + 1.0f / grid;
         float v1 = v0 + 1.0f / grid;
 
+        // Camera axes in the space of the weapon model.
+        org.joml.Matrix4f model = new org.joml.Matrix4f(poseStack.last().pose());
+        org.joml.Matrix3f inverse = new org.joml.Matrix3f(model).invert();
+        org.joml.Vector3f right = inverse.transform(new org.joml.Vector3f(1, 0, 0)).normalize();
+        org.joml.Vector3f up = inverse.transform(new org.joml.Vector3f(0, 1, 0)).normalize();
+        // Random roll, so no two shots look the same.
         float cos = (float) Math.cos(roll);
         float sin = (float) Math.sin(roll);
+        float rx = right.x * cos + up.x * sin;
+        float ry = right.y * cos + up.y * sin;
+        float rz = right.z * cos + up.z * sin;
+        float ux = -right.x * sin + up.x * cos;
+        float uy = -right.y * sin + up.y * cos;
+        float uz = -right.z * sin + up.z * cos;
+
         final float fs = s;
         final float fa = alpha;
         final float fr = r;
@@ -99,40 +116,29 @@ public final class MuzzleFlashFx {
         final float fv0 = v0;
         final float fu1 = u1;
         final float fv1 = v1;
+        final float frx = rx, fry = ry, frz = rz;
+        final float fux = ux, fuy = uy, fuz = uz;
 
         collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(art.texture()),
                 (pose, consumer) -> {
                     var matrix = pose.pose();
-                    // Three crossed planes: the barrel points away from the
-                    // camera, so a single quad would be invisible edge-on.
-                    rolledQuad(matrix, consumer, fs, fu0, fv0, fu1, fv1, fr, fg, fb, fa, cos, sin);
                     FxGeometry.uvQuad(matrix, consumer,
-                            0, -fs, -fs, 0, -fs, fs, 0, fs, fs, 0, fs, -fs,
+                            -fs * frx - fs * fux, -fs * fry - fs * fuy, -fs * frz - fs * fuz,
+                            fs * frx - fs * fux, fs * fry - fs * fuy, fs * frz - fs * fuz,
+                            fs * frx + fs * fux, fs * fry + fs * fuy, fs * frz + fs * fuz,
+                            -fs * frx + fs * fux, -fs * fry + fs * fuy, -fs * frz + fs * fuz,
                             fu0, fv0, fu1, fv0, fu1, fv1, fu0, fv1,
-                            fr, fg, fb, fa * 0.85f, FxGeometry.FULLBRIGHT);
+                            fr, fg, fb, fa, FxGeometry.FULLBRIGHT);
+                    // A second, smaller and hotter sprite in the middle gives
+                    // the flash a white hot heart.
+                    float core = fs * 0.45f;
                     FxGeometry.uvQuad(matrix, consumer,
-                            -fs, 0, -fs, fs, 0, -fs, fs, 0, fs, -fs, 0, fs,
+                            -core * frx - core * fux, -core * fry - core * fuy, -core * frz - core * fuz,
+                            core * frx - core * fux, core * fry - core * fuy, core * frz - core * fuz,
+                            core * frx + core * fux, core * fry + core * fuy, core * frz + core * fuz,
+                            -core * frx + core * fux, -core * fry + core * fuy, -core * frz + core * fuz,
                             fu0, fv0, fu1, fv0, fu1, fv1, fu0, fv1,
-                            fr, fg, fb, fa * 0.7f, FxGeometry.FULLBRIGHT);
+                            1, 1, 1, Math.min(1.0f, fa * 1.3f), FxGeometry.FULLBRIGHT);
                 });
-    }
-
-    /** Sprite rotated around Z, so no two shots look the same. */
-    private static void rolledQuad(org.joml.Matrix4fc pose,
-                                   com.mojang.blaze3d.vertex.VertexConsumer consumer,
-                                   float s, float u0, float v0, float u1, float v1,
-                                   float r, float g, float b, float a,
-                                   float cos, float sin) {
-        float x1 = -s * cos + s * sin;
-        float y1 = -s * sin - s * cos;
-        float x2 = s * cos + s * sin;
-        float y2 = s * sin - s * cos;
-        float x3 = s * cos - s * sin;
-        float y3 = s * sin + s * cos;
-        float x4 = -s * cos - s * sin;
-        float y4 = -s * sin + s * cos;
-        FxGeometry.uvQuad(pose, consumer,
-                x1, y1, 0, x2, y2, 0, x3, y3, 0, x4, y4, 0,
-                u0, v0, u1, v0, u1, v1, u0, v1, r, g, b, a, FxGeometry.FULLBRIGHT);
     }
 }

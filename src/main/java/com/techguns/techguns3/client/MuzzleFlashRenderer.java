@@ -2,13 +2,14 @@ package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.client.fx.FxGeometry;
+import com.techguns.techguns3.client.fx.FxRenderTypes;
+import com.techguns.techguns3.client.fx.MuzzleFlashArt;
 import com.techguns.techguns3.entity.MuzzleFlashEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.Identifier;
 
@@ -30,23 +31,18 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
      * CE muzzle art (IScreenEffect 1:1): texture path, grid divisions and used
      * frames. Rendered additively as crossed quads, frame advancing over life.
      */
-    private record FlashArt(Identifier texture, int grid, int frames) {}
-    private static final java.util.Map<Integer, FlashArt> FLASH_ART = java.util.Map.ofEntries(
-            java.util.Map.entry(1, new FlashArt(id("fx/muzzleflashnew_add.png"), 4, 12)),
-            java.util.Map.entry(2, new FlashArt(id("fx/muzzleflashnew_2_add_2.png"), 4, 11)),
-            java.util.Map.entry(3, new FlashArt(id("fx/muzzleflash_minigun.png"), 2, 4)),
-            java.util.Map.entry(4, new FlashArt(id("fx/bluemuzzleflash.png"), 4, 8)),
-            java.util.Map.entry(5, new FlashArt(id("fx/laserflare02.png"), 4, 7)),
-            java.util.Map.entry(6, new FlashArt(id("fx/teslaflare01.png"), 4, 14)),
-            java.util.Map.entry(7, new FlashArt(id("fx/sonicwave4x4.png"), 4, 16)),
-            java.util.Map.entry(8, new FlashArt(id("fx/nukebeamflare.png"), 4, 16)),
-            java.util.Map.entry(9, new FlashArt(id("fx/tfg_flare.png"), 4, 16)),
-            java.util.Map.entry(10, new FlashArt(id("fx/flamethrower.png"), 4, 16)),
-            java.util.Map.entry(11, new FlashArt(id("fx/lensflare1.png"), 1, 1)));
-
-    private static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath(TechGuns3.MODID, "textures/" + path);
-    }
+    private static final java.util.Map<Integer, MuzzleFlashArt.Art> FLASH_ART = java.util.Map.ofEntries(
+            java.util.Map.entry(1, MuzzleFlashArt.art(1)),
+            java.util.Map.entry(2, MuzzleFlashArt.art(2)),
+            java.util.Map.entry(3, MuzzleFlashArt.art(3)),
+            java.util.Map.entry(4, MuzzleFlashArt.art(4)),
+            java.util.Map.entry(5, MuzzleFlashArt.art(5)),
+            java.util.Map.entry(6, MuzzleFlashArt.art(6)),
+            java.util.Map.entry(7, MuzzleFlashArt.art(7)),
+            java.util.Map.entry(8, MuzzleFlashArt.art(8)),
+            java.util.Map.entry(9, MuzzleFlashArt.art(9)),
+            java.util.Map.entry(10, MuzzleFlashArt.art(10)),
+            java.util.Map.entry(11, MuzzleFlashArt.art(11)));
 
     public MuzzleFlashRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -89,7 +85,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
         if (state.fade <= 0.01f) return;
-        FlashArt art = FLASH_ART.get(state.texture);
+        MuzzleFlashArt.Art art = FLASH_ART.get(state.texture);
         if (art != null) {
             submitTextured(state, poseStack, collector, art);
             return;
@@ -102,7 +98,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
      * age (ScreenEffect behaviour), tinted by the preset color, additive glow.
      */
     private static void submitTextured(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
-                                       SubmitNodeCollector collector, FlashArt art) {
+                                       SubmitNodeCollector collector, MuzzleFlashArt.Art art) {
         float age = MuzzleFlashEntity.MAX_LIFE * (1.0f - state.fade);
         int frame = Math.min(art.frames() - 1, (int) (age / MuzzleFlashEntity.MAX_LIFE * art.frames()));
         int grid = art.grid();
@@ -124,7 +120,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
         }
         final float fs = s;
         final float fa = alpha;
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(art.texture()), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(art.texture()), (pose, consumer) -> {
             var matrix = pose.pose();
             // Three crossed planes so the art reads volumetrically in motion.
             FxGeometry.uvQuad(matrix, consumer,
@@ -177,7 +173,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
         final float fca = coreAlpha;
         final float cos = (float) Math.cos(roll);
         final float sin = (float) Math.sin(roll);
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(FLASH_TEXTURE), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(FLASH_TEXTURE), (pose, consumer) -> {
             var matrix = pose.pose();
             // Rolled star (XY) + two crossed planes sharing the same sprite.
             starRolled(matrix, consumer, fs, r, g, b, fa, cos, sin);

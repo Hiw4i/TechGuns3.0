@@ -2,12 +2,12 @@ package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.client.fx.FxGeometry;
+import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.ChargeOrbEntity;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.Identifier;
 
@@ -56,17 +56,21 @@ public final class ChargeOrbRenderer extends EntityRenderer<ChargeOrbEntity, Cha
         float pulse = 1.0f + 0.06f * (float) Math.sin(System.nanoTime() / 90_000_000.0);
         final float fs = size * pulse;
         final float fa = 0.65f + 0.35f * charge;
+        // The camera axes are read now: the geometry is submitted and drawn
+        // later, by which time the shared buffer has moved on.
         final float[] axes = FxGeometry.cameraAxes();
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(TFG_FLARE), (pose, consumer) -> {
+        final float ax0 = axes[0], ax1 = axes[1], ax2 = axes[2];
+        final float ax3 = axes[3], ax4 = axes[4], ax5 = axes[5];
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(TFG_FLARE), (pose, consumer) -> {
             var matrix = pose.pose();
             FxGeometry.cameraBillboard(matrix, consumer, 0, 0, 0,
-                    axes[0], axes[1], axes[2], axes[3], axes[4], axes[5],
+                    ax0, ax1, ax2, ax3, ax4, ax5,
                     fs, u0, v0, u0 + 0.25f, v0 + 0.25f,
                     0.45f, 1.0f, 0.45f, fa, FxGeometry.FULLBRIGHT);
             if (charge > 0.75f) {
                 float core = fs * 0.4f;
                 FxGeometry.cameraBillboard(matrix, consumer, 0, 0, 0,
-                        axes[0], axes[1], axes[2], axes[3], axes[4], axes[5],
+                        ax0, ax1, ax2, ax3, ax4, ax5,
                         core, u0, v0, u0 + 0.25f, v0 + 0.25f,
                         1, 1, 1, Math.min(1.0f, fa + 0.2f), FxGeometry.FULLBRIGHT);
             }

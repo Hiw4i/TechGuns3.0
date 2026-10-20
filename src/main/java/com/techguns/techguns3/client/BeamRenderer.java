@@ -2,12 +2,12 @@ package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.client.fx.FxGeometry;
+import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.BeamEntity;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.Identifier;
 import org.joml.Vector3f;
@@ -31,6 +31,13 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         super(context);
         shadowRadius = 0.0f;
     }
+
+    // Scratch vectors: the beam is drawn every frame, allocating four vectors
+    // per beam per frame is pure garbage for the collector to deal with.
+    private static final Vector3f DIR = new Vector3f();
+    private static final Vector3f UP = new Vector3f();
+    private static final Vector3f SIDE_U = new Vector3f();
+    private static final Vector3f SIDE_W = new Vector3f();
 
     public static final class State extends EntityRenderState {
         public final Vector3f end = new Vector3f();
@@ -81,10 +88,10 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         float core = (nuke ? 0.038f : 0.03f) * (0.25f + 0.75f * pulse);
         float brightness = 0.35f + 0.65f * pulse;
 
-        Vector3f dir = new Vector3f(state.end).normalize();
-        Vector3f up = Math.abs(dir.y) > 0.94f ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0);
-        Vector3f u = new Vector3f(dir).cross(up).normalize();
-        Vector3f w = new Vector3f(dir).cross(u).normalize();
+        Vector3f dir = DIR.set(state.end).normalize();
+        Vector3f up = Math.abs(dir.y) > 0.94f ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
+        Vector3f u = SIDE_U.set(dir).cross(up).normalize();
+        Vector3f w = SIDE_W.set(dir).cross(u).normalize();
 
         Identifier bodyTex = nuke ? TEX_NUKEBEAM : TEX_LASER;
         // NDR: 17-frame vertical strip animation; laser: static frame.
@@ -106,24 +113,27 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         final float ux = u.x, uy = u.y, uz = u.z, wx = w.x, wy = w.y, wz = w.z;
         final int nsegs = segs;
         final float flen = len;
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(bodyTex), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(bodyTex), (pose, consumer) -> {
             var matrix = pose.pose();
             for (int sgi = 0; sgi < nsegs; sgi++) {
                 float s0 = flen * sgi / nsegs;
                 float s1 = flen * (sgi + 1) / nsegs;
                 float ax = dx * s0, ay = dy * s0, az = dz * s0;
                 float bx = dx * s1, by = dy * s1, bz = dz * s1;
-                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, ux, uy, uz, fw, 0, fvx0, 1, fvx1, 1, 1, 1, fb * 0.85f);
-                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, wx, wy, wz, fw, 0, fvx0, 1, fvx1, 1, 1, 1, fb * 0.85f);
-                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, ux, uy, uz, fc, 0, fvx0, 1, fvx1, 1, 1, 1, Math.min(1.0f, fb + 0.2f));
-                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, wx, wy, wz, fc, 0, fvx0, 1, fvx1, 1, 1, 1, Math.min(1.0f, fb + 0.2f));
+                // The beam loses energy along its length instead of stopping
+                // dead at the far end.
+                float fade = 1.0f - 0.55f * (s1 / flen);
+                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, ux, uy, uz, fw, 0, fvx0, 1, fvx1, 1, 1, 1, fb * 0.85f * fade);
+                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, wx, wy, wz, fw, 0, fvx0, 1, fvx1, 1, 1, 1, fb * 0.85f * fade);
+                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, ux, uy, uz, fc, 0, fvx0, 1, fvx1, 1, 1, 1, Math.min(1.0f, fb + 0.2f) * fade);
+                beamQuad(matrix, consumer, ax, ay, az, bx, by, bz, wx, wy, wz, fc, 0, fvx0, 1, fvx1, 1, 1, 1, Math.min(1.0f, fb + 0.2f) * fade);
             }
         });
         // Bright start cap at the muzzle (laser3_start, NDR reuses beam head).
         Identifier capTex = nuke ? TEX_NUKEBEAM : TEX_LASER_START;
         final float capLen = Math.min(1.0f, len);
         final float cex = dir.x * capLen, cey = dir.y * capLen, cez = dir.z * capLen;
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(capTex), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(capTex), (pose, consumer) -> {
             var matrix = pose.pose();
             beamQuad(matrix, consumer, 0, 0, 0, cex, cey, cez, ux, uy, uz, fw * 1.1f, 0, 0, 1, 1, 1, 1, 1, fb);
             beamQuad(matrix, consumer, 0, 0, 0, cex, cey, cez, wx, wy, wz, fw * 1.1f, 0, 0, 1, 1, 1, 1, 1, fb);
@@ -155,7 +165,7 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         final float dx = dir.x, dy = dir.y, dz = dir.z;
         final float ux = u.x, uy = u.y, uz = u.z, wx = w.x, wy = w.y, wz = w.z;
         final float ribbonHalf = 0.045f;
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(TEX_NUKEBEAM), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(TEX_NUKEBEAM), (pose, consumer) -> {
             var matrix = pose.pose();
             // Helix point i, then join prev->curr with a strip quad widened
             // along the beam axis (CE offsets ±w along local X = beam dir).

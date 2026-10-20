@@ -187,8 +187,6 @@ public final class GunClientHandler {
         ClientPacketDistributor.sendToServer(new GunPackets.ZoomState(zooming));
     }
 
-    private static long lastShotNanos;
-
     /**
      * Instant local feedback for a predicted shot: the weapon animation, the
      * view-model muzzle flash, the weapon recoil spring and the camera kick.
@@ -217,7 +215,6 @@ public final class GunClientHandler {
         }
         // The weapon itself kicks back and settles on its own.
         GunFeel.get().kick(stats.recoilPitchDeg(), yawJitter * 2.0f, 1.0f);
-        lastShotNanos = System.nanoTime();
         if (!TGConfig.cinematicFx()) return;
         try {
             // Same barrel tip the server fires from (single source of truth).
@@ -230,7 +227,7 @@ public final class GunClientHandler {
             MuzzleFlashFx.trigger(
                     com.techguns.techguns3.fx.GunFxPresets.muzzleTexture(stats, extras),
                     preset.muzzleColor(),
-                    0.22f + 0.18f * stats.muzzleFlashScale());
+                    0.45f + 0.35f * stats.muzzleFlashScale());
             if (stats.projectileKind()
                     == com.techguns.techguns3.item.GunStats.ProjectileKind.FIRE) {
                 // Flamethrower: tongues of textured flame blown forward, no smoke puff.

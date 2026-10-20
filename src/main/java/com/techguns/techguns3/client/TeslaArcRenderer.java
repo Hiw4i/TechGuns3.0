@@ -1,6 +1,7 @@
 package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.client.fx.FxGeometry;
+import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.TeslaArcEntity;
 import com.techguns.techguns3.fx.BoltGeometry;
 import net.minecraft.client.Minecraft;
@@ -8,7 +9,6 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import org.joml.Vector3f;
 
@@ -85,7 +85,7 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
         // Halo shrinks with distance fade; core stays crisp.
         float haloScale = 0.55f + 0.45f * closeFade;
 
-        collector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additiveColor(), (pose, consumer) -> {
             var matrix = pose.pose();
             for (int c = 0; c < 2; c++) {
                 float[] main = FxGeometry.translated(bolt.main(),

@@ -2,12 +2,12 @@ package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.client.fx.FxGeometry;
+import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.BlastEntity;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.Identifier;
 
@@ -88,7 +88,7 @@ public final class BlastRenderer extends EntityRenderer<BlastEntity, BlastRender
         final float fa = alpha;
         final float c = (float) Math.cos(roll);
         final float s = (float) Math.sin(roll);
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(BLAST_TEXTURE), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(BLAST_TEXTURE), (pose, consumer) -> {
             var matrix = pose.pose();
             // Rolled main quad + two crossed planes for volume.
             float x1 = -fs * c + fs * s, y1 = -fs * s - fs * c;

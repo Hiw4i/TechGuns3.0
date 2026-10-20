@@ -1,12 +1,12 @@
 package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.client.fx.FxGeometry;
+import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.SlimeBlobEntity;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.Direction;
 
@@ -54,7 +54,7 @@ public final class SlimeBlobRenderer extends EntityRenderer<SlimeBlobEntity, Sli
         final float sy = by;
         final float sz = bz;
         float core = 0.55f;
-        collector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, FxRenderTypes.additiveColor(), (pose, consumer) -> {
             var matrix = pose.pose();
             FxGeometry.box(matrix, consumer, sx, sy, sz, 0.22f, 0.75f, 0.20f, 0.50f);
             FxGeometry.box(matrix, consumer, sx * core, sy * core, sz * core, 0.55f, 1.0f, 0.35f, 0.75f);

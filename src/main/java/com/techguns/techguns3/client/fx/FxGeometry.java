@@ -166,17 +166,34 @@ public final class FxGeometry {
                 u0, v1, u1, v1, u1, v0, u0, v0, r, g, b, a, light);
     }
 
-    /** World-space camera right + up vectors (6 floats). Falls back to identity. */
+    /**
+     * World-space camera right + up vectors (6 floats). Fills a reused buffer:
+     * the result has to be read right away, because the buffer is shared and
+     * the geometry that uses it is only drawn later.
+     */
+    private static final float[] CAMERA_AXES = new float[6];
+
     public static float[] cameraAxes() {
         try {
             var rot = net.minecraft.client.Minecraft.getInstance()
                     .gameRenderer.mainCamera().rotation();
             org.joml.Vector3f right = new org.joml.Vector3f(1, 0, 0).rotate(rot);
             org.joml.Vector3f up = new org.joml.Vector3f(0, 1, 0).rotate(rot);
-            return new float[]{right.x, right.y, right.z, up.x, up.y, up.z};
+            CAMERA_AXES[0] = right.x;
+            CAMERA_AXES[1] = right.y;
+            CAMERA_AXES[2] = right.z;
+            CAMERA_AXES[3] = up.x;
+            CAMERA_AXES[4] = up.y;
+            CAMERA_AXES[5] = up.z;
         } catch (Exception e) {
-            return new float[]{1, 0, 0, 0, 1, 0};
+            CAMERA_AXES[0] = 1;
+            CAMERA_AXES[1] = 0;
+            CAMERA_AXES[2] = 0;
+            CAMERA_AXES[3] = 0;
+            CAMERA_AXES[4] = 1;
+            CAMERA_AXES[5] = 0;
         }
+        return CAMERA_AXES;
     }
 
     /**

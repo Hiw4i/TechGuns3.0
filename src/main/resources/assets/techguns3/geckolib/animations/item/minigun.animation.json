@@ -1,1 +1,91 @@
-{"format_version":"1.8.0","animations":{"fire":{"animation_length":0.12,"bones":{"gun":{"rotation":{"0.0":[0,0,0],"0.03":[1,0,0],"0.12":[0,0,0]},"position":{"0.0":[0,0,0],"0.03":[0,0.06,-0.3],"0.07":[0,-0.05,-0.15],"0.12":[0,0,0]}}}},"reload":{"animation_length":5,"bones":{"gun":{"rotation":{"0.0":[0,0,0],"1":[-25,0,10],"4":[-25,0,10],"4.5":[-18,0,6],"5":[0,0,0]}}}},"spin":{"loop":true,"animation_length":0.5,"bones":{"barrels":{"rotation":{"0.0":[0,0,0],"0.5":[360,0,0]}}}}}}
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "fire": {
+      "animation_length": 0.12,
+      "bones": {
+        "gun": {
+          "rotation": {
+            "0.0": {
+              "vector": [0, 0, 0],
+              "easing": "easeoutcubic"
+            },
+            "0.03": {
+              "vector": [1, 0, 0],
+              "easing": "easeoutquad"
+            },
+            "0.12": {
+              "vector": [0, 0, 0],
+              "easing": "easeinoutcubic"
+            }
+          },
+          "position": {
+            "0.0": {
+              "vector": [0, 0, 0],
+              "easing": "easeoutcubic"
+            },
+            "0.03": {
+              "vector": [0, 0.06, -0.3],
+              "easing": "easeoutquad"
+            },
+            "0.07": {
+              "vector": [0, -0.05, -0.15],
+              "easing": "easeinoutcubic"
+            },
+            "0.12": {
+              "vector": [0, 0, 0],
+              "easing": "easeoutcubic"
+            }
+          }
+        }
+      }
+    },
+    "reload": {
+      "animation_length": 5,
+      "bones": {
+        "gun": {
+          "rotation": {
+            "0.0": {
+              "vector": [0, 0, 0],
+              "easing": "easeinoutcubic"
+            },
+            "1": {
+              "vector": [-25, 0, 10],
+              "easing": "easeinoutcubic"
+            },
+            "4": {
+              "vector": [-25, 0, 10],
+              "easing": "easeinoutcubic"
+            },
+            "4.5": {
+              "vector": [-18, 0, 6],
+              "easing": "easeinoutcubic"
+            },
+            "5": {
+              "vector": [0, 0, 0],
+              "easing": "easeinoutcubic"
+            }
+          }
+        }
+      }
+    },
+    "spin": {
+      "loop": true,
+      "animation_length": 0.5,
+      "bones": {
+        "barrels": {
+          "rotation": {
+            "0.0": {
+              "vector": [0, 0, 0],
+              "easing": "linear"
+            },
+            "0.5": {
+              "vector": [360, 0, 0],
+              "easing": "linear"
+            }
+          }
+        }
+      }
+    }
+  }
+}
