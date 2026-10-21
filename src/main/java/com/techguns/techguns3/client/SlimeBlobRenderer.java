@@ -1,20 +1,28 @@
 package com.techguns.techguns3.client;
 
+import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.client.fx.FxGeometry;
-import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.SlimeBlobEntity;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.Identifier;
 
 /**
- * Slime blob: bright core inside a translucent green shell, sized by growth,
- * squashed along the block face normal.
+ * Slime blob: a translucent green blob, sized by growth and squashed along
+ * the block face normal.
+ *
+ * <p>It is a translucent solid and not an additive glow - the gel is lit by
+ * the world, a glowing cube on the wall reads as a bug.</p>
  */
 public final class SlimeBlobRenderer extends EntityRenderer<SlimeBlobEntity, SlimeBlobRenderer.State> {
+    private static final Identifier SLIME_TEXTURE = Identifier.fromNamespaceAndPath(
+            TechGuns3.MODID, "textures/fx/slime.png");
+
     public SlimeBlobRenderer(EntityRendererProvider.Context context) {
         super(context);
         shadowRadius = 0.0f;
@@ -53,11 +61,17 @@ public final class SlimeBlobRenderer extends EntityRenderer<SlimeBlobEntity, Sli
         final float sx = bx;
         final float sy = by;
         final float sz = bz;
+        // The core of the blob is brighter than the shell around it.
         float core = 0.55f;
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additiveColor(), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(SLIME_TEXTURE),
+                (pose, consumer) -> {
             var matrix = pose.pose();
-            FxGeometry.box(matrix, consumer, sx, sy, sz, 0.22f, 0.75f, 0.20f, 0.50f);
-            FxGeometry.box(matrix, consumer, sx * core, sy * core, sz * core, 0.55f, 1.0f, 0.35f, 0.75f);
+            FxGeometry.texturedBox(matrix, consumer, sx, sy, sz,
+                    0, 0, 0, 0, 0, 1, 1,
+                    0.55f, 1.0f, 0.60f, 0.55f, state.lightCoords);
+            FxGeometry.texturedBox(matrix, consumer, sx * core, sy * core, sz * core,
+                    0, 0, 0, 0, 0, 1, 1,
+                    0.75f, 1.0f, 0.80f, 0.85f, state.lightCoords);
         });
     }
 }

@@ -257,6 +257,34 @@ for path in sorted(guns_dir.glob("*.json")):
         errors.append(f"{anim_path.relative_to(root)}: reload length {actual}s does not match "
                       f"{name}.json ballistic.reload_ticks ({expected}s)")
 
+# --- own core shaders ---------------------------------------------------------
+# The effect pipelines point at files in assets/techguns3/shaders/core. A typo
+# there does not fail the build, the game just skips the pipeline and the
+# effect silently disappears, so the names are checked here.
+shader_dir = assets / "shaders/core"
+# The vertex stage of every effect pipeline is the same, so it lives in one
+# shared file. Every other stage has to come in a pair.
+SHARED_VERTEX = "fx_common.vsh"
+if not shader_dir.is_dir():
+    errors.append("missing shader dir: assets/techguns3/shaders/core")
+else:
+    if not (shader_dir / SHARED_VERTEX).exists():
+        errors.append(f"missing shared vertex shader: {SHARED_VERTEX}")
+    for vsh in sorted(shader_dir.glob("*.vsh")):
+        if vsh.name != SHARED_VERTEX and not (shader_dir / (vsh.stem + ".fsh")).exists():
+            errors.append(f"missing fragment shader for {vsh.name}")
+    for fsh in sorted(shader_dir.glob("*.fsh")):
+        if not (shader_dir / (fsh.stem + ".vsh")).exists() and not (shader_dir / SHARED_VERTEX).exists():
+            errors.append(f"missing vertex shader for {fsh.name}")
+    # Every shader the pipelines refer to has to exist.
+    fx_java = (root / "src/main/java/com/techguns/techguns3/client/fx/FxRenderTypes.java") \
+        .read_text(encoding="utf-8")
+    for name in sorted(set(re.findall(r'"core/([a-z0-9_]+)"', fx_java))):
+        if not (shader_dir / f"{name}.vsh").exists():
+            errors.append(f"missing shader: core/{name}.vsh")
+        elif f"{name}.vsh" != SHARED_VERTEX and not (shader_dir / f"{name}.fsh").exists():
+            errors.append(f"missing shader: core/{name}.fsh")
+
 # --- crafting recipes ---
 for path in sorted((resources / "data/techguns3/recipe").glob("*.json")):
     data = json.loads(path.read_text(encoding="utf-8"))

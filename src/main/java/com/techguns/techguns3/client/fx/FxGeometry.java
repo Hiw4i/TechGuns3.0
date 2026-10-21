@@ -69,6 +69,65 @@ public final class FxGeometry {
     }
 
     /**
+     * Ribbon quad with UVs: U runs across the width of the ribbon, V along it.
+     *
+     * <p>The beam shader derives the cross section of a tube from U, so a ribbon
+     * that carries UVs can be drawn with a soft edge instead of a hard cut.</p>
+     */
+    public static void ribbonUv(Matrix4fc pose, VertexConsumer consumer,
+                                float fx, float fy, float fz,
+                                float tx, float ty, float tz,
+                                float sx, float sy, float sz, float halfWidth,
+                                float v0, float v1,
+                                float r, float g, float b, float a) {
+        uvQuad(pose, consumer,
+                fx + sx * halfWidth, fy + sy * halfWidth, fz + sz * halfWidth,
+                fx - sx * halfWidth, fy - sy * halfWidth, fz - sz * halfWidth,
+                tx - sx * halfWidth, ty - sy * halfWidth, tz - sz * halfWidth,
+                tx + sx * halfWidth, ty + sy * halfWidth, tz + sz * halfWidth,
+                0, v0, 1, v0, 1, v1, 0, v1, r, g, b, a, FULLBRIGHT);
+    }
+
+    /**
+     * Polyline as crossed ribbon pairs with UVs.
+     *
+     * <p>V is mapped onto the length of the whole polyline, so the texture does
+     * not stretch when the arc gets longer.</p>
+     */
+    public static void polylineUv(Matrix4fc pose, VertexConsumer consumer, float[] pts,
+                                  float ux, float uy, float uz,
+                                  float wx, float wy, float wz,
+                                  float halfWidth, float r, float g, float b, float a) {
+        int n = pts.length / 3;
+        if (n < 2) return;
+        float total = 0.0f;
+        for (int i = 0; i < n - 1; i++) {
+            float dx = pts[(i + 1) * 3] - pts[i * 3];
+            float dy = pts[(i + 1) * 3 + 1] - pts[i * 3 + 1];
+            float dz = pts[(i + 1) * 3 + 2] - pts[i * 3 + 2];
+            total += (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        float travelled = 0.0f;
+        for (int i = 0; i < n - 1; i++) {
+            float fx = pts[i * 3];
+            float fy = pts[i * 3 + 1];
+            float fz = pts[i * 3 + 2];
+            float tx = pts[i * 3 + 3];
+            float ty = pts[i * 3 + 4];
+            float tz = pts[i * 3 + 5];
+            float dx = tx - fx;
+            float dy = ty - fy;
+            float dz = tz - fz;
+            float seg = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+            float v0 = total > 0.0f ? travelled / total : 0.0f;
+            float v1 = total > 0.0f ? (travelled + seg) / total : 1.0f;
+            ribbonUv(pose, consumer, fx, fy, fz, tx, ty, tz, ux, uy, uz, halfWidth, v0, v1, r, g, b, a);
+            ribbonUv(pose, consumer, fx, fy, fz, tx, ty, tz, wx, wy, wz, halfWidth, v0, v1, r, g, b, a);
+            travelled += seg;
+        }
+    }
+
+    /**
      * Textured quad for ENTITY-format pipelines (eyes / entityTranslucent).
      * UVs map a sub-rect of the texture; light should be {@link #FULLBRIGHT}
      * for emissive FX. Double-sided.

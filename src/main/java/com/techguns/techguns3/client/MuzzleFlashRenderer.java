@@ -122,7 +122,9 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
         }
         final float fs = s;
         final float fa = alpha;
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(art.texture()), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.SPRITE, art.texture()),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             // Three crossed planes so the art reads volumetrically in motion.
             FxGeometry.uvQuad(matrix, consumer,
@@ -175,7 +177,9 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
         final float fca = coreAlpha;
         final float cos = (float) Math.cos(roll);
         final float sin = (float) Math.sin(roll);
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(FLASH_TEXTURE), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.SPRITE, FLASH_TEXTURE),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             // Rolled star (XY) + two crossed planes sharing the same sprite.
             starRolled(matrix, consumer, fs, r, g, b, fa, cos, sin);

@@ -84,6 +84,10 @@ public final class TGConfig {
     private static final ModConfigSpec.DoubleValue WEAPON_BOB = CLIENT
             .comment("Walk bob of the held weapon. 0 disables it.")
             .defineInRange("weaponBob", 1.0, 0.0, 3.0);
+    private static final ModConfigSpec.BooleanValue ENHANCED_FX = CLIENT
+            .comment("Use the own effect shaders (soft edges on glows, fog that dims the light "
+                    + "instead of tinting it). Turn off to fall back to the vanilla core shaders.")
+            .define("enhancedFx", true);
 
     static final ModConfigSpec COMMON_SPEC = COMMON.build();
     static final ModConfigSpec CLIENT_SPEC = CLIENT.build();
@@ -108,6 +112,7 @@ public final class TGConfig {
     private static volatile double adsPose = 1.0;
     private static volatile double weaponSway = 1.0;
     private static volatile double weaponBob = 1.0;
+    private static volatile boolean enhancedFx = true;
 
     public static double gunDamageMultiplier() { return gunDamageMultiplier; }
     public static double fxDensity() { return fxDensity; }
@@ -128,6 +133,7 @@ public final class TGConfig {
     public static double adsPose() { return adsPose; }
     public static double weaponSway() { return weaponSway; }
     public static double weaponBob() { return weaponBob; }
+    public static boolean enhancedFx() { return enhancedFx; }
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -152,6 +158,7 @@ public final class TGConfig {
             adsPose = ADS_POSE.get();
             weaponSway = WEAPON_SWAY.get();
             weaponBob = WEAPON_BOB.get();
+            enhancedFx = ENHANCED_FX.get();
         }
     }
 }

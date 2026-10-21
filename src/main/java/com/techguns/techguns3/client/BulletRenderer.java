@@ -183,6 +183,7 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             return;
         }
         net.minecraft.resources.Identifier bodyTex = null;
+        FxRenderTypes.Style bodyStyle = FxRenderTypes.Style.GLOW;
         float bodySize = 0.2f;
         float bodyU0 = 0, bodyV0 = 0, bodyU1 = 1, bodyV1 = 1;
         if (fire) {
@@ -196,6 +197,8 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             bodySize = 0.20f;
         } else if (plasma) {
             bodyTex = TEX_TFG;
+            // The plasma flare is a 4x4 sheet, the soft edge has to follow the cell.
+            bodyStyle = FxRenderTypes.Style.ATLAS_GLOW;
             int frame = Math.abs(state.age) % 16;
             bodyU0 = (frame % 4) / 4.0f;
             bodyV0 = (frame / 4) / 4.0f;
@@ -206,6 +209,8 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             // Nuke = max bulk flag, HV = fast flight (mirror of combat logic).
             bodyTex = state.bulk >= 2.45f ? TEX_ROCKET_NUKE : (speed > 1.5f ? TEX_ROCKET_HV : TEX_ROCKET);
             bodySize = 0.55f;
+            // A rocket is an elongated sprite, a radial edge would cut its fins off.
+            bodyStyle = FxRenderTypes.Style.SPRITE;
         }
 
         if (bodyTex != null) {
@@ -217,7 +222,9 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             final float[] axes = FxGeometry.cameraAxes();
             final float ax0 = axes[0], ax1 = axes[1], ax2 = axes[2];
             final float ax3 = axes[3], ax4 = axes[4], ax5 = axes[5];
-            collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(tex), (pose, consumer) -> {
+            collector.submitCustomGeometry(poseStack,
+                    FxRenderTypes.styled(bodyStyle, tex),
+                    (pose, consumer) -> {
                 var matrix = pose.pose();
                 FxGeometry.cameraBillboard(matrix, consumer, 0, 0, 0,
                         ax0, ax1, ax2, ax3, ax4, ax5,
@@ -323,7 +330,9 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
         final float ux = u.x, uy = u.y, uz = u.z;
         final float wx = w.x, wy = w.y, wz = w.z;
         final float dx = dir.x, dy = dir.y, dz = dir.z;
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(TEX_SHOCKWAVE), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.GLOW, TEX_SHOCKWAVE),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             for (int i = 0; i <= 5; i++) {
                 float r = fa * rand.nextFloat();

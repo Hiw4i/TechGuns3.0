@@ -1,18 +1,26 @@
 package com.techguns.techguns3.client;
 
+import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.client.fx.FxGeometry;
-import com.techguns.techguns3.client.fx.FxRenderTypes;
 import com.techguns.techguns3.entity.ShellCasingEntity;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.resources.Identifier;
 
 /**
  * Brass casing: small elongated box tumbling by seeded spin + age.
+ *
+ * <p>The casing is a lit solid and not an additive glow - brass does not
+ * emit light, and a glowing cube in the air reads as a bug.</p>
  */
 public final class ShellCasingRenderer extends EntityRenderer<ShellCasingEntity, ShellCasingRenderer.State> {
+    private static final Identifier CASING_TEXTURE = Identifier.fromNamespaceAndPath(
+            TechGuns3.MODID, "textures/fx/casing.png");
+
     public ShellCasingRenderer(EntityRendererProvider.Context context) {
         super(context);
         shadowRadius = 0.0f;
@@ -41,10 +49,13 @@ public final class ShellCasingRenderer extends EntityRenderer<ShellCasingEntity,
         poseStack.pushPose();
         poseStack.mulPose(new org.joml.Matrix4f()
                 .rotationXYZ(state.age * 0.35f + state.spin, state.spin * 1.7f, 0.3f));
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additiveColor(), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(CASING_TEXTURE),
+                (pose, consumer) -> {
             var matrix = pose.pose();
-            // Brass body + darker tip.
-            FxGeometry.box(matrix, consumer, 0.07f, 0.045f, 0.045f, 0.78f, 0.60f, 0.22f, 1.0f);
+            // Brass body, the case mouth reads as the darker end of the texture.
+            FxGeometry.texturedBox(matrix, consumer, 0.07f, 0.045f, 0.045f,
+                    0, 0, 0, 0, 0, 1, 1,
+                    1, 1, 1, 1, state.lightCoords);
         });
         poseStack.popPose();
     }

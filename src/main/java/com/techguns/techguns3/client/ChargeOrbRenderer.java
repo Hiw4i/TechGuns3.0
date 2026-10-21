@@ -61,7 +61,9 @@ public final class ChargeOrbRenderer extends EntityRenderer<ChargeOrbEntity, Cha
         final float[] axes = FxGeometry.cameraAxes();
         final float ax0 = axes[0], ax1 = axes[1], ax2 = axes[2];
         final float ax3 = axes[3], ax4 = axes[4], ax5 = axes[5];
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(TFG_FLARE), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.ATLAS_ENERGY, TFG_FLARE),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             FxGeometry.cameraBillboard(matrix, consumer, 0, 0, 0,
                     ax0, ax1, ax2, ax3, ax4, ax5,

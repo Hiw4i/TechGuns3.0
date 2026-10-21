@@ -5,6 +5,9 @@ Generates:
 - textures/particle/puff.png      32x32 soft blotchy smoke (white, tinted by particle color)
 - textures/particle/flame.png     32x32 teardrop fire blob (white core, tinted by particle color)
 - textures/fx/muzzle_flash.png    64x64 baked star (white core + spikes, tinted by flash color)
+- textures/fx/bolt.png            32x32 soft tube profile for the tesla arcs
+- textures/fx/casing.png          16x16 brass for the ejected shell casings
+- textures/fx/slime.png            16x16 translucent gel for the slime blobs
 
 All textures are white-with-alpha so vertex/particle color provides the hue.
 Run:  python tools/gen_fx_textures.py
@@ -140,7 +143,74 @@ def muzzle_flash(size=64):
     return px
 
 
+def bolt(size=32):
+    """Soft tube profile for the tesla arcs.
+
+    The ribbon of an arc samples U across its width, so the texture is a
+    horizontal gradient: opaque in the middle, fading out towards the edges.
+    """
+    px = []
+    for y in range(size):
+        row = []
+        for x in range(size):
+            u = (x + 0.5) / size
+            d = abs(u * 2.0 - 1.0)
+            # Opaque core over the middle half, soft shoulders, clear edges.
+            a = 1.0 if d < 0.5 else max(0.0, 1.0 - (d - 0.5) / 0.5) ** 1.4
+            v = 255
+            row.append((v, v, v, int(a * 255)))
+        px.append(row)
+    return px
+
+
+def casing(size=16):
+    """Brass for the ejected shell casings.
+
+    A diagonal sheen plus a band that reads as the rim of the case, so a tiny
+    tumbling box still looks like a piece of brass and not like a grey cube.
+    """
+    px = []
+    for y in range(size):
+        row = []
+        for x in range(size):
+            u = (x + 0.5) / size
+            v = (y + 0.5) / size
+            sheen = max(0.0, 1.0 - abs(u - 0.35) * 1.4)
+            band = 0.55 + 0.45 * math.sin(v * math.pi * 2.0)
+            t = max(0.0, min(1.0, sheen * band))
+            r = int(150 + 95 * t)
+            g = int(112 + 82 * t)
+            b = int(46 + 48 * t)
+            row.append((r, g, b, 255))
+        px.append(row)
+    return px
+
+
+def slime(size=16):
+    """Translucent green gel for the slime blobs the tesla gun leaves behind."""
+    px = []
+    c = size / 2.0
+    for y in range(size):
+        row = []
+        for x in range(size):
+            dx = (x + 0.5 - c) / c
+            dy = (y + 0.5 - c) / c
+            d = math.sqrt(dx * dx + dy * dy)
+            body = max(0.0, 1.0 - d)
+            core = max(0.0, 1.0 - d / 0.45)
+            a = min(1.0, body * 0.85)
+            r = int(70 + 150 * core)
+            g = int(150 + 105 * core)
+            b = int(60 + 70 * core)
+            row.append((min(255, r), min(255, g), min(255, b), int(a * 255)))
+        px.append(row)
+    return px
+
+
 write_png(os.path.join(ROOT, "particle", "glow_dot.png"), 16, 16, glow_dot())
 write_png(os.path.join(ROOT, "particle", "puff.png"), 32, 32, puff())
 write_png(os.path.join(ROOT, "particle", "flame.png"), 32, 32, flame())
 write_png(os.path.join(ROOT, "fx", "muzzle_flash.png"), 64, 64, muzzle_flash())
+write_png(os.path.join(ROOT, "fx", "bolt.png"), 32, 32, bolt())
+write_png(os.path.join(ROOT, "fx", "casing.png"), 16, 16, casing())
+write_png(os.path.join(ROOT, "fx", "slime.png"), 16, 16, slime())

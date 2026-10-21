@@ -114,7 +114,8 @@ public final class MuzzleFlashFx {
         final float frx = rx, fry = ry, frz = rz;
         final float fux = ux, fuy = uy, fuz = uz;
 
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(art.texture()),
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.SPRITE, art.texture()),
                 (pose, consumer) -> {
                     var matrix = pose.pose();
                     FxGeometry.uvQuad(matrix, consumer,

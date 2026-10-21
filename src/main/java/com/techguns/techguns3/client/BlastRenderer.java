@@ -88,7 +88,9 @@ public final class BlastRenderer extends EntityRenderer<BlastEntity, BlastRender
         final float fa = alpha;
         final float c = (float) Math.cos(roll);
         final float s = (float) Math.sin(roll);
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(BLAST_TEXTURE), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.ATLAS_GLOW, BLAST_TEXTURE),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             // Rolled main quad + two crossed planes for volume.
             float x1 = -fs * c + fs * s, y1 = -fs * s - fs * c;

@@ -21,6 +21,11 @@ import java.util.Random;
  * halo when the camera sits inside the arc start.
  */
 public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, TeslaArcRenderer.State> {
+    /** Soft tube profile, the beam shader feathers the edges of the ribbon. */
+    private static final net.minecraft.resources.Identifier BOLT_TEXTURE =
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                    com.techguns.techguns3.TechGuns3.MODID, "textures/fx/bolt.png");
+
     public TeslaArcRenderer(EntityRendererProvider.Context context) {
         super(context);
         shadowRadius = 0.0f;
@@ -85,30 +90,32 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
         // Halo shrinks with distance fade; core stays crisp.
         float haloScale = 0.55f + 0.45f * closeFade;
 
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additiveColor(), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.BEAM, BOLT_TEXTURE),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             for (int c = 0; c < 2; c++) {
                 float[] main = FxGeometry.translated(bolt.main(),
                         channelOff[c][0], channelOff[c][1], channelOff[c][2]);
                 boolean primary = c == 0;
                 if (primary) {
-                    FxGeometry.polyline(matrix, consumer, main,
+                    FxGeometry.polylineUv(matrix, consumer, main,
                             u.x, u.y, u.z, w.x, w.y, w.z,
                             0.06f * haloScale, 0.20f, 0.50f, 1.0f, 0.26f * closeFade);
                 }
-                FxGeometry.polyline(matrix, consumer, main,
+                FxGeometry.polylineUv(matrix, consumer, main,
                         u.x, u.y, u.z, w.x, w.y, w.z,
                         (primary ? 0.04f : 0.03f) * haloScale, 0.30f, 0.72f, 1.0f,
                         (primary ? 0.55f : 0.40f) * closeFade);
-                FxGeometry.polyline(matrix, consumer, main,
+                FxGeometry.polylineUv(matrix, consumer, main,
                         u.x, u.y, u.z, w.x, w.y, w.z,
                         primary ? 0.02f : 0.016f, 0.93f, 1.0f, 1.0f, Math.min(1.0f, closeFade + 0.2f));
             }
             for (float[] branch : bolt.branches()) {
-                FxGeometry.polyline(matrix, consumer, branch,
+                FxGeometry.polylineUv(matrix, consumer, branch,
                         u.x, u.y, u.z, w.x, w.y, w.z,
                         0.022f * haloScale, 0.35f, 0.75f, 1.0f, 0.40f * closeFade);
-                FxGeometry.polyline(matrix, consumer, branch,
+                FxGeometry.polylineUv(matrix, consumer, branch,
                         u.x, u.y, u.z, w.x, w.y, w.z,
                         0.012f, 0.90f, 1.0f, 1.0f, Math.min(1.0f, closeFade + 0.2f));
             }

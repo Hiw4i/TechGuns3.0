@@ -113,7 +113,9 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         final float ux = u.x, uy = u.y, uz = u.z, wx = w.x, wy = w.y, wz = w.z;
         final int nsegs = segs;
         final float flen = len;
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(bodyTex), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.BEAM, bodyTex),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             for (int sgi = 0; sgi < nsegs; sgi++) {
                 float s0 = flen * sgi / nsegs;
@@ -133,7 +135,9 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         Identifier capTex = nuke ? TEX_NUKEBEAM : TEX_LASER_START;
         final float capLen = Math.min(1.0f, len);
         final float cex = dir.x * capLen, cey = dir.y * capLen, cez = dir.z * capLen;
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(capTex), (pose, consumer) -> {
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.BEAM, capTex),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             beamQuad(matrix, consumer, 0, 0, 0, cex, cey, cez, ux, uy, uz, fw * 1.1f, 0, 0, 1, 1, 1, 1, 1, fb);
             beamQuad(matrix, consumer, 0, 0, 0, cex, cey, cez, wx, wy, wz, fw * 1.1f, 0, 0, 1, 1, 1, 1, 1, fb);
@@ -165,7 +169,11 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         final float dx = dir.x, dy = dir.y, dz = dir.z;
         final float ux = u.x, uy = u.y, uz = u.z, wx = w.x, wy = w.y, wz = w.z;
         final float ribbonHalf = 0.045f;
-        collector.submitCustomGeometry(poseStack, FxRenderTypes.additive(TEX_NUKEBEAM), (pose, consumer) -> {
+        // The spiral ribbon carries its length in U and its width in V, so the
+        // beam profile does not apply to it.
+        collector.submitCustomGeometry(poseStack,
+                FxRenderTypes.styled(FxRenderTypes.Style.SPRITE, TEX_NUKEBEAM),
+                (pose, consumer) -> {
             var matrix = pose.pose();
             // Helix point i, then join prev->curr with a strip quad widened
             // along the beam axis (CE offsets ±w along local X = beam dir).
