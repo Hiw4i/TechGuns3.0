@@ -36,14 +36,12 @@ public final class BulletHoleParticle extends SingleQuadParticle {
     };
 
     private final BlockPos blockPos;
-    private final Direction face;
     private final BlockState blockState;
     private final Quaternionf rotation = new Quaternionf();
 
     public BulletHoleParticle(ClientLevel level, double x, double y, double z,
                               TextureAtlasSprite sprite, Direction face, BlockPos blockPos) {
         super(level, x, y, z, sprite);
-        this.face = face;
         this.blockPos = blockPos.immutable();
         this.blockState = level.getBlockState(blockPos);
         // A little in front of the surface, otherwise the hole and the face of
@@ -94,10 +92,5 @@ public final class BulletHoleParticle extends SingleQuadParticle {
         if (left < FADE) {
             this.alpha = Mth.clamp(left / (float) FADE, 0.0f, 1.0f);
         }
-    }
-
-    /** The face the hole was made in. */
-    public Direction face() {
-        return this.face;
     }
 }

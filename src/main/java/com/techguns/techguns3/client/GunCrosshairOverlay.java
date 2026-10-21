@@ -80,8 +80,11 @@ public final class GunCrosshairOverlay {
         }
         if (gap >= 0.0f) {
             // The gap follows the spread of the weapon, a jump of the spread
-            // would make the crosshair twitch.
-            smoothedGap = smoothedGap < 0.0f ? gap : smoothedGap + (gap - smoothedGap) * 0.35f;
+            // would make the crosshair twitch. The smoothing runs over time,
+            // so it is the same at any frame rate.
+            float dt = tracker.getRealtimeDeltaTicks() / 20.0f;
+            float factor = 1.0f - (float) Math.exp(-dt / 0.05f);
+            smoothedGap = smoothedGap < 0.0f ? gap : smoothedGap + (gap - smoothedGap) * factor;
             if (fade > 0.02f) {
                 int alpha = (int) (fade * 0.88f * 255.0f) << 24 | 0xFFFFFF;
                 drawCrosshair(extractor, cx, cy, smoothedGap, alpha);
