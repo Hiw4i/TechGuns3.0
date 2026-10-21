@@ -3,15 +3,16 @@
 * textures/gui/hud_panel.png  - the frame of the ammo readout in the bottom
   right: a dark gun metal plate with an orange accent, in the style of the
   Techguns 2 HUD.
-* textures/gui/scope.png      - the mask of a scope: a soft vignette that hides
-  everything outside of the lens, with the reticle in the middle.
+* textures/gui/scope.png      - the mask of a scope: the glass of the lens with
+  a soft vignette that hides everything outside of it, the blue coating of the
+  lens edge and a mil dot reticle in the middle.
 
 Run from the project root:  python tools/make_hud_art.py
 """
 import math
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 root = Path(__file__).resolve().parents[1]
 out = root / "src/main/resources/assets/techguns3/textures/gui/hud_panel.png"
@@ -58,43 +59,90 @@ print(f"wrote {out} ({W}x{H})")
 
 
 # --- the scope mask -----------------------------------------------------------
-# The lens is a circle in the middle of the image. Everything outside of it is
-# covered by the opaque vignette, so the weapon and the world disappear and
-# only the view through the lens is left.
+# The glass of the lens fills the circle in the middle of the image, everything
+# outside of it is the dark wall of the tube. The vignette is soft, the edge of
+# the glass carries the blue coating of a real lens and the reticle is a mil
+# dot with the range numbers next to it.
 
-S = 256
+S = 1024
 C = S / 2.0
-RETICLE = (18, 20, 24, 255)
+TUBE = (10, 10, 10, 255)          # the wall of the tube, the same as the mask
+RETICLE = (12, 14, 18, 240)       # the shadowed reticle of a real scope
+RETICLE_HALO = (196, 202, 214, 70)  # the faint edge that keeps it readable at night
 
-scope = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+# The wall of the tube fills the whole image, the lens is cut out of it.
+scope = Image.new("RGBA", (S, S), TUBE)
 d = ImageDraw.Draw(scope)
 
-# The vignette: opaque at the rim, gone before the middle of the lens.
+# The vignette: the glass is cut out of the tube. The ellipses are drawn from
+# the outside in, so the last one that touches a pixel decides its alpha: the
+# middle of the lens ends up clear, the rim is solid.
 for i in range(int(C), 0, -1):
     t = i / C
-    # Fully opaque from the rim, fading out over the last third.
-    k = min(1.0, max(0.0, (t - 0.62) / 0.38))
-    alpha = int(255 * (k ** 1.6))
-    d.ellipse([C - i, C - i, C + i, C + i], fill=(4, 5, 7, alpha))
+    # A smooth falloff from 0.84 to 0.99 of the radius.
+    k = min(1.0, max(0.0, (t - 0.84) / 0.15))
+    k = k * k * (3.0 - 2.0 * k)
+    d.ellipse([C - i, C - i, C + i, C + i], fill=(5, 6, 8, int(255 * k)))
 
-# A thin bright ring where the lens ends.
-d.ellipse([C - C * 0.995, C - C * 0.995, C + C * 0.995, C + C * 0.995],
-          outline=(120, 128, 140, 150), width=2)
+# The glass: a very faint cool tint over the lens.
+glass = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+gd = ImageDraw.Draw(glass)
+for i in range(int(C), 0, -1):
+    t = i / C
+    # The tint is the strongest at the edge of the glass, the middle is clear.
+    alpha = int(14 * (t ** 2))
+    gd.ellipse([C - i, C - i, C + i, C + i], fill=(104, 136, 178, alpha))
+scope = Image.alpha_composite(scope, glass)
+d = ImageDraw.Draw(scope)
 
-# The reticle: a cross with a gap in the middle and small hash marks.
-gap = 14
-length = 74
-width = 1
+# The blue coating of the lens edge. It is a reflection on the glass, so it
+# sits on top of the vignette.
+coating = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+cd = ImageDraw.Draw(coating)
+for i in range(int(C), 0, -1):
+    t = i / C
+    band = math.exp(-((t - 0.875) / 0.026) ** 2)
+    alpha = int(38 * band)
+    cd.ellipse([C - i, C - i, C + i, C + i], fill=(138, 148, 226, alpha))
+scope = Image.alpha_composite(scope, coating)
+d = ImageDraw.Draw(scope)
+
+# The rim of the eyepiece: a thin bright ring where the glass ends.
+d.ellipse([C - C * 0.965, C - C * 0.965, C + C * 0.965, C + C * 0.965],
+          outline=(132, 140, 154, 130), width=3)
+
+# The reticle: a mil dot. A post below the centre with a dot for every mil and
+# the range number next to it, a cross with a gap in the middle and a fine
+# horizontal line.
+post = 0.60 * C
+d.line([(C, C), (C, C + post)], fill=RETICLE_HALO, width=6)
+d.line([(C, C), (C, C + post)], fill=RETICLE, width=3)
+
+# The horizontal line with a gap in the middle.
+gap = 0.035 * C
+arm = 0.34 * C
 for sign in (-1, 1):
-    d.line([(C + sign * gap, C), (C + sign * length, C)], fill=RETICLE, width=width)
-    d.line([(C, C + sign * gap), (C, C + sign * length)], fill=RETICLE, width=width)
-# Hash marks on the vertical line.
-for i, dist in enumerate((30, 46, 62)):
-    w = 8 if i % 2 == 0 else 5
-    d.line([(C - w, C + dist), (C + w, C + dist)], fill=RETICLE, width=width)
-    d.line([(C - w, C - dist), (C + w, C - dist)], fill=RETICLE, width=width)
-# A small dot in the middle.
-d.ellipse([C - 1, C - 1, C + 1, C + 1], fill=RETICLE)
+    d.line([(C + sign * gap, C), (C + sign * arm, C)], fill=RETICLE_HALO, width=6)
+    d.line([(C + sign * gap, C), (C + sign * arm, C)], fill=RETICLE, width=3)
+    d.line([(C, C + sign * gap), (C, C + sign * arm * 0.55)], fill=RETICLE_HALO, width=6)
+    d.line([(C, C + sign * gap), (C, C + sign * arm * 0.55)], fill=RETICLE, width=3)
+
+# The dot in the middle.
+d.ellipse([C - 5, C - 5, C + 5, C + 5], fill=RETICLE_HALO)
+d.ellipse([C - 3, C - 3, C + 3, C + 3], fill=RETICLE)
+
+# The mil dots and their numbers.
+try:
+    font = ImageFont.load_default(size=22)
+except TypeError:
+    font = ImageFont.load_default()
+
+mil = 0.115 * C
+for number in range(1, 6):
+    y = C + mil * number
+    d.ellipse([C - 6, y - 6, C + 6, y + 6], fill=RETICLE_HALO)
+    d.ellipse([C - 4, y - 4, C + 4, y + 4], fill=RETICLE)
+    d.text((C + 15, y - 11), str(number), font=font, fill=RETICLE)
 
 scope.save(scope_out)
 print(f"wrote {scope_out} ({S}x{S})")

@@ -55,7 +55,8 @@ public final class ScopeOverlay {
         int r = (int) (Math.min(w, h) * LENS_SHARE * aim);
         if (r < 2) return;
 
-        int scope = 0xFF0A0A0A;
+        // The wall of the tube, the same colour the mask ends with.
+        int scope = 0xFF050608;
         // Dark surround outside the tube.
         extractor.fill(0, 0, w, cy - r, scope);
         extractor.fill(0, cy + r, w, h, scope);
