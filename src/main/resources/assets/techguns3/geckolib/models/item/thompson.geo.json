@@ -802,12 +802,12 @@
         },
         {
           "name": "aim",
-          "parent": "gun",
           "pivot": [
             25.5,
             3.5,
             1.0
-          ]
+          ],
+          "parent": "gun"
         }
       ]
     }

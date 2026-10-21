@@ -13,11 +13,19 @@ Run from the project root:  python tools/add_aim_bones.py
 
 import json
 import math
+import re
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 models = root / "src/main/resources/assets/techguns3/geckolib/models/item"
 item_models = root / "src/main/resources/assets/techguns3/models/item"
+
+# The aim anchor that a previous run of this script wrote. It is removed from
+# the text before the new one is written, so the script can be run again
+# without piling up copies of the bone. The keys of the block are matched in
+# any order, an older version of the script wrote them in a different one.
+AIM_BLOCK = re.compile(
+    r",\n        \{\n          \"name\": \"aim\",\n(?:[^\}]*?)\n        \}")
 
 IDENT = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 
@@ -160,6 +168,9 @@ for geo_path in sorted(models.glob("*.geo.json")):
                  f'          ],\n'
                  f'          "parent": "{root_bone["name"]}"\n'
                  f'        }}')
+        # Drop the anchor of a previous run first, the text is edited in place.
+        text = AIM_BLOCK.sub("", text)
+        idx = text.rindex(marker)
         text = text[:idx] + ",\n" + block + text[idx:]
     else:
         bones.append({"name": "aim", "parent": root_bone["name"], "pivot": point})

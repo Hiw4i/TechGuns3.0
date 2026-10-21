@@ -88,5 +88,9 @@ checked by the build, it has to be looked at:
   the edge of the screen instead of at the ejection port of the weapon.
 - The scope is a screen mask, not a stencil mask of the lens: the weapon is hidden instead of
   being cut away by the tube of the scope.
+- The weapon is only drawn with an animation on the screen of the player who switched to it.
+  Everybody else sees the weapon appear, because the switch itself is not sent to the server.
+- There is no animation for putting the weapon away: the item is swapped in the inventory before
+  the model could be lowered.
 
 This is the first test slice, not the completed Community Edition port. Projectile collision and turret target filtering have been corrected, and cartridge sprites in flight have been replaced by particles. The original 3D geometry and textures are converted into GeckoLib models, with new firing and reload tracks and display scale matching the original renderer settings. The four weapons that were still flat sprites (revolver, M4, Thompson, bolt action rifle) now have real 3D models, animations and recipes; they were converted from the original 1.12 java models by `tools/convert_legacy_models.py`, which reproduces the already ported AK-47 exactly. First-person two-arm posing, exact animation and UV parity, HUD beyond the ammo bar, full faction rules, damage penetration and two-client play still require in-game verification and improvement.

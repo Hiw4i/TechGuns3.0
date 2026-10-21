@@ -211,7 +211,7 @@ public final class GunFeel {
         swayYaw.update(dt);
 
         updateKicks(dt);
-        updateSway(dt);
+        updateSway(dt, tracker);
         updateBob(dt, tracker);
     }
 
@@ -266,8 +266,13 @@ public final class GunFeel {
     /**
      * Weapon lag: the model keeps following the camera a moment after the
      * mouse moved, which is what gives a held weapon its weight.
+     *
+     * <p>The angles of the head are used and not the ones of the body: the
+     * body only follows the head when the player walks, so a sway that was
+     * built on the body would not react to the mouse at all while standing
+     * still.</p>
      */
-    private void updateSway(float dt) {
+    private void updateSway(float dt, DeltaTracker tracker) {
         var mc = Minecraft.getInstance();
         var player = mc.player;
         if (player == null) {
@@ -276,8 +281,9 @@ public final class GunFeel {
             haveLastAngles = false;
             return;
         }
-        float yaw = player.getYRot();
-        float pitch = player.getXRot();
+        float partial = tracker == null ? 0.0f : tracker.getGameTimeDeltaPartialTick(false);
+        float yaw = player.getViewYRot(partial);
+        float pitch = player.getViewXRot(partial);
         if (haveLastAngles) {
             // The mouse delta is already smoothed by the game; a fraction of it
             // becomes the lag, and the spring pulls the weapon back to rest.

@@ -1634,12 +1634,12 @@
         },
         {
           "name": "aim",
-          "parent": "gun",
           "pivot": [
             1.5,
             18.25,
             9.5
-          ]
+          ],
+          "parent": "gun"
         }
       ]
     }

@@ -1922,12 +1922,12 @@
         },
         {
           "name": "aim",
-          "parent": "gun",
           "pivot": [
             29.5,
             6.5,
             0.5
-          ]
+          ],
+          "parent": "gun"
         }
       ]
     }
