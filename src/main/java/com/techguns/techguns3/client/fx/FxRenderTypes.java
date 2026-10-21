@@ -87,7 +87,7 @@ public final class FxRenderTypes {
     public static final RenderPipeline FX_SPRITE = enhanced("fx_sprite", false, 0);
 
     /** Additive sprite with a soft radial edge, own shader. */
-    public static final RenderPipeline FX_GLOW = enhanced("fx_sprite", true, 1);
+    public static final RenderPipeline FX_GLOW = enhanced("fx_sprite", true, 0);
 
     /** Additive sprite with a soft radial edge inside a 4x4 sheet, own shader. */
     public static final RenderPipeline FX_ATLAS_GLOW = enhanced("fx_sprite", true, 4);
@@ -114,7 +114,8 @@ public final class FxRenderTypes {
                 .withFragmentShader(Identifier.fromNamespaceAndPath(
                         TechGuns3.MODID, "core/" + fragmentShader))
                 .withLocation(Identifier.fromNamespaceAndPath(
-                        TechGuns3.MODID, "pipeline/fx_" + fragmentShader + "_" + atlasGrid))
+                        TechGuns3.MODID, "pipeline/fx_" + fragmentShader
+                                + (softEdge ? "_soft" : "") + (atlasGrid > 0 ? "_atlas" + atlasGrid : "")))
                 .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
                 .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
                 .withCull(false);
