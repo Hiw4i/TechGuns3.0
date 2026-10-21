@@ -65,6 +65,6 @@ public final class ScopeOverlay {
         // The lens: the vignette hides everything outside of it and the
         // reticle of the scope is drawn over the view.
         extractor.blit(SCOPE_TEXTURE, cx - r, cy - r, cx + r, cy + r,
-                0.0f, 0.0f, 1.0f, 1.0f);
+                0.0f, 1.0f, 0.0f, 1.0f);
     }
 }
