@@ -162,6 +162,49 @@ public final class FxParticles {
                 0x9A9A9A, 0x3A3A3A, 0.18f, 0.45f, 24, -0.012f, 0.97f, 0.4, 0.4);
     }
 
+    /**
+     * The impact of a bullet on a surface, in the look of its material.
+     *
+     * <p>Metal and stone throw bright sparks, wood throws splinters, loose
+     * material throws dust and glass throws shards. The sparks fly in the plane
+     * of the surface, so the hit reads as a hit and not as an explosion in the
+     * middle of the wall.</p>
+     */
+    public static void impactMaterial(ServerLevel level, Vec3 at, Vec3 normal, SurfaceMaterial material) {
+        switch (material) {
+            case METAL -> {
+                impactSparks(level, at, 6);
+                impactRing(level, at, normal, 0xFFF2D2, 6);
+                dust(level, at, 1, 0xC8C2B8, 0x6E6960);
+            }
+            case ROCK -> {
+                impactSparks(level, at, 4);
+                impactRing(level, at, normal, 0xFFE9C8, 5);
+                dust(level, at, 2, 0xB9B4AC, 0x6A655E);
+            }
+            case WOOD -> {
+                // Splinters of wood and a puff of saw dust.
+                glow(level, at.x, at.y, at.z, 4,
+                        0xC89B5A, 0x6B4A22, 0.09f, 0.02f, 16, 0.10f, 0.94f, 1.0, 1.4);
+                dust(level, at, 2, 0x9A7B4F, 0x5A4526);
+            }
+            case DIRT -> {
+                dust(level, at, 4, 0x9C8A6E, 0x5A4E3C);
+                impactRing(level, at, normal, 0xB9A886, 3);
+            }
+            case GLASS -> {
+                glow(level, at.x, at.y, at.z, 6,
+                        0xE8FBFF, 0x86C8D8, 0.07f, 0.015f, 14, 0.08f, 0.93f, 1.0, 1.6);
+            }
+        }
+    }
+
+    /** A puff of material dust. */
+    private static void dust(ServerLevel level, Vec3 at, int count, int color, int endColor) {
+        puff(level, at.x, at.y, at.z, count,
+                color, endColor, 0.12f, 0.34f, 20, -0.010f, 0.96f, 0.5, 0.5);
+    }
+
     /** Muzzle smoke pushed along the barrel so it never hangs in the shooter's head. */
     public static void muzzleSmoke(ServerLevel level, Vec3 at, Vec3 look, int count) {
         puffPushed(level, at, look.scale(0.7), count,

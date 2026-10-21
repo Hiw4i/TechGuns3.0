@@ -43,6 +43,9 @@ public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
     public static final String CONTROLLER_RELOAD = "reload";
     public static final String CONTROLLER_CHARGE = "charge";
     public static final String CONTROLLER_BARRELS = "barrels";
+    public static final String CONTROLLER_DRAW = "draw";
+    public static final String CONTROLLER_INSPECT = "inspect";
+    public static final String CONTROLLER_DRYFIRE = "dryfire";
 
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
 
@@ -60,13 +63,26 @@ public final class AnimatedGunItem extends GenericGunItem implements GeoItem {
                 .triggerableAnim("fire", RawAnimation.begin().thenPlay("fire")));
         controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_RELOAD, 4, state -> PlayState.STOP)
                 .triggerableAnim("reload", RawAnimation.begin().thenPlay("reload")));
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_BARRELS, 0, state -> PlayState.STOP)
+                .triggerableAnim("spin", RawAnimation.begin().thenLoop("spin")));
+        // The tracks below are additive: they are laid on top of whatever the
+        // weapon is doing instead of replacing it. A weapon that is drawn
+        // while it is fired still kicks, and a weapon that is looked over
+        // still recoils.
         controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_CHARGE, 4, state -> PlayState.STOP)
                 .additiveAnimations()
                 // Plays once and holds the last frame: a looping charge track
                 // would snap back to the start pose every few seconds.
                 .triggerableAnim("charge", RawAnimation.begin().thenPlayAndHold("charge")));
-        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_BARRELS, 0, state -> PlayState.STOP)
-                .triggerableAnim("spin", RawAnimation.begin().thenLoop("spin")));
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_DRAW, 0, state -> PlayState.STOP)
+                .additiveAnimations()
+                .triggerableAnim("draw", RawAnimation.begin().thenPlay("draw")));
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_INSPECT, 4, state -> PlayState.STOP)
+                .additiveAnimations()
+                .triggerableAnim("inspect", RawAnimation.begin().thenPlay("inspect")));
+        controllers.add(new AnimationController<AnimatedGunItem>(CONTROLLER_DRYFIRE, 0, state -> PlayState.STOP)
+                .additiveAnimations()
+                .triggerableAnim("dryfire", RawAnimation.begin().thenPlay("dryfire")));
     }
 
     @Override

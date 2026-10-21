@@ -23,7 +23,6 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Set;
 
 /**
  * Wave-1 bullet. Collapses every plain 1.12 {@code GenericProjectile} shooter
@@ -71,19 +70,6 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                     explosiveNuke, knockback, ignoreIframes, radiationTicks, true);
         }
     }
-
-    private static final Set<SoundType> WOOD = Set.of(
-            SoundType.WOOD, SoundType.LADDER, SoundType.BAMBOO_WOOD,
-            SoundType.NETHER_WOOD, SoundType.CHERRY_WOOD, SoundType.SCAFFOLDING);
-    private static final Set<SoundType> GLASS = Set.of(
-            SoundType.GLASS, SoundType.AMETHYST, SoundType.AMETHYST_CLUSTER,
-            SoundType.SMALL_AMETHYST_BUD, SoundType.MEDIUM_AMETHYST_BUD, SoundType.LARGE_AMETHYST_BUD);
-    private static final Set<SoundType> METAL = Set.of(
-            SoundType.METAL, SoundType.ANVIL, SoundType.COPPER, SoundType.CHAIN,
-            SoundType.NETHERITE_BLOCK, SoundType.LODESTONE);
-    private static final Set<SoundType> DIRT = Set.of(
-            SoundType.SAND, SoundType.GRAVEL, SoundType.SNOW, SoundType.SOUL_SAND,
-            SoundType.SOUL_SOIL, SoundType.MUD, SoundType.GRASS, SoundType.ROOTED_DIRT);
 
     private Spec spec = new Spec(5.0f, 2.0f, 40, 20.0f, 40.0f, 5.0f, 0.0, 0.0f);
     private int ttlLeft;
@@ -391,12 +377,10 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
                 level().addFreshEntity(new MuzzleFlashEntity(level(),
                         at.x, at.y, at.z, MuzzleFlashEntity.WHITE, 0.17f));
-                com.techguns.techguns3.fx.FxParticles.impactSparks(
-                        (ServerLevel) level(), at, 4);
-                com.techguns.techguns3.fx.FxParticles.impactRing(
-                        (ServerLevel) level(), at, normal, 0xFFE9C8, 5);
-                com.techguns.techguns3.fx.FxParticles.smoke(
-                        (ServerLevel) level(), at, 1);
+                // The impact looks like the material it hit.
+                com.techguns.techguns3.fx.FxParticles.impactMaterial(
+                        (ServerLevel) level(), at, normal,
+                        com.techguns.techguns3.fx.SurfaceMaterial.of(sound));
                 // A hole in the surface, flat on the face that was hit.
                 level().addParticle(new com.techguns.techguns3.registry.TGParticles.BulletHoleOptions(
                         blockHit.getBlockPos(), face.ordinal()), at.x, at.y, at.z, 0, 0, 0);
@@ -447,11 +431,13 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
 
     private static net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.sounds.SoundEvent, net.minecraft.sounds.SoundEvent> impactFor(
             SoundType sound) {
-        if (WOOD.contains(sound)) return TGSounds.IMPACT_WOOD;
-        if (GLASS.contains(sound)) return TGSounds.IMPACT_GLASS;
-        if (METAL.contains(sound)) return TGSounds.IMPACT_METAL;
-        if (DIRT.contains(sound)) return TGSounds.IMPACT_DIRT;
-        return TGSounds.IMPACT_ROCK;
+        return switch (com.techguns.techguns3.fx.SurfaceMaterial.of(sound)) {
+            case WOOD -> TGSounds.IMPACT_WOOD;
+            case GLASS -> TGSounds.IMPACT_GLASS;
+            case METAL -> TGSounds.IMPACT_METAL;
+            case DIRT -> TGSounds.IMPACT_DIRT;
+            case ROCK -> TGSounds.IMPACT_ROCK;
+        };
     }
 
     private float damageAt(double x, double y, double z) {

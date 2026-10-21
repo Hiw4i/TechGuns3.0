@@ -11,7 +11,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Dedicated gun keys. Fire stays on LMB (vanilla attack key, intercepted for guns);
- * zoom stays on RMB (vanilla use key); reload gets its own bind, default {@code R}.
+ * zoom stays on RMB (vanilla use key); reload gets its own bind, default {@code R},
+ * and looking the weapon over one more, default {@code V}.
  */
 @EventBusSubscriber(modid = TechGuns3.MODID, value = Dist.CLIENT)
 public final class TGKeyMappings {
@@ -21,6 +22,10 @@ public final class TGKeyMappings {
         return Holder.RELOAD;
     }
 
+    public static KeyMapping inspect() {
+        return Holder.INSPECT;
+    }
+
     private static final class Holder {
         // Direct construction + RegisterKeyMappingsEvent#registerCategory is the
         // current path; the static Category.register initializer is deprecated.
@@ -28,11 +33,14 @@ public final class TGKeyMappings {
                 new KeyMapping.Category(Identifier.fromNamespaceAndPath(TechGuns3.MODID, "guns"));
         static final KeyMapping RELOAD = new KeyMapping("key.techguns3.reload",
                 InputConstants.Type.KEYBOARD, InputConstants.KEY_R, CATEGORY);
+        static final KeyMapping INSPECT = new KeyMapping("key.techguns3.inspect",
+                InputConstants.Type.KEYBOARD, InputConstants.KEY_V, CATEGORY);
     }
 
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
         event.registerCategory(Holder.CATEGORY);
         event.register(Holder.RELOAD);
+        event.register(Holder.INSPECT);
     }
 }

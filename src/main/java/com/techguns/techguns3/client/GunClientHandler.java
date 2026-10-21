@@ -1,6 +1,7 @@
 package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.TGConfig;
+import com.techguns.techguns3.item.AnimatedGunItem;
 import com.techguns.techguns3.item.GenericGunItem;
 import com.techguns.techguns3.network.GunPackets;
 import net.minecraft.client.Minecraft;
@@ -135,6 +136,11 @@ public final class GunClientHandler {
                 ClientPacketDistributor.sendToServer(new GunPackets.FireStop(true));
             }
             syncZoom(player, false);
+            // The weapon is drawn: it comes up into the hand.
+            if (held.getItem() instanceof AnimatedGunItem drawn) {
+                com.techguns.techguns3.combat.GunAnimSync.triggerLocal(held,
+                        AnimatedGunItem.CONTROLLER_DRAW, "draw");
+            }
         }
         if (!holding) {
             lmbDown = false;
@@ -148,6 +154,12 @@ public final class GunClientHandler {
         if (TGKeyMappings.reload().consumeClick()) {
             reloadStartTick = player.level().getGameTime();
             ClientPacketDistributor.sendToServer(new GunPackets.ReloadRequest(true));
+        }
+
+        // Look the weapon over.
+        if (TGKeyMappings.inspect().consumeClick() && holding) {
+            com.techguns.techguns3.combat.GunAnimSync.triggerLocal(held,
+                    AnimatedGunItem.CONTROLLER_INSPECT, "inspect");
         }
 
         boolean zooming = player.isUsingItem()
@@ -217,8 +229,12 @@ public final class GunClientHandler {
             if (player.getCooldowns().isOnCooldown(held)) return;
             ClientPacketDistributor.sendToServer(new GunPackets.FirePressed(true, zooming));
             if (gun.loadedRounds(held) <= 0) {
-                // Empty magazine: the server starts an automatic reload.
+                // Empty magazine: the server starts an automatic reload. The
+                // weapon clicks instead of kicking, there is nothing to fire.
                 reloadStartTick = player.level().getGameTime();
+                com.techguns.techguns3.combat.GunAnimSync.triggerLocal(held,
+                        AnimatedGunItem.CONTROLLER_DRYFIRE, "dryfire");
+                return;
             }
             predictShotFeedback(player, held, gun, stats, extras);
         } else {

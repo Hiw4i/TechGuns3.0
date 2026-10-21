@@ -42,6 +42,7 @@
   "tooltip.techguns3.gun.controls": "LMB fire, RMB aim, R reload",
   "hud.techguns3.reload_hint": "Press R to reload",
   "key.techguns3.reload": "Reload Gun",
+  "key.techguns3.inspect": "Inspect Weapon",
   "key.category.techguns3.guns": "TechGuns 3.0",
   "subtitles.techguns3.pistol_fire": "Pistol fires",
   "subtitles.techguns3.pistol_reload": "Pistol reloads",
