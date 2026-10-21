@@ -13,6 +13,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ComputeFovModifierEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import com.techguns.techguns3.TechGuns3;
 
@@ -27,6 +28,10 @@ import com.techguns.techguns3.TechGuns3;
  * </ul>
  * Also applies instant local feedback (recoil kick + muzzle particles) so firing
  * feels responsive despite server authority. Damage and ammo stay server-side.
+ *
+ * <p>It also advances the weapon feel once per rendered frame: the springs of
+ * the recoil, the aim blend and the scope zoom have to move with the frames
+ * and not with the ticks.</p>
  */
 @EventBusSubscriber(modid = TechGuns3.MODID, value = Dist.CLIENT)
 public final class GunClientHandler {
@@ -151,6 +156,16 @@ public final class GunClientHandler {
         syncZoom(player, zooming);
         GunFeel.get().setAiming(zooming);
         GunFeel.get().setSprinting(player.isSprinting());
+        // The scope zoom of the held weapon. The spring smooths the transition
+        // in a frame rate independent way.
+        float zoomTarget = 1.0f;
+        if (zooming) {
+            var stats = ((GenericGunItem) player.getUseItem().getItem()).stats();
+            if (stats.canZoom()) {
+                zoomTarget = stats.zoomFov();
+            }
+        }
+        GunFeel.get().setZoomTarget(zoomTarget);
 
         boolean down = mc.options.keyAttack.isDown();
         if (down != lmbDown) {
@@ -291,37 +306,29 @@ public final class GunClientHandler {
     }
 
     /** Smoothed ADS zoom (modern transition instead of an instant FOV cut). */
-    private static float smoothedZoom = 1.0f;
-
     @SubscribeEvent
     public static void onFov(ComputeFovModifierEvent event) {
         if (!(event.getPlayer() instanceof LocalPlayer player)) return;
-        // Every spring of the weapon feel advances once per rendered frame.
-        GunFeel.get().update();
         float fov = event.getFovModifier();
-        float target = 1.0f;
-        if (player.isUsingItem()) {
-            ItemStack using = player.getUseItem();
-            if (using.getItem() instanceof GenericGunItem gun
-                    && player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
-                var stats = gun.stats();
-                if (stats.canZoom()) {
-                    target = stats.zoomFov();
-                }
-            }
-        }
-        // Ease toward the target (~8 frames); instant when far off (weapon switch).
-        if (Math.abs(target - smoothedZoom) > 0.4f) {
-            smoothedZoom = target;
-        } else {
-            smoothedZoom += (target - smoothedZoom) * 0.25f;
-        }
-        fov *= smoothedZoom;
+        fov *= GunFeel.get().zoom();
         // TG2 scope-recoil feel: brief punch-out on every shot, then settle.
         // The punch is a spring, so it eases back instead of cutting off.
         if (player.getMainHandItem().getItem() instanceof GenericGunItem) {
             fov *= 1.0f + 0.35f * GunFeel.get().fovPunch();
         }
         event.setNewFovModifier(fov);
+    }
+
+    /**
+     * Advances the weapon feel once per rendered frame.
+     *
+     * <p>The springs of the feel have to advance exactly once per frame, and
+     * the FOV event is not the right place for it: it does not fire while a
+     * screen is open, so the motion of the weapon would freeze in the
+     * inventory.</p>
+     */
+    @SubscribeEvent
+    public static void onRenderFramePre(RenderFrameEvent.Pre event) {
+        GunFeel.get().update(event.getPartialTick());
     }
 }
