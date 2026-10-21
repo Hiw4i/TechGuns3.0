@@ -48,11 +48,16 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
         if (GunFeel.get().aimProgress() > 0.02f) {
             return;
         }
+        // The rear sight. The position the listener reports is relative to the
+        // model, the alignment needs the position on the screen, so it is put
+        // through the matrix of the render pass.
         renderPassInfo.addBonePositionListener("aim", (world, model, local) -> {
             if (local == null) {
                 return;
             }
-            GunSightAlignment.record(item, perspective, (float) local.x, (float) local.y);
+            var view = renderPassInfo.getPreRenderMatrixState()
+                    .transform(new org.joml.Vector4f((float) local.x, (float) local.y, (float) local.z, 1.0f));
+            GunSightAlignment.recordAim(item, perspective, view.x, view.y);
         });
     }
 

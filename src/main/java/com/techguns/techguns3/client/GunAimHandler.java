@@ -14,7 +14,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Puts the rear sight of the held weapon on the crosshair while aiming.
@@ -25,6 +27,10 @@ import java.util.List;
  * model, the item display transform and the first person hand placement of
  * the game, so the sight ends up exactly in the middle of the screen while
  * the weapon is shouldered.</p>
+ *
+ * <p>While the weapon is at the hip the renderer measures where the sight
+ * really ends up and that measurement is used instead of the stored offset,
+ * so the alignment stays exact when a model or a display transform changes.</p>
  *
  * <p>The event fires before the hand is drawn, in the camera space of the
  * first person view, which is the only place where a screen aligned movement
@@ -38,6 +44,9 @@ public final class GunAimHandler {
     /** Offset that is currently applied to the pose stack (main hand). */
     private static float appliedX;
     private static float appliedY;
+
+    /** Weapons whose sight was already compared with the stored offset. */
+    private static final Set<String> REPORTED = new HashSet<>();
 
     @SubscribeEvent
     public static void onRenderHand(RenderHandEvent event) {
@@ -63,27 +72,58 @@ public final class GunAimHandler {
         if (aim <= 0.001f) {
             return;
         }
+        ItemDisplayContext perspective = perspective(event, offHand);
         // The real position of the sight is measured by the renderer while the
         // weapon is at the hip, that is exact. The datapack offset is only the
         // fallback for the very first frames.
-        float[] hip = GunSightAlignment.hip(gun, perspective(event, offHand));
+        float[] hip = GunSightAlignment.hip(gun, perspective);
+        List<Float> stored = offHand ? gun.def().adsOffsetLeft() : gun.def().adsOffset();
         float x;
         float y;
         if (hip != null) {
             x = Mth.clamp(-hip[0], -2.5f, 2.5f) * aim;
             y = Mth.clamp(-hip[1], -1.5f, 1.5f) * aim;
+            if (stored.size() >= 2) {
+                reportDrift(gun, offHand, hip[0], hip[1], stored.get(0), stored.get(1));
+            }
         } else {
-            List<Float> offset = offHand ? gun.def().adsOffsetLeft() : gun.def().adsOffset();
-            if (offset.size() < 2) {
+            if (stored.size() < 2) {
                 return;
             }
-            x = Mth.clamp(offset.get(0), -2.5f, 2.5f) * aim;
-            y = Mth.clamp(offset.get(1), -1.5f, 1.5f) * aim;
+            x = Mth.clamp(stored.get(0), -2.5f, 2.5f) * aim;
+            y = Mth.clamp(stored.get(1), -1.5f, 1.5f) * aim;
         }
         event.getPoseStack().translate(x, y, 0.0f);
         if (!offHand) {
             appliedX = x;
             appliedY = y;
+        }
+    }
+
+    /**
+     * Compares the measured position of the sight with the offset that was
+     * computed offline.
+     *
+     * <p>Both describe the same thing, so they have to agree. When they do
+     * not, the model or the display transform of the weapon changed and the
+     * stored offset is stale - the log says so instead of the sight quietly
+     * ending up somewhere else.</p>
+     */
+    private static void reportDrift(GenericGunItem gun, boolean offHand,
+                                    float measuredX, float measuredY,
+                                    float storedX, float storedY) {
+        String key = gun.def().ammo() + (offHand ? ":left" : ":right");
+        if (!REPORTED.add(key)) {
+            return;
+        }
+        float dx = measuredX + storedX;
+        float dy = measuredY + storedY;
+        if (Math.abs(dx) > 0.25f || Math.abs(dy) > 0.25f) {
+            TechGuns3.LOGGER.warn(
+                    "[TechGuns3] the sight of {} does not match its stored offset "
+                            + "(measured ({:.3f},{:.3f}), stored ({:.3f},{:.3f})). "
+                            + "Run tools/add_ads_offsets.py to refresh the datapack.",
+                    gun.def().ammo(), measuredX, measuredY, -storedX, -storedY);
         }
     }
 

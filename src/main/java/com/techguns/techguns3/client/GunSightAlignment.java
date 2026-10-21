@@ -11,9 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>The renderer reads the real position of the {@code aim} anchor bone while
  * the weapon is at the hip and caches it here. Aiming then only has to undo
- * that position, which is exact no matter how the model, the item display
- * transform or the hand placement of the game look - a hand written offset
- * would have to be recomputed for every model change.</p>
+ * the position of the sight, which is exact no matter how the model, the item
+ * display transform or the hand placement of the game look - a hand written
+ * offset would have to be recomputed for every model change.</p>
  *
  * <p>The cache is keyed by the display context, because the main hand is drawn
  * with the left context when the player uses the left arm.</p>
@@ -21,16 +21,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class GunSightAlignment {
     private GunSightAlignment() {}
 
+    /** The measured sight, in camera space. */
     private static final Map<Item, Map<ItemDisplayContext, float[]>> HIPS = new ConcurrentHashMap<>();
 
     /**
-     * Records the screen position of the sight of a weapon at the hip.
+     * Records the screen position of the rear sight of a weapon at the hip.
      *
      * <p>The value is smoothed: the measured position also contains the sway
      * and the walk bob of the weapon, and the average of those is the real
      * position of the sight.</p>
+     *
+     * @param x camera space X of the rear sight
+     * @param y camera space Y of the rear sight
      */
-    public static void record(Item item, ItemDisplayContext perspective, float x, float y) {
+    public static void recordAim(Item item, ItemDisplayContext perspective, float x, float y) {
         float[] slot = HIPS.computeIfAbsent(item, i -> new ConcurrentHashMap<>())
                 .computeIfAbsent(perspective, p -> new float[2]);
         slot[0] += (x - slot[0]) * 0.08f;
