@@ -37,14 +37,6 @@
     "bulk": 1.0,
     "muzzle_flash": 1,
     "loop_ticks": 0,
-    "two_handed": true,
-    "ads_offset": [
-      -1.5288,
-      0.3706
-    ],
-    "ads_offset_left": [
-      0.5287,
-      0.3706
-    ]
+    "two_handed": true
   }
 }

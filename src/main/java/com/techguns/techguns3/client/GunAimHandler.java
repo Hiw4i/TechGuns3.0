@@ -21,16 +21,15 @@ import java.util.Set;
 /**
  * Puts the rear sight of the held weapon on the crosshair while aiming.
  *
- * <p>The weapon is slid in camera space by the offset stored in the gun
- * definition. That offset is computed offline (see
- * {@code tools/add_ads_offsets.py}) from the position of the sight in the
- * model, the item display transform and the first person hand placement of
- * the game, so the sight ends up exactly in the middle of the screen while
- * the weapon is shouldered.</p>
+ * <p>While the weapon is at the hip the renderer measures where its rear
+ * sight really ends up on the screen and caches that position. Aiming slides
+ * the weapon by exactly that distance, so the sight ends up in the middle of
+ * the screen while the weapon is shouldered.</p>
  *
- * <p>While the weapon is at the hip the renderer measures where the sight
- * really ends up and that measurement is used instead of the stored offset,
- * so the alignment stays exact when a model or a display transform changes.</p>
+ * <p>The measurement is the only place where the real position is known: it
+ * depends on the model, on the display transform of the item and on the hand
+ * placement of the game. A hand written offset would have to be recomputed
+ * for every change of any of them.</p>
  *
  * <p>The event fires before the hand is drawn, in the camera space of the
  * first person view, which is the only place where a screen aligned movement
@@ -73,26 +72,18 @@ public final class GunAimHandler {
             return;
         }
         ItemDisplayContext perspective = perspective(event, offHand);
-        // The real position of the sight is measured by the renderer while the
-        // weapon is at the hip, that is exact. The datapack offset is only the
-        // fallback for the very first frames.
+        // The renderer measures where the rear sight of the weapon really ends
+        // up on the screen while the weapon is at the hip. The weapon is slid
+        // by that distance, so the sight ends up in the middle of the screen.
         float[] hip = GunSightAlignment.hip(gun, perspective);
-        List<Float> stored = offHand ? gun.def().adsOffsetLeft() : gun.def().adsOffset();
-        float x;
-        float y;
-        if (hip != null) {
-            x = Mth.clamp(-hip[0], -2.5f, 2.5f) * aim;
-            y = Mth.clamp(-hip[1], -1.5f, 1.5f) * aim;
-            if (stored.size() >= 2) {
-                reportDrift(gun, offHand, hip[0], hip[1], stored.get(0), stored.get(1));
-            }
-        } else {
-            if (stored.size() < 2) {
-                return;
-            }
-            x = Mth.clamp(stored.get(0), -2.5f, 2.5f) * aim;
-            y = Mth.clamp(stored.get(1), -1.5f, 1.5f) * aim;
+        if (hip == null) {
+            // The weapon was just taken into the hand and has not been measured
+            // yet. It is not moved, and the measurement slides it into place as
+            // soon as it is there.
+            return;
         }
+        float x = Mth.clamp(-hip[0], -2.5f, 2.5f) * aim;
+        float y = Mth.clamp(-hip[1], -1.5f, 1.5f) * aim;
         event.getPoseStack().translate(x, y, 0.0f);
         if (!offHand) {
             appliedX = x;
@@ -101,30 +92,24 @@ public final class GunAimHandler {
     }
 
     /**
-     * Compares the measured position of the sight with the offset that was
-     * computed offline.
+     * Reports the position of the rear sight of the weapon on the screen.
      *
-     * <p>Both describe the same thing, so they have to agree. When they do
-     * not, the model or the display transform of the weapon changed and the
-     * stored offset is stale - the log says so instead of the sight quietly
-     * ending up somewhere else.</p>
+     * <p>The renderer measures it while the weapon is at the hip, and the
+     * measurement is the only place where the real position is known: it
+     * depends on the model, on the display transform of the item and on the
+     * hand placement of the game.</p>
+     *
+     * @param x camera space X of the rear sight
+     * @param y camera space Y of the rear sight
      */
-    private static void reportDrift(GenericGunItem gun, boolean offHand,
-                                    float measuredX, float measuredY,
-                                    float storedX, float storedY) {
-        String key = gun.gunId() + (offHand ? ":left" : ":right");
+    public static void reportSight(GenericGunItem gun, ItemDisplayContext perspective,
+                                   float x, float y) {
+        String key = gun.gunId() + ":" + perspective.name();
         if (!REPORTED.add(key)) {
             return;
         }
-        float dx = measuredX + storedX;
-        float dy = measuredY + storedY;
-        if (Math.abs(dx) > 0.25f || Math.abs(dy) > 0.25f) {
-            TechGuns3.LOGGER.warn(
-                    "[TechGuns3] the sight of {} does not match its stored offset "
-                            + "(measured ({:.3f},{:.3f}), stored ({:.3f},{:.3f})). "
-                            + "Run tools/add_ads_offsets.py to refresh the datapack.",
-                    gun.gunId(), measuredX, measuredY, -storedX, -storedY);
-        }
+        TechGuns3.LOGGER.info("[TechGuns3] the sight of {} is at ({},{}) on the screen",
+                gun.gunId(), x, y);
     }
 
     /** The display context a hand is drawn with, the same rule the game uses. */

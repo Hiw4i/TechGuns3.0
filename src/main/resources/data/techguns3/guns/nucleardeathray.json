@@ -38,15 +38,7 @@
     "bulk": 1.0,
     "muzzle_flash": 8,
     "loop_ticks": 10,
-    "two_handed": true,
-    "ads_offset": [
-      -1.56,
-      0.2113
-    ],
-    "ads_offset_left": [
-      0.56,
-      0.2113
-    ]
+    "two_handed": true
   },
   "extras": {
     "beam": true,

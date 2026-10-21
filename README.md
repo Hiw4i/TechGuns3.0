@@ -29,7 +29,7 @@ The held weapon is a view model with its own animation state, not a static prop:
 - The weapon reacts on the **same frame** as the trigger pull: the shooter predicts the fire animation locally and the server broadcast skips them, so an automatic never lags behind the mouse.
 - Recoil is a **stack of kicks**, not a snap: every shot adds its own kick and the kicks overlap while a burst is firing, so a fast weapon climbs further and further. Every shot is a little different and a little noisy, a kick that is exactly the same every time reads as an animation.
 - The weapon has **weight**: mouse sway, walk bob, a sprint pose that drops it out of the way and an aim pose that brings it up to the shoulder.
-- **Aiming is aligned to the sights.** The renderer measures where the rear sight of the weapon really ends up on the screen while the weapon is at the hip, and aiming slides the weapon by exactly that distance. The log compares the measurement with the offset that was computed offline (`tools/add_ads_offsets.py`) and warns when the two do not agree.
+- **Aiming is aligned to the sights.** While the weapon is at the hip the renderer measures where its rear sight really ends up on the screen and caches that position. Aiming slides the weapon by exactly that distance, so the sight ends up in the middle of the screen while the weapon is shouldered. The measurement is the only place where the real position is known - it depends on the model, on the display transform of the item and on the hand placement of the game. The log prints the measured position of the sight of every weapon that is taken into the hand.
 - The walk bob follows the **walk animation of the player**, the same value that drives the legs, so the weapon does not slide against the stride. Every spring is integrated in fixed sub steps, so the motion is the same at 30, 60 and 240 frames per second.
 - All animation tracks have **easing curves** - the recoil rises fast and settles slowly, reloads ease in and out, mechanical parts (slide, bolt, pump, magazine) stay linear and the barrel spin stays linear so it does not stutter.
 - Every weapon also has the tracks that are the same for all of them: it is **drawn** into the hand, it can be **looked over** (key `V`) and it **clicks** instead of kicking when the trigger is pulled with an empty magazine. These tracks are additive, so a weapon that is looked over still recoils.
@@ -76,7 +76,8 @@ checked by the build, it has to be looked at:
 7. Press `V`: the weapon is looked over and comes back.
 8. Pull the trigger with an empty magazine: the weapon clicks instead of kicking, and the
    reload starts.
-9. Look at the log: no `Couldn't parse GLSL` and no `does not match its stored offset`.
+9. Look at the log: no `Couldn't parse GLSL` and no exception. Every weapon that is taken into the
+   hand prints the position of its sight (`the sight of techguns3:ak47 is at (...) on the screen`).
 
 ## Known gaps
 
