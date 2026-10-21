@@ -1,6 +1,7 @@
 package com.techguns.techguns3.registry;
 
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.techguns.techguns3.TechGuns3;
 import net.minecraft.core.particles.ParticleOptions;
@@ -40,6 +41,31 @@ public final class TGParticles {
             TYPES.register("flame", FlameType::new);
     public static final DeferredHolder<ParticleType<?>, ParticleType<BloodOptions>> BLOOD =
             TYPES.register("blood", BloodType::new);
+    public static final DeferredHolder<ParticleType<?>, ParticleType<BulletHoleOptions>> BULLET_HOLE =
+            TYPES.register("bullet_hole", BulletHoleType::new);
+
+    /**
+     * A bullet hole on a surface.
+     *
+     * @param pos  the block that was hit
+     * @param face the face of that block that was hit, as the index of
+     *             {@link net.minecraft.core.Direction#values()}
+     */
+    public record BulletHoleOptions(net.minecraft.core.BlockPos pos, int face) implements ParticleOptions {
+        public static final MapCodec<BulletHoleOptions> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
+                net.minecraft.core.BlockPos.CODEC.fieldOf("pos").forGetter(BulletHoleOptions::pos),
+                Codec.INT.fieldOf("face").forGetter(BulletHoleOptions::face)
+        ).apply(inst, BulletHoleOptions::new));
+        public static final StreamCodec<RegistryFriendlyByteBuf, BulletHoleOptions> STREAM_CODEC =
+                StreamCodec.composite(net.minecraft.core.BlockPos.STREAM_CODEC, BulletHoleOptions::pos,
+                        ByteBufCodecs.INT, BulletHoleOptions::face,
+                        BulletHoleOptions::new);
+
+        @Override
+        public ParticleType<?> getType() {
+            return BULLET_HOLE.get();
+        }
+    }
 
     public record GlowOptions(int color, int endColor, float size0, float size1,
                               int life, float gravity, float drag) implements ParticleOptions {
@@ -210,6 +236,22 @@ public final class TGParticles {
         @Override
         public StreamCodec<? super RegistryFriendlyByteBuf, BloodOptions> streamCodec() {
             return BloodOptions.STREAM_CODEC;
+        }
+    }
+
+    private static final class BulletHoleType extends ParticleType<BulletHoleOptions> {
+        BulletHoleType() {
+            super(false);
+        }
+
+        @Override
+        public MapCodec<BulletHoleOptions> codec() {
+            return BulletHoleOptions.CODEC;
+        }
+
+        @Override
+        public StreamCodec<? super RegistryFriendlyByteBuf, BulletHoleOptions> streamCodec() {
+            return BulletHoleOptions.STREAM_CODEC;
         }
     }
 }

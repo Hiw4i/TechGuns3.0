@@ -8,6 +8,7 @@ Generates:
 - textures/fx/bolt.png            32x32 soft tube profile for the tesla arcs
 - textures/fx/casing.png          16x16 brass for the ejected shell casings
 - textures/fx/slime.png            16x16 translucent gel for the slime blobs
+- textures/particle/bullet_hole.png 32x32 crater for the bullet holes
 
 All textures are white-with-alpha so vertex/particle color provides the hue.
 Run:  python tools/gen_fx_textures.py
@@ -207,6 +208,27 @@ def slime(size=16):
     return px
 
 
+def bullet_hole(size=32):
+    """Crater of a bullet hole, drawn on the surface of the block."""
+    px = []
+    c = size / 2.0
+    for y in range(size):
+        row = []
+        for x in range(size):
+            dx = (x + 0.5 - c) / c
+            dy = (y + 0.5 - c) / c
+            d = math.sqrt(dx * dx + dy * dy)
+            # The dark pit in the middle, a bright rim of broken material.
+            pit = max(0.0, 1.0 - d / 0.55) ** 1.6
+            rim = max(0.0, 1.0 - abs(d - 0.62) / 0.3)
+            rim *= 0.55 + 0.45 * smooth_noise(x / size * 6, y / size * 6 + 2)
+            a = min(1.0, pit + rim * 0.8)
+            shade = int(70 + 150 * rim)
+            row.append((shade, shade, shade, int(a * 255)))
+        px.append(row)
+    return px
+
+
 write_png(os.path.join(ROOT, "particle", "glow_dot.png"), 16, 16, glow_dot())
 write_png(os.path.join(ROOT, "particle", "puff.png"), 32, 32, puff())
 write_png(os.path.join(ROOT, "particle", "flame.png"), 32, 32, flame())
@@ -214,3 +236,4 @@ write_png(os.path.join(ROOT, "fx", "muzzle_flash.png"), 64, 64, muzzle_flash())
 write_png(os.path.join(ROOT, "fx", "bolt.png"), 32, 32, bolt())
 write_png(os.path.join(ROOT, "fx", "casing.png"), 16, 16, casing())
 write_png(os.path.join(ROOT, "fx", "slime.png"), 16, 16, slime())
+write_png(os.path.join(ROOT, "particle", "bullet_hole.png"), 32, 32, bullet_hole())

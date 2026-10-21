@@ -172,6 +172,9 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
         float closeness = cameraCloseness(state);
         float bodyScale = closeness < 1.2f ? 0.5f : 1.0f;
         float trailAlpha = closeness < 1.2f ? 0.0f : 1.0f;
+        // A tracer keeps the same width on the screen, no matter how far away
+        // it is: a ribbon that shrinks with the distance is a dot at the end.
+        float screenWidth = Math.max(1.0f, closeness / 3.5f);
 
         // CE textured bodies (billboard quads). Sonic non-main blades stay
         // invisible like the original; the main blade draws the wave rings.
@@ -179,7 +182,7 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             if (state.main && trailAlpha > 0.0f) {
                 submitSonicRings(state, poseStack, collector, dir, u, w);
             }
-            submitTrail(state, poseStack, collector, trailPts, trailAlpha * 0.4f, u, w, cr, cg, cb);
+            submitTrail(state, poseStack, collector, trailPts, trailAlpha, u, w, cr, cg, cb, screenWidth);
             return;
         }
         net.minecraft.resources.Identifier bodyTex = null;
@@ -230,7 +233,7 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
                         ax0, ax1, ax2, ax3, ax4, ax5,
                         bs, fau0, fav0, fau1, fav1, 1, 1, 1, 1, FxGeometry.FULLBRIGHT);
             });
-            submitTrail(state, poseStack, collector, trailPts, trailAlpha, u, w, cr, cg, cb);
+            submitTrail(state, poseStack, collector, trailPts, trailAlpha, u, w, cr, cg, cb, screenWidth);
             return;
         }
 
@@ -263,7 +266,7 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
                 for (int i = 0; i < n - 1; i++) {
                     float k = (i + 1) / (float) n;
                     float a = (0.06f + 0.22f * k) * trailAlpha;
-                    float thw = 0.014f + 0.022f * k;
+                    float thw = (0.014f + 0.022f * k) * screenWidth;
                     FxGeometry.ribbon(matrix, consumer,
                             trailPts[i * 3] - state.px, trailPts[i * 3 + 1] - state.py, trailPts[i * 3 + 2] - state.pz,
                             trailPts[i * 3 + 3] - state.px, trailPts[i * 3 + 4] - state.py, trailPts[i * 3 + 5] - state.pz,
@@ -287,7 +290,8 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
     /** Shared fading ribbon trail (untextured additive). */
     private static void submitTrail(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                                     SubmitNodeCollector collector, float[] trailPts, float alpha,
-                                    Vector3f u, Vector3f w, float cr, float cg, float cb) {
+                                    Vector3f u, Vector3f w, float cr, float cg, float cb,
+                                    float screenWidth) {
         if (trailPts == null || alpha <= 0.0f) return;
         // Copy the axes now, the geometry is drawn after this call returns.
         final float ux = u.x, uy = u.y, uz = u.z;
@@ -298,7 +302,7 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             for (int i = 0; i < n - 1; i++) {
                 float k = (i + 1) / (float) n;
                 float a = (0.06f + 0.22f * k) * alpha;
-                float thw = 0.014f + 0.022f * k;
+                float thw = (0.014f + 0.022f * k) * screenWidth;
                 FxGeometry.ribbon(matrix, consumer,
                         trailPts[i * 3] - state.px, trailPts[i * 3 + 1] - state.py, trailPts[i * 3 + 2] - state.pz,
                         trailPts[i * 3 + 3] - state.px, trailPts[i * 3 + 4] - state.py, trailPts[i * 3 + 5] - state.pz,

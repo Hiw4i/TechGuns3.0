@@ -9,15 +9,18 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Ammo readout of the held weapon.
  *
  * <p>A gun metal plate in the bottom right with the name of the weapon, the
  * rounds in the magazine, the rounds in the inventory, the icon of the
- * ammunition and the progress of a running reload. The charge bar of the
- * plasma gun is drawn on top of it.</p>
+ * ammunition, the fire mode and the progress of a running reload. The charge
+ * bar of the plasma gun is drawn on top of it.</p>
  */
+@EventBusSubscriber(modid = com.techguns.techguns3.TechGuns3.MODID, value = Dist.CLIENT)
 public final class GunHudOverlay {
     private GunHudOverlay() {}
 
@@ -29,6 +32,9 @@ public final class GunHudOverlay {
 
     private static final int PANEL_W = 148;
     private static final int PANEL_H = 46;
+
+    /** Below this part of the magazine the counter starts to pulse. */
+    private static final float LOW_AMMO_SHARE = 0.25f;
 
     public static void render(GuiGraphicsExtractor extractor, DeltaTracker tracker) {
         if (!TGConfig.ammoHud()) return;
@@ -51,6 +57,10 @@ public final class GunHudOverlay {
         // Weapon name, dimmed.
         extractor.text(font, held.getHoverName().getString(), x + 12, y + 6, 0xFFB9BEC7, true);
 
+        // The fire mode of the weapon, right next to the name.
+        String mode = stats.semiAuto() ? "SEMI" : "AUTO";
+        extractor.text(font, mode, x + PANEL_W - 40, y + 6, 0xFF6E747E, true);
+
         // Ammunition icon of the weapon.
         Item ammoItem = gun.ammoItem();
         if (ammoItem != null && ammoItem != net.minecraft.world.item.Items.AIR) {
@@ -58,7 +68,16 @@ public final class GunHudOverlay {
         }
 
         // Rounds in the magazine, big, and the size of the magazine next to it.
-        int ammoColor = loaded == 0 ? 0xFFE05A5A : loaded * 2 <= magazine ? 0xFFE8A22A : 0xFFF2F4F7;
+        // A nearly empty magazine pulses, so the player sees it without
+        // having to read the number.
+        int ammoColor = 0xFFF2F4F7;
+        if (loaded == 0) {
+            ammoColor = 0xFFE05A5A;
+        } else if (magazine > 0 && loaded <= magazine * LOW_AMMO_SHARE) {
+            float pulse = 0.5f + 0.5f * (float) Math.sin(System.nanoTime() / 120_000_000.0);
+            ammoColor = 0xFFE8A22A;
+            ammoColor = lerpColor(0xFFE05A5A, 0xFFE8A22A, pulse);
+        }
         extractor.text(font, String.valueOf(loaded), x + 12, y + 16, ammoColor, true);
         int loadedWidth = font.width(String.valueOf(loaded));
         extractor.text(font, "/ " + magazine, x + 12 + loadedWidth + 3, y + 21, 0xFF8A9099, true);
@@ -71,11 +90,7 @@ public final class GunHudOverlay {
         // Reload progress.
         float reload = GunClientHandler.reloadProgress(held);
         if (reload > 0.0f) {
-            int barX = x + 12;
-            int barY = y + PANEL_H - 9;
-            int barW = PANEL_W - 30;
-            extractor.fill(barX, barY, barX + barW, barY + 3, 0xFF16171A);
-            extractor.fill(barX, barY, barX + (int) (barW * reload), barY + 3, 0xFFE8A22A);
+            drawBar(extractor, x + 12, y + PANEL_H - 9, PANEL_W - 30, reload, 0xFFE8A22A);
         }
 
         // Charge bar of the plasma gun.
@@ -83,18 +98,34 @@ public final class GunHudOverlay {
         if (extras.hasCharge() && !extras.guided()) {
             float charge = GunClientHandler.chargeProgress(held);
             if (charge >= 0.0f) {
-                int barX = x + 12;
-                int barY = y + PANEL_H - 9;
-                int barW = PANEL_W - 30;
                 boolean full = charge >= 1.0f;
-                extractor.fill(barX, barY, barX + barW, barY + 3, 0xFF16171A);
-                extractor.fill(barX, barY, barX + (int) (barW * charge), barY + 3,
+                drawBar(extractor, x + 12, y + PANEL_H - 9, PANEL_W - 30, charge,
                         full ? 0xFF39FF5E : 0xFF2A9A3A);
                 if (full) {
-                    extractor.text(font, "MAX", barX + barW + 3, barY - 4, 0xFF39FF5E, true);
+                    extractor.text(font, "MAX", x + PANEL_W - 30, y + PANEL_H - 13, 0xFF39FF5E, true);
                 }
             }
         }
+    }
+
+    /** A bar with a dark groove and a coloured fill. */
+    private static void drawBar(GuiGraphicsExtractor extractor, int x, int y, int width,
+                                 float progress, int color) {
+        extractor.fill(x, y, x + width, y + 3, 0xFF16171A);
+        int filled = (int) (width * Math.max(0.0f, Math.min(1.0f, progress)));
+        if (filled > 0) {
+            extractor.fill(x, y, x + filled, y + 3, color);
+        }
+    }
+
+    /** Blends two colours, the alpha of the result is taken from the first. */
+    private static int lerpColor(int from, int to, float t) {
+        float k = Math.max(0.0f, Math.min(1.0f, t));
+        int a = (from >> 24) & 0xFF;
+        int r = (int) (((from >> 16) & 0xFF) * (1 - k) + ((to >> 16) & 0xFF) * k);
+        int g = (int) (((from >> 8) & 0xFF) * (1 - k) + ((to >> 8) & 0xFF) * k);
+        int b = (int) ((from & 0xFF) * (1 - k) + (to & 0xFF) * k);
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     /** Rounds of the matching ammunition in the inventory, without the gun itself. */

@@ -7,6 +7,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Crosshair of the held weapon.
@@ -14,7 +16,13 @@ import net.minecraft.world.item.ItemStack;
  * <p>The gap of the crosshair follows the spread of the weapon, so it opens up
  * while the weapon is inaccurate and closes while aiming. A hit marker is
  * drawn for a moment when a shot of the player hits something.</p>
+ *
+ * <p>While the weapon is aimed the model brings its own sights to the
+ * crosshair, so the marker of the screen fades away and the iron sights of the
+ * weapon take over. A scoped weapon has no iron sights and gets the reticle
+ * of the scope instead.</p>
  */
+@EventBusSubscriber(modid = com.techguns.techguns3.TechGuns3.MODID, value = Dist.CLIENT)
 public final class GunCrosshairOverlay {
     private GunCrosshairOverlay() {}
 
@@ -27,8 +35,13 @@ public final class GunCrosshairOverlay {
     /** How long the hit marker stays visible, in nanoseconds. */
     private static final long HIT_MARKER_NANOS = 320_000_000L;
 
+    /** The crosshair is gone once the weapon is this far aimed. */
+    private static final float HIDE_AT_AIM = 0.85f;
+
     private static long hitAt;
     private static boolean hitKill;
+    /** The gap the crosshair is drawn with, smoothed. */
+    private static float smoothedGap = -1.0f;
 
     /** Called when the server confirms that a shot hit something. */
     public static void onHit(boolean killed) {
@@ -46,6 +59,7 @@ public final class GunCrosshairOverlay {
         int cy = h / 2;
 
         float gap = -1.0f;
+        float fade = 1.0f;
         ItemStack held = mc.player.getMainHandItem();
         if (held.getItem() instanceof GenericGunItem gun) {
             var stats = gun.stats();
@@ -56,10 +70,24 @@ public final class GunCrosshairOverlay {
                     spread *= stats.zoomSpreadMult();
                 }
                 gap = 3.0f + spread * 190.0f;
+                // The iron sights of the weapon come to the crosshair while
+                // aiming, the marker of the screen steps out of the way.
+                float aim = GunFeel.get().aimProgress();
+                if (aim > 0.55f) {
+                    fade = Math.max(0.0f, 1.0f - (aim - 0.55f) / (HIDE_AT_AIM - 0.55f));
+                }
             }
         }
         if (gap >= 0.0f) {
-            drawCrosshair(extractor, cx, cy, gap, 0xE0FFFFFF);
+            // The gap follows the spread of the weapon, a jump of the spread
+            // would make the crosshair twitch.
+            smoothedGap = smoothedGap < 0.0f ? gap : smoothedGap + (gap - smoothedGap) * 0.35f;
+            if (fade > 0.02f) {
+                int alpha = (int) (fade * 0.88f * 255.0f) << 24 | 0xFFFFFF;
+                drawCrosshair(extractor, cx, cy, smoothedGap, alpha);
+            }
+        } else {
+            smoothedGap = -1.0f;
         }
 
         long age = System.nanoTime() - hitAt;

@@ -1,6 +1,7 @@
 package com.techguns.techguns3.client;
 
 import com.techguns.techguns3.TechGuns3;
+import com.techguns.techguns3.client.particle.BulletHoleParticle;
 import com.techguns.techguns3.client.particle.CurveParticle;
 import com.techguns.techguns3.registry.TGEntities;
 import com.techguns.techguns3.registry.TGBlockEntities;
@@ -72,5 +73,11 @@ public final class TGClientSetup {
                 new CurveParticle(level, x, y, z, dx, dy, dz, sprites.first(),
                         options.color(), options.endColor(), options.size0(), options.size1(),
                         options.life(), options.gravity(), options.drag(), false, 0.0f));
+        // Bullet holes: a flat quad on the face that was hit.
+        event.registerSpriteSet(TGParticles.BULLET_HOLE.get(), sprites -> (options, level, x, y, z, dx, dy, dz, rand) -> {
+            var faces = net.minecraft.core.Direction.values();
+            var face = faces[Math.floorMod(options.face(), faces.length)];
+            return new BulletHoleParticle(level, x, y, z, sprites.first(), face, options.pos());
+        });
     }
 }

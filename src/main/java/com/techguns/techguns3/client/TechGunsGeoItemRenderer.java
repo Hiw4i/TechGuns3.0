@@ -28,6 +28,9 @@ import com.techguns.techguns3.item.AnimatedGunItem;
  * <p>All of it is client side and purely visual.</p>
  */
 public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunItem> {
+    /** Guns at or below this zoom FOV count as scoped. */
+    private static final float SCOPE_ZOOM_FOV = 0.5f;
+
     private final AnimatedGunItem item;
 
     public TechGunsGeoItemRenderer(AnimatedGunItem item) {
@@ -59,6 +62,27 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
                     .transform(new org.joml.Vector4f((float) local.x, (float) local.y, (float) local.z, 1.0f));
             GunSightAlignment.recordAim(item, perspective, view.x, view.y);
         });
+    }
+
+    /**
+     * A scoped weapon is not drawn while the player looks through the scope.
+     *
+     * <p>The scope mask of the screen covers everything outside of the lens,
+     * but the tube of the scope itself would still stand in the middle of it.
+     * The weapon is therefore hidden once the scope is fully up.</p>
+     */
+    @Override
+    public boolean firePreRenderEvent(RenderPassInfo<GeoRenderState> renderPassInfo,
+                                      SubmitNodeCollector renderTasks) {
+        if (!super.firePreRenderEvent(renderPassInfo, renderTasks)) {
+            return false;
+        }
+        if (!isFirstPerson(renderPassInfo)) {
+            return true;
+        }
+        var stats = item.stats();
+        boolean scoped = stats.canZoom() && stats.zoomFov() <= SCOPE_ZOOM_FOV;
+        return !(scoped && GunFeel.get().aimProgress() > 0.9f);
     }
 
     @Override

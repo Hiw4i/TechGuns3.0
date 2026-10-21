@@ -397,6 +397,9 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                         (ServerLevel) level(), at, normal, 0xFFE9C8, 5);
                 com.techguns.techguns3.fx.FxParticles.smoke(
                         (ServerLevel) level(), at, 1);
+                // A hole in the surface, flat on the face that was hit.
+                level().addParticle(new com.techguns.techguns3.registry.TGParticles.BulletHoleOptions(
+                        blockHit.getBlockPos(), face.ordinal()), at.x, at.y, at.z, 0, 0, 0);
                 if (spec.fireTicks() > 0) {
                     // The stream sets the world alight where it lands, like the
                     // original flamethrower: bloom of flame + a real fire block.
