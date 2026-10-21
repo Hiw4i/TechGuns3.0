@@ -4,12 +4,16 @@ The test world has no player data, so the client starts with empty hands and
 never renders a weapon. This writes a minimal player file with one gun in the
 first hotbar slot, so a quick play session shows the view model.
 
-Run from the project root:  python tools/seed_test_player.py
+    python tools/seed_test_player.py [techguns3:as50]
+
+Run it again after the client has quit: the integrated server writes the
+player back and overwrites the file.
 """
 
 import gzip
 import hashlib
 import struct
+import sys
 import uuid
 from pathlib import Path
 
@@ -18,7 +22,7 @@ world = root / "run/saves/New World"
 playerdata = world / "playerdata"
 
 USERNAME = "Dev"
-GUN = "techguns3:ak47"
+GUN = sys.argv[1] if len(sys.argv) > 1 else "techguns3:ak47"
 DATA_VERSION = 5023
 
 

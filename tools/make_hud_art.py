@@ -66,7 +66,9 @@ print(f"wrote {out} ({W}x{H})")
 
 S = 1024
 C = S / 2.0
-TUBE = (10, 10, 10, 255)          # the wall of the tube, the same as the mask
+# The wall of the tube. It has to be the same colour the overlay paints
+# outside the mask, or the edge of the quad shows up as a square.
+TUBE = (5, 6, 8, 255)
 RETICLE = (12, 14, 18, 240)       # the shadowed reticle of a real scope
 RETICLE_HALO = (196, 202, 214, 70)  # the faint edge that keeps it readable at night
 
@@ -90,7 +92,7 @@ gd = ImageDraw.Draw(glass)
 for i in range(int(C), 0, -1):
     t = i / C
     # The tint is the strongest at the edge of the glass, the middle is clear.
-    alpha = int(14 * (t ** 2))
+    alpha = int(9 * (t ** 2))
     gd.ellipse([C - i, C - i, C + i, C + i], fill=(104, 136, 178, alpha))
 scope = Image.alpha_composite(scope, glass)
 d = ImageDraw.Draw(scope)

@@ -54,17 +54,19 @@ public final class GunHudOverlay {
         extractor.blit(PANEL, x, y, x + PANEL_W, y + PANEL_H, 0.0f, 1.0f, 0.0f, 1.0f);
 
         var font = mc.font;
-        // Weapon name, dimmed.
-        extractor.text(font, held.getHoverName().getString(), x + 12, y + 6, 0xFFB9BEC7, true);
-
-        // The fire mode of the weapon, right next to the name.
-        String mode = stats.semiAuto() ? "SEMI" : "AUTO";
-        extractor.text(font, mode, x + PANEL_W - 40, y + 6, 0xFF6E747E, true);
+        // Weapon name, dimmed. Long names are cut so they never run into the
+        // icon of the ammunition.
+        String label = held.getHoverName().getString();
+        int room = PANEL_W - 12 - 26;
+        if (font.width(label) > room) {
+            label = font.plainSubstrByWidth(label, Math.max(0, room - font.width("..."))) + "...";
+        }
+        extractor.text(font, label, x + 12, y + 6, 0xFFB9BEC7, true);
 
         // Ammunition icon of the weapon.
         Item ammoItem = gun.ammoItem();
         if (ammoItem != null && ammoItem != net.minecraft.world.item.Items.AIR) {
-            extractor.item(new ItemStack(ammoItem), x + PANEL_W - 24, y + 5);
+            extractor.item(new ItemStack(ammoItem), x + PANEL_W - 22, y + 4);
         }
 
         // Rounds in the magazine, big, and the size of the magazine next to it.
@@ -75,12 +77,14 @@ public final class GunHudOverlay {
             ammoColor = 0xFFE05A5A;
         } else if (magazine > 0 && loaded <= magazine * LOW_AMMO_SHARE) {
             float pulse = 0.5f + 0.5f * (float) Math.sin(System.nanoTime() / 120_000_000.0);
-            ammoColor = 0xFFE8A22A;
             ammoColor = lerpColor(0xFFE05A5A, 0xFFE8A22A, pulse);
         }
         extractor.text(font, String.valueOf(loaded), x + 12, y + 16, ammoColor, true);
         int loadedWidth = font.width(String.valueOf(loaded));
         extractor.text(font, "/ " + magazine, x + 12 + loadedWidth + 3, y + 21, 0xFF8A9099, true);
+
+        // The fire mode of the weapon, behind the rounds.
+        extractor.text(font, stats.semiAuto() ? "SEMI" : "AUTO", x + 78, y + 21, 0xFF6E747E, true);
 
         // Rounds in the inventory.
         if (reserve > 0) {
