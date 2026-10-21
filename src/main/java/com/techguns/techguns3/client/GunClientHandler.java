@@ -124,7 +124,7 @@ public final class GunClientHandler {
             return;
         }
         ItemStack held = player.getMainHandItem();
-        boolean holding = held.getItem() instanceof GenericGunItem gun;
+        boolean holding = held.getItem() instanceof GenericGunItem;
 
         // Weapon switch invalidates hold state on both sides. Compare the item only:
         // every shot mutates the AMMO component, which must NOT look like a switch.
@@ -157,7 +157,7 @@ public final class GunClientHandler {
         }
 
         // Look the weapon over.
-        if (TGKeyMappings.inspect().consumeClick() && holding) {
+        if (TGKeyMappings.inspect().consumeClick()) {
             com.techguns.techguns3.combat.GunAnimSync.triggerLocal(held,
                     AnimatedGunItem.CONTROLLER_INSPECT, "inspect");
         }
