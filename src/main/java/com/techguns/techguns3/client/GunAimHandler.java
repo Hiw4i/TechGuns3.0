@@ -15,7 +15,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
