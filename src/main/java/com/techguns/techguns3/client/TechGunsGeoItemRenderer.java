@@ -80,8 +80,8 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
         if (!isFirstPerson(renderPassInfo)) {
             return true;
         }
-        var stats = item.stats();
-        boolean scoped = stats.canZoom() && stats.zoomFov() <= SCOPE_ZOOM_FOV;
+        var def = item.def();
+        boolean scoped = def.canZoom() && def.zoomFov() <= SCOPE_ZOOM_FOV;
         return !(scoped && GunFeel.get().aimProgress() > 0.9f);
     }
 

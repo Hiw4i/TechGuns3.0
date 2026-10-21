@@ -227,10 +227,11 @@ def check_animation(anim_path: Path, geo_path: Path, required_animations, requir
 
 
 # Every gun that has a GeckoLib model needs a muzzle anchor bone so the
-# first-person muzzle flash can be attached to the barrel.
+# first-person muzzle flash can be attached to the barrel, and an aim anchor
+# bone so the sight can be put on the crosshair.
 for geo_path in sorted((assets / "geckolib/models/item").glob("*.geo.json")):
     anim_path = assets / "geckolib/animations/item" / geo_path.name.replace(".geo.json", ".animation.json")
-    check_animation(anim_path, geo_path, required_animations=("fire", "reload"),
+    check_animation(anim_path, geo_path, required_animations=("fire", "reload", "draw", "inspect", "dryfire"),
                     required_locators=("muzzle", "aim"))
 
 for kind in ("block", "entity"):
@@ -257,8 +258,26 @@ for path in sorted(guns_dir.glob("*.json")):
         errors.append(f"{anim_path.relative_to(root)}: reload length {actual}s does not match "
                       f"{name}.json ballistic.reload_ticks ({expected}s)")
 
-# --- own core shaders ---------------------------------------------------------
-# The effect pipelines point at files in assets/techguns3/shaders/core. A typo
+# --- the localisation ---------------------------------------------------------
+# Every key of the english file has to exist in the other files as well, and
+# the text has to be real: a file that was written with the wrong encoding
+# turns every non ascii character into a question mark.
+lang_dir = assets / "lang"
+langs = {p.stem: json.loads(p.read_text(encoding="utf-8")) for p in sorted(lang_dir.glob("*.json"))}
+if "en_us" in langs:
+    reference = langs["en_us"]
+    for name, values in langs.items():
+        missing = sorted(set(reference) - set(values))
+        if missing:
+            errors.append(f"lang/{name}.json: missing keys {missing}")
+        extra = sorted(set(values) - set(reference))
+        if extra:
+            errors.append(f"lang/{name}.json: unknown keys {extra}")
+        for key, text in values.items():
+            if "?" in text and not any(c.isalpha() for c in text.replace("?", "")):
+                errors.append(f"lang/{name}.json: '{key}' looks like a broken encoding")
+
+# --- own core shaders ---------------------------------------------------------# The effect pipelines point at files in assets/techguns3/shaders/core. A typo
 # there does not fail the build, the game just skips the pipeline and the
 # effect silently disappears, so the names are checked here.
 shader_dir = assets / "shaders/core"

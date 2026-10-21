@@ -112,7 +112,7 @@ public final class GunAimHandler {
     private static void reportDrift(GenericGunItem gun, boolean offHand,
                                     float measuredX, float measuredY,
                                     float storedX, float storedY) {
-        String key = gun.def().ammo() + (offHand ? ":left" : ":right");
+        String key = gun.gunId() + (offHand ? ":left" : ":right");
         if (!REPORTED.add(key)) {
             return;
         }
@@ -123,7 +123,7 @@ public final class GunAimHandler {
                     "[TechGuns3] the sight of {} does not match its stored offset "
                             + "(measured ({:.3f},{:.3f}), stored ({:.3f},{:.3f})). "
                             + "Run tools/add_ads_offsets.py to refresh the datapack.",
-                    gun.def().ammo(), measuredX, measuredY, -storedX, -storedY);
+                    gun.gunId(), measuredX, measuredY, -storedX, -storedY);
         }
     }
 

@@ -8,6 +8,9 @@
 // any frame rate. GameTime is (gameTime + partialTick) / 24000, so it is
 // fractional and continuous; multiplying it by an integer keeps the wave
 // continuous across the wrap back to zero.
+//
+// The waves run over the cell of the sprite sheet that is drawn, not over the
+// whole sheet, so a sprite that changes its cell does not jump.
 
 #include <minecraft:fog.glsl>
 #include <minecraft:dynamictransforms.glsl>
@@ -26,19 +29,20 @@ void main() {
     vec4 color = texture(Sampler0, texCoord0);
     color *= vertexColor * ColorModulator;
 
-    float time = GameTime * 6.2831853;
-
-    // Two travelling waves at different speeds and directions.
-    float waveA = sin(time * 3.0 + texCoord0.y * 9.0) * 0.5 + 0.5;
-    float waveB = sin(time * 2.0 - texCoord0.x * 7.0) * 0.5 + 0.5;
-    float flow = mix(0.55, 1.45, waveA * 0.6 + waveB * 0.4);
-    color.rgb *= flow;
-
-#ifdef SOFT_EDGE
     vec2 local = texCoord0;
 #ifdef ATLAS_GRID
     local = fract(texCoord0 * float(ATLAS_GRID));
 #endif
+
+    float time = GameTime * 6.2831853;
+
+    // Two travelling waves at different speeds and directions.
+    float waveA = sin(time * 3.0 + local.y * 9.0) * 0.5 + 0.5;
+    float waveB = sin(time * 2.0 - local.x * 7.0) * 0.5 + 0.5;
+    float flow = mix(0.55, 1.45, waveA * 0.6 + waveB * 0.4);
+    color.rgb *= flow;
+
+#ifdef SOFT_EDGE
     vec2 offset = local * 2.0 - 1.0;
     float falloff = clamp(1.0 - dot(offset, offset), 0.0, 1.0);
     color.a *= falloff * falloff;

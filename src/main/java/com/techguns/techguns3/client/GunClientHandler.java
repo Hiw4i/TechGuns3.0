@@ -240,6 +240,14 @@ public final class GunClientHandler {
         } else {
             ClientPacketDistributor.sendToServer(new GunPackets.FireStart(true, zooming));
             lastAutoFeedbackTick = player.level().getGameTime();
+            if (gun.loadedRounds(held) <= 0) {
+                // Empty magazine: the server starts an automatic reload. The
+                // weapon clicks instead of kicking, there is nothing to fire.
+                reloadStartTick = player.level().getGameTime();
+                com.techguns.techguns3.combat.GunAnimSync.triggerLocal(held,
+                        AnimatedGunItem.CONTROLLER_DRYFIRE, "dryfire");
+                return;
+            }
             // Sustained beams start silently; the hold tick owns the tremor.
             if (!extras.continuousBeam()) {
                 predictShotFeedback(player, held, gun, stats, extras);

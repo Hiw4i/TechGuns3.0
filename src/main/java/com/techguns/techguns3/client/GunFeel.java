@@ -36,13 +36,27 @@ public final class GunFeel {
      * How far the model moves compared to the camera.
      *
      * <p>The camera kick is the angle of the gun definition, the view model
-     * moves noticeably further than that: a real weapon fills the screen more
-     * than the aim point moves.</p>
+     * moves a little less than that: a real weapon fills the screen more than
+     * the aim point moves, but the model is the smaller of the two.</p>
+     *
+     * <p>The value is the measured peak of the spring that stood here before,
+     * so the recoil keeps the strength it had at 60 frames per second. The
+     * spring itself was integrated with one step per frame, so its peak was
+     * a quarter of this value at 30 frames per second - the recoil was four
+     * times weaker on a slow machine.</p>
      */
-    private static final float RECOIL_GAIN = 3.5f;
+    private static final float RECOIL_GAIN = 0.7f;
 
     /** The weapon never swings further than this, in radians. */
     private static final float MAX_SWAY = 0.07f;
+
+    /**
+     * How much of the mouse movement becomes the lag of the weapon.
+     *
+     * <p>A quick flick of the mouse swings the weapon by about one and a half
+     * degrees, a slow movement by a fraction of that.</p>
+     */
+    private static final float SWAY_IMPULSE = 0.09f;
 
     /**
      * The weapon trails behind the camera: the mouse pushes it, the spring
@@ -271,8 +285,8 @@ public final class GunFeel {
             float dPitch = pitch - lastPitch;
             if (dYaw > 180.0f) dYaw -= 360.0f;
             if (dYaw < -180.0f) dYaw += 360.0f;
-            swayYaw.kick(-dYaw * 0.03f);
-            swayPitch.kick(-dPitch * 0.03f);
+            swayYaw.kick(-dYaw * SWAY_IMPULSE);
+            swayPitch.kick(-dPitch * SWAY_IMPULSE);
         }
         lastYaw = yaw;
         lastPitch = pitch;

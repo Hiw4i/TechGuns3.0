@@ -131,7 +131,7 @@ public final class FxRenderTypes {
 
     /** Additive textured render type for the given texture (vanilla shader). */
     public static RenderType additive(Identifier texture) {
-        return TEXTURED.computeIfAbsent("legacy:" + texture.getPath(), tex -> RenderType.create(
+        return TEXTURED.computeIfAbsent("legacy:" + texture, tex -> RenderType.create(
                 "techguns3_fx_additive",
                 RenderSetup.builder(ADDITIVE_TEXTURED)
                         .withTexture("Sampler0", texture)
@@ -150,7 +150,7 @@ public final class FxRenderTypes {
         if (!TGConfig.enhancedFx()) {
             return additive(texture);
         }
-        return TEXTURED.computeIfAbsent(style.name() + ":" + texture.getPath(), key -> {
+        return TEXTURED.computeIfAbsent(style.name() + ":" + texture, key -> {
             RenderPipeline pipeline = switch (style) {
                 case SPRITE -> FX_SPRITE;
                 case GLOW -> FX_GLOW;
