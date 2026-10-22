@@ -43,8 +43,21 @@ public final class GunAimHandler {
     private static float appliedX;
     private static float appliedY;
 
-    /** Weapons whose sight was already compared with the stored offset. */
+    /** Weapons whose sight was already reported. */
     private static final Set<String> REPORTED = new HashSet<>();
+
+    /**
+     * Forgets the offset of the last frame.
+     *
+     * <p>The main hand puts the weapon on the pose stack and the other hand
+     * has to take it off again. The main hand is not always drawn, so the
+     * offset is cleared once per frame instead of when the main hand is
+     * rendered.</p>
+     */
+    public static void beginFrame() {
+        appliedX = 0.0f;
+        appliedY = 0.0f;
+    }
 
     @SubscribeEvent
     public static void onRenderHand(RenderHandEvent event) {
@@ -74,15 +87,15 @@ public final class GunAimHandler {
         // The renderer measures where the rear sight of the weapon really ends
         // up on the screen while the weapon is at the hip. The weapon is slid
         // by that distance, so the sight ends up in the middle of the screen.
-        float[] hip = GunSightAlignment.hip(gun, perspective);
-        if (hip == null) {
+        GunSightAlignment.Measurement sight = GunSightAlignment.measurement(gun, perspective);
+        if (sight == null) {
             // The weapon was just taken into the hand and has not been measured
             // yet. It is not moved, and the measurement slides it into place as
             // soon as it is there.
             return;
         }
-        float x = Mth.clamp(-hip[0], -2.5f, 2.5f) * aim;
-        float y = Mth.clamp(-hip[1], -1.5f, 1.5f) * aim;
+        float x = Mth.clamp(-sight.x, -2.5f, 2.5f) * aim;
+        float y = Mth.clamp(-sight.y, -1.5f, 1.5f) * aim;
         event.getPoseStack().translate(x, y, 0.0f);
         if (!offHand) {
             appliedX = x;
@@ -110,7 +123,6 @@ public final class GunAimHandler {
         TechGuns3.LOGGER.info("[TechGuns3] the sight of {} is at ({},{}) on the screen",
                 gun.gunId(), x, y);
     }
-
     /** The display context a hand is drawn with, the same rule the game uses. */
     private static ItemDisplayContext perspective(RenderHandEvent event, boolean offHand) {
         var player = Minecraft.getInstance().player;

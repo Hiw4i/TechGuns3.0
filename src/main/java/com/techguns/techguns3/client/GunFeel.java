@@ -29,8 +29,14 @@ public final class GunFeel {
     private final Spring sprint = new Spring(120.0f, 20.0f);
     /** Camera punch, drives the zoom FOV spike on every shot. */
     private final Spring fovPunch = new Spring(170.0f, 19.0f);
-    /** Scope zoom: 1 = no zoom, below 1 = zoomed in. */
-    private final Spring zoom = new Spring(600.0f, 49.0f);
+    /**
+     * Scope zoom: 1 = no zoom, below 1 = zoomed in.
+     *
+     * <p>It starts at one, not at zero: the zoom multiplies the field of view
+     * of the game, and a zoom of zero would turn the screen into a telescope
+     * for everybody who does not hold a gun.</p>
+     */
+    private final Spring zoom = new Spring(600.0f, 49.0f, 1.0f);
 
     /**
      * How far the model moves compared to the camera.
@@ -56,7 +62,7 @@ public final class GunFeel {
      * <p>A quick flick of the mouse swings the weapon by about one and a half
      * degrees, a slow movement by a fraction of that.</p>
      */
-    private static final float SWAY_IMPULSE = 0.09f;
+    private static final float SWAY_IMPULSE = 0.12f;
 
     /**
      * The weapon trails behind the camera: the mouse pushes it, the spring
@@ -195,14 +201,14 @@ public final class GunFeel {
 
     /** Advance every spring. Call once per rendered frame. */
     public void update(DeltaTracker tracker) {
+        aim.setTarget(aiming ? 1.0f : 0.0f);
+        sprint.setTarget(sprinting ? 1.0f : 0.0f);
         long now = System.nanoTime();
         float dt = lastFrameNanos == 0L ? 0.0f : (now - lastFrameNanos) / 1_000_000_000.0f;
         lastFrameNanos = now;
         if (dt <= 0.0f) return;
         dt = Math.min(dt, 0.1f);
 
-        aim.setTarget(aiming ? 1.0f : 0.0f);
-        sprint.setTarget(sprinting ? 1.0f : 0.0f);
         aim.update(dt);
         sprint.update(dt);
         fovPunch.update(dt);
@@ -291,8 +297,9 @@ public final class GunFeel {
             float dPitch = pitch - lastPitch;
             if (dYaw > 180.0f) dYaw -= 360.0f;
             if (dYaw < -180.0f) dYaw += 360.0f;
-            swayYaw.kick(-dYaw * SWAY_IMPULSE);
-            swayPitch.kick(-dPitch * SWAY_IMPULSE);
+            // The angles of the player are in degrees, the spring carries radians.
+            swayYaw.kick((float) Math.toRadians(-dYaw) * SWAY_IMPULSE);
+            swayPitch.kick((float) Math.toRadians(-dPitch) * SWAY_IMPULSE);
         }
         lastYaw = yaw;
         lastPitch = pitch;

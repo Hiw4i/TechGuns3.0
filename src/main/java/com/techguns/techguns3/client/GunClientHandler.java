@@ -103,6 +103,9 @@ public final class GunClientHandler {
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
+        // The scope zoom belongs to the weapon in the hand, without one there is
+        // no zoom at all.
+        GunFeel.get().setZoomTarget(1.0f);
         if (player == null || mc.gui.screen() != null) {
             // The weapon feel must not keep the aim pose of a gun that is gone.
             GunFeel.get().setAiming(false);
@@ -334,10 +337,12 @@ public final class GunClientHandler {
     public static void onFov(ComputeFovModifierEvent event) {
         if (!(event.getPlayer() instanceof LocalPlayer player)) return;
         float fov = event.getFovModifier();
-        fov *= GunFeel.get().zoom();
-        // TG2 scope-recoil feel: brief punch-out on every shot, then settle.
-        // The punch is a spring, so it eases back instead of cutting off.
         if (player.getMainHandItem().getItem() instanceof GenericGunItem) {
+            // The zoom multiplies the field of view of the game, it only means
+            // something while a gun is in the hand.
+            fov *= GunFeel.get().zoom();
+            // TG2 scope-recoil feel: brief punch-out on every shot, then settle.
+            // The punch is a spring, so it eases back instead of cutting off.
             fov *= 1.0f + 0.35f * GunFeel.get().fovPunch();
         }
         event.setNewFovModifier(fov);
@@ -354,5 +359,9 @@ public final class GunClientHandler {
     @SubscribeEvent
     public static void onRenderFramePre(RenderFrameEvent.Pre event) {
         GunFeel.get().update(event.getPartialTick());
+        // The offset of the weapon is put on the pose stack of the hand, the
+        // other hand has to take it away again. It is reset here, because the
+        // hand that carries the gun is not always drawn.
+        GunAimHandler.beginFrame();
     }
 }

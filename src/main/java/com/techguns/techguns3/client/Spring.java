@@ -26,8 +26,19 @@ public final class Spring {
     private final float damping;
 
     public Spring(float stiffness, float damping) {
+        this(stiffness, damping, 0.0f);
+    }
+
+    /**
+     * @param initialValue where the spring starts, for a spring that already
+     *                     stands for something at the start (the zoom of the
+     *                     scope is one, not zero)
+     */
+    public Spring(float stiffness, float damping, float initialValue) {
         this.stiffness = stiffness;
         this.damping = damping;
+        this.value = initialValue;
+        this.target = initialValue;
     }
 
     /** Impulse: adds velocity, the spring converts it into displacement. */

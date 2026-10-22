@@ -134,13 +134,17 @@ public final class GunHudOverlay {
 
     /** Rounds of the matching ammunition in the inventory, without the gun itself. */
     private static int countReserve(Inventory inventory, GenericGunItem gun) {
+        // The list of the accepted ammunition is built from the definition, it
+        // must not be rebuilt for every slot of the inventory.
+        Item magazine = gun.ammoItem();
+        java.util.List<Item> accepted = gun.acceptedAmmoItems();
         int total = 0;
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
             if (stack.isEmpty()) continue;
-            if (stack.is(gun.ammoItem())) {
+            if (stack.is(magazine)) {
                 total += stack.getCount();
-            } else if (gun.acceptedAmmoItems().contains(stack.getItem())) {
+            } else if (accepted.contains(stack.getItem())) {
                 total += stack.getCount();
             }
         }

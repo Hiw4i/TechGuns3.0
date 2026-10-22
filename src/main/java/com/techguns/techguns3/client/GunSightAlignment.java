@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * the weapon is at the hip and caches it here. Aiming then only has to undo
  * the position of the sight, which is exact no matter how the model, the item
  * display transform or the hand placement of the game look - a hand written
- * offset would have to be recomputed for every model change.</p>
+ * offset would have to be recomputed for every change of any of them.</p>
  *
  * <p>The cache is keyed by the display context, because the main hand is drawn
  * with the left context when the player uses the left arm.</p>
@@ -21,10 +21,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class GunSightAlignment {
     private GunSightAlignment() {}
 
-    /** The measured sight of one weapon in one hand. */
-    private static final class Measurement {
-        float x;
-        float y;
+    /** The measured position of the rear sight of one weapon in one hand. */
+    public static final class Measurement {
+        /** Camera space X of the rear sight. */
+        public float x;
+        /** Camera space Y of the rear sight. */
+        public float y;
+        /** When the measurement was taken the last time. */
         long stamp;
     }
 
@@ -57,10 +60,9 @@ public final class GunSightAlignment {
         measurement.y += (y - measurement.y) * factor;
     }
 
-    /** Screen position of the sight at the hip, or {@code null} if unknown. */
-    public static float[] hip(Item item, ItemDisplayContext perspective) {
-        Measurement measurement = MEASUREMENTS.get(item) == null
-                ? null : MEASUREMENTS.get(item).get(perspective);
-        return measurement == null ? null : new float[]{measurement.x, measurement.y};
+    /** The measured sight of a weapon, or {@code null} if it was never seen. */
+    public static Measurement measurement(Item item, ItemDisplayContext perspective) {
+        Map<ItemDisplayContext, Measurement> byPerspective = MEASUREMENTS.get(item);
+        return byPerspective == null ? null : byPerspective.get(perspective);
     }
 }

@@ -33,6 +33,8 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
     private static final float SCOPE_ZOOM_FOV = 0.5f;
 
     private final AnimatedGunItem item;
+    /** Scratch vector for the position of the sight, the renderer runs on one thread. */
+    private final org.joml.Vector4f scratch = new org.joml.Vector4f();
 
     public TechGunsGeoItemRenderer(AnimatedGunItem item) {
         super(item);
@@ -59,9 +61,10 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
             if (local == null) {
                 return;
             }
-            var pre = renderPassInfo.getPreRenderMatrixState();
-            var view = pre.transform(new org.joml.Vector4f(
-                    (float) local.x, (float) local.y, (float) local.z, 1.0f));
+            // The position of the bone in the space of the render pass, that is
+            // the space the weapon is placed in.
+            var view = scratch.set(local.x, local.y, local.z, 1.0f)
+                    .mul(renderPassInfo.getPreRenderMatrixState());
             GunSightAlignment.recordAim(item, perspective, view.x, view.y);
             // The measured position of the sight, once per weapon and hand.
             GunAimHandler.reportSight(item, perspective, view.x, view.y);
