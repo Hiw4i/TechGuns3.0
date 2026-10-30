@@ -14,6 +14,73 @@ public final class FxGeometry {
 
     /** Fullbright light coords for emissive FX (muzzle stars, flames). */
     public static final int FULLBRIGHT = 0xF000F0;
+    /** Parallel-to-view up-vector fallback threshold, shared by every ribbon. */
+    public static final float UP_AXIS_FALLBACK = 0.94f;
+    /** Additive geometry below this alpha is skipped outright. */
+    public static final float MIN_VISIBLE_ALPHA = 0.02f;
+    /** The white-hot heart of a flash/blast is this share of its body size. */
+    public static final float CORE_SCALE = 0.45f;
+    /** One full turn, for seeded random rolls. */
+    public static final float TWO_PI = (float) (Math.PI * 2);
+    /** Geometry shorter than this collapses to nothing on screen. */
+    public static final float MIN_EFFECT_LENGTH = 0.05f;
+
+    /**
+     * UV rect of {@code frame} in a {@code grid} x {@code grid} atlas, as
+     * {@code [u0, v0, u1, v1]}. Fills a reused buffer like {@link #cameraAxes()}:
+     * read the values right away.
+     */
+    private static final float[] ATLAS_CELL = new float[4];
+
+    public static float[] atlasCell(int frame, int grid) {
+        float cell = 1.0f / grid;
+        float u0 = (frame % grid) * cell;
+        ATLAS_CELL[0] = u0;
+        ATLAS_CELL[1] = (frame / grid) * cell;
+        ATLAS_CELL[2] = u0 + cell;
+        ATLAS_CELL[3] = ATLAS_CELL[1] + cell;
+        return ATLAS_CELL;
+    }
+
+    /**
+     * A quad rolled around the Z axis by an angle given as cos/sin — the shared
+     * "spinning star" shape of muzzle flashes and blasts. Seeded callers roll
+     * the angle themselves and pass the decomposition in.
+     */
+    public static void rolledQuad(org.joml.Matrix4fc pose, VertexConsumer consumer,
+                                  float s, float r, float g, float b, float a,
+                                  float cos, float sin,
+                                  float u0, float v0, float u1, float v1) {
+        float x1 = -s * cos + s * sin;
+        float y1 = -s * sin - s * cos;
+        float x2 = s * cos + s * sin;
+        float y2 = s * sin - s * cos;
+        float x3 = s * cos - s * sin;
+        float y3 = s * sin + s * cos;
+        float x4 = -s * cos - s * sin;
+        float y4 = -s * sin + s * cos;
+        uvQuad(pose, consumer,
+                x1, y1, 0, x2, y2, 0, x3, y3, 0, x4, y4, 0,
+                u0, v0, u1, v0, u1, v1, u0, v1, r, g, b, a, FULLBRIGHT);
+    }
+
+    /**
+     * Camera eye distance to a world point, or -1 when there is no camera yet.
+     * The callers own their own fade thresholds and out-of-camera fallbacks.
+     */
+    public static double cameraDistanceTo(double x, double y, double z) {
+        try {
+            var mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc == null || mc.player == null) return -1.0;
+            var cam = mc.player.getEyePosition();
+            double dx = cam.x - x;
+            double dy = cam.y - y;
+            double dz = cam.z - z;
+            return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        } catch (Exception e) {
+            return -1.0;
+        }
+    }
 
     public static void quad(Matrix4fc pose, VertexConsumer consumer,
                             float x1, float y1, float z1,
@@ -45,27 +112,6 @@ public final class FxGeometry {
                 tx - sx * halfWidth, ty - sy * halfWidth, tz - sz * halfWidth,
                 tx + sx * halfWidth, ty + sy * halfWidth, tz + sz * halfWidth,
                 r, g, b, a);
-    }
-
-    /**
-     * Polyline ({@code xyz xyz ...}) as crossed ribbon pairs, one quad per
-     * segment per side. Used for lightning channels and branches.
-     */
-    public static void polyline(Matrix4fc pose, VertexConsumer consumer, float[] pts,
-                               float ux, float uy, float uz,
-                               float wx, float wy, float wz,
-                               float halfWidth, float r, float g, float b, float a) {
-        int n = pts.length / 3;
-        for (int i = 0; i < n - 1; i++) {
-            float fx = pts[i * 3];
-            float fy = pts[i * 3 + 1];
-            float fz = pts[i * 3 + 2];
-            float tx = pts[i * 3 + 3];
-            float ty = pts[i * 3 + 4];
-            float tz = pts[i * 3 + 5];
-            ribbon(pose, consumer, fx, fy, fz, tx, ty, tz, ux, uy, uz, halfWidth, r, g, b, a);
-            ribbon(pose, consumer, fx, fy, fz, tx, ty, tz, wx, wy, wz, halfWidth, r, g, b, a);
-        }
     }
 
     /**
@@ -233,6 +279,8 @@ public final class FxGeometry {
     private static final float[] CAMERA_AXES = new float[6];
 
     public static float[] cameraAxes() {
+        // The fallback axes only cover "no camera yet" (menu background):
+        // identity right/up keep the billboard axis-aligned instead of crashing.
         try {
             var rot = net.minecraft.client.Minecraft.getInstance()
                     .gameRenderer.mainCamera().rotation();
@@ -253,26 +301,6 @@ public final class FxGeometry {
             CAMERA_AXES[5] = 0;
         }
         return CAMERA_AXES;
-    }
-
-    /**
-     * Axis-aligned box centered at origin, double-sided. Squash factors stretch
-     * each axis independently (slime blobs squash along the block normal).
-     */
-    public static void box(Matrix4fc pose, VertexConsumer consumer,
-                           float sx, float sy, float sz,
-                           float r, float g, float b, float a) {        float x = sx / 2;
-        float y = sy / 2;
-        float z = sz / 2;
-        // Top / bottom.
-        quad(pose, consumer, -x, y, -z, x, y, -z, x, y, z, -x, y, z, r, g, b, a);
-        quad(pose, consumer, -x, -y, -z, -x, -y, z, x, -y, z, x, -y, -z, r, g, b, a);
-        // North / south.
-        quad(pose, consumer, -x, -y, -z, x, -y, -z, x, y, -z, -x, y, -z, r, g, b, a);
-        quad(pose, consumer, -x, -y, z, -x, y, z, x, y, z, x, -y, z, r, g, b, a);
-        // West / east.
-        quad(pose, consumer, -x, -y, -z, -x, y, -z, -x, y, z, -x, -y, z, r, g, b, a);
-        quad(pose, consumer, x, -y, -z, x, -y, z, x, y, z, x, y, -z, r, g, b, a);
     }
 
     /**

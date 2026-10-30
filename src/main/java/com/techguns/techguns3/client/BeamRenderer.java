@@ -58,15 +58,10 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         state.color = entity.color();
         // Wall-clock pulse: sustained beams refresh life every tick, so a
         // life-based progress would freeze the shimmer. Time loops it forever.
-        try {
-            var level = net.minecraft.client.Minecraft.getInstance().level;
-            double t = (level != null ? level.getGameTime() : 0) + partialTick;
-            state.prog = (float) ((t % 20.0) / 20.0);
-            state.time = (float) t;
-        } catch (Exception e) {
-            state.prog = 0.5f;
-            state.time = 0.0f;
-        }
+        var level = net.minecraft.client.Minecraft.getInstance().level;
+        double t = (level != null ? level.getGameTime() : 0) + partialTick;
+        state.prog = (float) ((t % 20.0) / 20.0);
+        state.time = (float) t;
     }
 
     @Override
@@ -78,7 +73,7 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
         float len = state.end.length();
-        if (len < 0.05f) return;
+        if (len < FxGeometry.MIN_EFFECT_LENGTH) return;
         boolean nuke = state.color == com.techguns.techguns3.fx.GunFxPresets.TRACER_NDR;
         float prog = Math.max(0.0f, Math.min(1.0f, state.prog));
         // CE width pulse: swell mid-life, vanish at both ends.
@@ -89,7 +84,7 @@ public final class BeamRenderer extends EntityRenderer<BeamEntity, BeamRenderer.
         float brightness = 0.35f + 0.65f * pulse;
 
         Vector3f dir = DIR.set(state.end).normalize();
-        Vector3f up = Math.abs(dir.y) > 0.94f ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
+        Vector3f up = Math.abs(dir.y) > FxGeometry.UP_AXIS_FALLBACK ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
         Vector3f u = SIDE_U.set(dir).cross(up).normalize();
         Vector3f w = SIDE_W.set(dir).cross(u).normalize();
 

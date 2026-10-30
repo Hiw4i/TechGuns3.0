@@ -8,7 +8,6 @@ import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.item.ItemDisplayContext;
 import com.techguns.techguns3.TGConfig;
-import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.item.AnimatedGunItem;
 
 /**
@@ -29,16 +28,16 @@ import com.techguns.techguns3.item.AnimatedGunItem;
  * <p>All of it is client side and purely visual.</p>
  */
 public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunItem> {
-    /** Guns at or below this zoom FOV count as scoped. */
-    private static final float SCOPE_ZOOM_FOV = 0.5f;
+    /** Guns at or below this zoom FOV count as scoped (single source for HUD overlays). */
+    public static final float SCOPE_ZOOM_FOV = 0.5f;
 
-    private final AnimatedGunItem item;
+    private final AnimatedGunItem gunItem;
     /** Scratch vector for the position of the sight, the renderer runs on one thread. */
     private final org.joml.Vector4f scratch = new org.joml.Vector4f();
 
     public TechGunsGeoItemRenderer(AnimatedGunItem item) {
         super(item);
-        this.item = item;
+        this.gunItem = item;
         withRenderLayer(new MuzzleFlashLayer(this));
     }
 
@@ -65,9 +64,9 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
             // the space the weapon is placed in.
             var view = scratch.set(local.x, local.y, local.z, 1.0f)
                     .mul(renderPassInfo.getPreRenderMatrixState());
-            GunSightAlignment.recordAim(item, perspective, view.x, view.y);
+            GunSightAlignment.recordAim(gunItem, perspective, view.x, view.y);
             // The measured position of the sight, once per weapon and hand.
-            GunAimHandler.reportSight(item, perspective, view.x, view.y);
+            GunAimHandler.reportSight(gunItem, perspective, view.x, view.y);
         });
     }
 
@@ -87,7 +86,7 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
         if (!isFirstPerson(renderPassInfo)) {
             return true;
         }
-        var def = item.def();
+        var def = gunItem.def();
         boolean scoped = def.canZoom() && def.zoomFov() <= SCOPE_ZOOM_FOV;
         return !(scoped && GunFeel.get().aimProgress() > 0.9f);
     }
@@ -144,7 +143,8 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
         }
     }
 
-    private static boolean isFirstPerson(RenderPassInfo<GeoRenderState> info) {
+    /** True inside the first-person hand pass (the view model). */
+    public static boolean isFirstPerson(RenderPassInfo<GeoRenderState> info) {
         ItemDisplayContext perspective = perspective(info);
         return perspective != null && perspective.firstPerson();
     }

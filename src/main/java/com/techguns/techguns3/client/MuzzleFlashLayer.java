@@ -43,8 +43,6 @@ public final class MuzzleFlashLayer extends GeoRenderLayer<AnimatedGunItem, GeoI
     }
 
     private static boolean isFirstPerson(RenderPassInfo<GeoRenderState> info) {
-        ItemDisplayContext perspective =
-                info.renderState().getGeckolibData(DataTickets.ITEM_RENDER_PERSPECTIVE);
-        return perspective != null && perspective.firstPerson();
+        return TechGunsGeoItemRenderer.isFirstPerson(info);
     }
 }

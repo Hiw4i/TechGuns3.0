@@ -73,12 +73,13 @@ public final class BlastRenderer extends EntityRenderer<BlastEntity, BlastRender
         float grow = (float) (1.0 - Math.pow(1.0 - Math.min(1.0f, prog * 2.0f), 2.0));
         float size = Math.max(0.3f, state.radius * (0.25f + 0.75f * grow));
         float alpha = prog < 0.15f ? prog / 0.15f : 1.0f - (prog - 0.15f) / 0.85f;
-        if (alpha <= 0.02f) return;
+        if (alpha <= FxGeometry.MIN_VISIBLE_ALPHA) return;
         int frame = Math.min(15, (int) (prog * 16.0f));
-        float u0 = (frame % 4) / 4.0f;
-        float v0 = (frame / 4) / 4.0f;
-        float u1 = u0 + 0.25f;
-        float v1 = v0 + 0.25f;
+        float[] cell = FxGeometry.atlasCell(frame, 4);
+        float u0 = cell[0];
+        float v0 = cell[1];
+        float u1 = cell[2];
+        float v1 = cell[3];
         float r = ((state.tint >> 16) & 0xFF) / 255.0f;
         float g = ((state.tint >> 8) & 0xFF) / 255.0f;
         float b = (state.tint & 0xFF) / 255.0f;
@@ -93,19 +94,14 @@ public final class BlastRenderer extends EntityRenderer<BlastEntity, BlastRender
                 (pose, consumer) -> {
             var matrix = pose.pose();
             // Rolled main quad + two crossed planes for volume.
-            float x1 = -fs * c + fs * s, y1 = -fs * s - fs * c;
-            float x2 = fs * c + fs * s, y2 = fs * s - fs * c;
-            float x3 = fs * c - fs * s, y3 = fs * s + fs * c;
-            float x4 = -fs * c - fs * s, y4 = -fs * s + fs * c;
-            FxGeometry.uvQuad(matrix, consumer,
-                    x1, y1, 0, x2, y2, 0, x3, y3, 0, x4, y4, 0,
-                    u0, v0, u1, v0, u1, v1, u0, v1, r, g, b, fa, FxGeometry.FULLBRIGHT);
+            FxGeometry.rolledQuad(matrix, consumer, fs, r, g, b, fa, c, s,
+                    u0, v0, u1, v1);
             FxGeometry.uvQuad(matrix, consumer,
                     0, -fs, -fs, 0, -fs, fs, 0, fs, fs, 0, fs, -fs,
                     u0, v0, u1, v0, u1, v1, u0, v1, r, g, b, fa * 0.7f, FxGeometry.FULLBRIGHT);
             // White-hot heart while young.
             if (prog < 0.35f) {
-                float core = fs * 0.45f;
+                float core = fs * FxGeometry.CORE_SCALE;
                 float ca = Math.min(1.0f, fa * 1.2f);
                 FxGeometry.uvQuad(matrix, consumer,
                         -core, -core, 0, core, -core, 0, core, core, 0, -core, core, 0,

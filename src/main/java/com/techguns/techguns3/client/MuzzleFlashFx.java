@@ -23,7 +23,7 @@ import java.util.Random;
 public final class MuzzleFlashFx {
     private MuzzleFlashFx() {}
 
-    /** How long the flash lives. CE shows it for 50 ms. */
+    /** How long the flash lives (the tuned value; the CE figure was 50 ms). */
     private static final long DURATION_NANOS = 70_000_000L;
 
     private static int flashId;
@@ -81,11 +81,11 @@ public final class MuzzleFlashFx {
         float b = (color & 0xFF) / 255.0f;
 
         int frame = Math.min(art.frames() - 1, (int) (t * art.frames()));
-        int grid = art.grid();
-        float u0 = (frame % grid) / (float) grid;
-        float v0 = (frame / grid) / (float) grid;
-        float u1 = u0 + 1.0f / grid;
-        float v1 = v0 + 1.0f / grid;
+        float[] cell = FxGeometry.atlasCell(frame, art.grid());
+        float u0 = cell[0];
+        float v0 = cell[1];
+        float u1 = cell[2];
+        float v1 = cell[3];
 
         // Camera axes in the space of the weapon model.
         org.joml.Matrix4f model = new org.joml.Matrix4f(poseStack.last().pose());

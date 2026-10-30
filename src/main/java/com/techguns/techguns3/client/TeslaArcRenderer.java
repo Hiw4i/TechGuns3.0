@@ -26,6 +26,14 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
             net.minecraft.resources.Identifier.fromNamespaceAndPath(
                     com.techguns.techguns3.TechGuns3.MODID, "textures/fx/bolt.png");
 
+    // Reused vectors and channel offsets: one renderer instance, render thread only.
+    private static final Vector3f DIR = new Vector3f();
+    private static final Vector3f UP = new Vector3f();
+    private static final Vector3f SIDE_U = new Vector3f();
+    private static final Vector3f SIDE_W = new Vector3f();
+    /** Per-channel offsets, flat [x,y,z, x,y,z]; channel 0 rides the bolt itself. */
+    private final float[] channelOff = new float[6];
+
     public TeslaArcRenderer(EntityRendererProvider.Context context) {
         super(context);
         shadowRadius = 0.0f;
@@ -66,27 +74,28 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
         float len = state.end.length();
-        if (len < 0.05f) return;
+        if (len < FxGeometry.MIN_EFFECT_LENGTH) return;
         BoltGeometry.Bolt bolt = BoltGeometry.tesla(state.seed, 0, 0, 0, state.end.x, state.end.y, state.end.z);
 
-        Vector3f dir = new Vector3f(state.end).normalize();
-        Vector3f up = Math.abs(dir.y) > 0.94f ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0);
-        Vector3f u = new Vector3f(dir).cross(up).normalize();
-        Vector3f w = new Vector3f(dir).cross(u).normalize();
+        Vector3f dir = DIR.set(state.end).normalize();
+        Vector3f up = Math.abs(dir.y) > FxGeometry.UP_AXIS_FALLBACK ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
+        Vector3f u = SIDE_U.set(dir).cross(up).normalize();
+        Vector3f w = SIDE_W.set(dir).cross(u).normalize();
 
-        // Parallel channel offsets, seeded so they match on every client.
+        // Second channel offset, seeded so it matches on every client (the
+        // first channel rides the bolt itself, no offset).
         Random chanRand = new Random(state.seed ^ 0x5EED1234L);
-        float[][] channelOff = new float[2][3];
-        for (int c = 1; c < 2; c++) {
-            float ang = chanRand.nextFloat() * (float) (Math.PI * 2);
-            float mag = 0.04f + 0.03f * chanRand.nextFloat();
-            channelOff[c][0] = (u.x * (float) Math.cos(ang) + w.x * (float) Math.sin(ang)) * mag;
-            channelOff[c][1] = (u.y * (float) Math.cos(ang) + w.y * (float) Math.sin(ang)) * mag;
-            channelOff[c][2] = (u.z * (float) Math.cos(ang) + w.z * (float) Math.sin(ang)) * mag;
-        }
+        float ang = chanRand.nextFloat() * (float) (Math.PI * 2);
+        float mag = 0.04f + 0.03f * chanRand.nextFloat();
+        channelOff[0] = 0;
+        channelOff[1] = 0;
+        channelOff[2] = 0;
+        channelOff[3] = (u.x * (float) Math.cos(ang) + w.x * (float) Math.sin(ang)) * mag;
+        channelOff[4] = (u.y * (float) Math.cos(ang) + w.y * (float) Math.sin(ang)) * mag;
+        channelOff[5] = (u.z * (float) Math.cos(ang) + w.z * (float) Math.sin(ang)) * mag;
 
         float closeFade = closeFade(state);
-        if (closeFade <= 0.02f) return;
+        if (closeFade <= FxGeometry.MIN_VISIBLE_ALPHA) return;
         // Halo shrinks with distance fade; core stays crisp.
         float haloScale = 0.55f + 0.45f * closeFade;
 
@@ -95,8 +104,9 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
                 (pose, consumer) -> {
             var matrix = pose.pose();
             for (int c = 0; c < 2; c++) {
+                int off = c * 3;
                 float[] main = FxGeometry.translated(bolt.main(),
-                        channelOff[c][0], channelOff[c][1], channelOff[c][2]);
+                        channelOff[off], channelOff[off + 1], channelOff[off + 2]);
                 boolean primary = c == 0;
                 if (primary) {
                     FxGeometry.polylineUv(matrix, consumer, main,
@@ -124,19 +134,10 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
 
     /** 1 at range, ->0.25 when the viewer stands at the arc origin. */
     private static float closeFade(State state) {
-        try {
-            var mc = Minecraft.getInstance();
-            if (mc == null || mc.player == null) return 1.0f;
-            var cam = mc.player.getEyePosition();
-            double dx = cam.x - state.sx;
-            double dy = cam.y - state.sy;
-            double dz = cam.z - state.sz;
-            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist >= 2.0) return 1.0f;
-            if (dist <= 0.4) return 0.25f;
-            return (float) (0.25 + (dist - 0.4) / (2.0 - 0.4) * 0.75);
-        } catch (Exception e) {
-            return 1.0f;
-        }
+        double dist = FxGeometry.cameraDistanceTo(state.sx, state.sy, state.sz);
+        if (dist < 0) return 1.0f;
+        if (dist >= 2.0) return 1.0f;
+        if (dist <= 0.4) return 0.25f;
+        return (float) (0.25 + (dist - 0.4) / (2.0 - 0.4) * 0.75);
     }
 }

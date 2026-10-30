@@ -1,5 +1,6 @@
 package com.techguns.techguns3.client;
 
+import com.techguns.techguns3.client.fx.FxGeometry;
 import com.techguns.techguns3.item.GenericGunItem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -28,9 +29,6 @@ public final class GunCrosshairOverlay {
 
     public static final Identifier LAYER_ID =
             Identifier.fromNamespaceAndPath(com.techguns.techguns3.TechGuns3.MODID, "crosshair");
-
-    /** Guns at or below this zoom FOV count as scoped and draw their own crosshair. */
-    private static final float SCOPE_ZOOM_FOV = 0.5f;
 
     /** How long the hit marker stays visible, in nanoseconds. */
     private static final long HIT_MARKER_NANOS = 320_000_000L;
@@ -63,7 +61,7 @@ public final class GunCrosshairOverlay {
         ItemStack held = mc.player.getMainHandItem();
         if (held.getItem() instanceof GenericGunItem gun) {
             var stats = gun.stats();
-            boolean scoped = stats.canZoom() && stats.zoomFov() <= SCOPE_ZOOM_FOV;
+            boolean scoped = stats.canZoom() && stats.zoomFov() <= TechGunsGeoItemRenderer.SCOPE_ZOOM_FOV;
             if (!scoped) {
                 float spread = stats.spread();
                 if (mc.player.isUsingItem() && mc.player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
@@ -85,7 +83,7 @@ public final class GunCrosshairOverlay {
             float dt = tracker.getRealtimeDeltaTicks() / 20.0f;
             float factor = 1.0f - (float) Math.exp(-dt / 0.05f);
             smoothedGap = smoothedGap < 0.0f ? gap : smoothedGap + (gap - smoothedGap) * factor;
-            if (fade > 0.02f) {
+            if (fade > FxGeometry.MIN_VISIBLE_ALPHA) {
                 int alpha = (int) (fade * 0.88f * 255.0f) << 24 | 0xFFFFFF;
                 drawCrosshair(extractor, cx, cy, smoothedGap, alpha);
             }

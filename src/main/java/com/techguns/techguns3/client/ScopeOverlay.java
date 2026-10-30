@@ -1,5 +1,6 @@
 package com.techguns.techguns3.client;
 
+import com.techguns.techguns3.client.fx.FxGeometry;
 import com.techguns.techguns3.item.GenericGunItem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -29,9 +30,6 @@ public final class ScopeOverlay {
     private static final Identifier SCOPE_TEXTURE = Identifier.fromNamespaceAndPath(
             com.techguns.techguns3.TechGuns3.MODID, "textures/gui/scope.png");
 
-    /** Guns at or below this zoom FOV count as scoped. */
-    private static final float SCOPE_ZOOM_FOV = 0.5f;
-
     /** The lens covers this part of the smaller screen dimension. */
     private static final float LENS_SHARE = 0.46f;
 
@@ -42,7 +40,7 @@ public final class ScopeOverlay {
         ItemStack using = mc.player.getUseItem();
         if (!(using.getItem() instanceof GenericGunItem gun)) return;
         var stats = gun.stats();
-        if (!stats.canZoom() || stats.zoomFov() > SCOPE_ZOOM_FOV) return;
+        if (!stats.canZoom() || stats.zoomFov() > TechGunsGeoItemRenderer.SCOPE_ZOOM_FOV) return;
 
         // The lens opens up while the weapon comes to the eye.
         float aim = GunFeel.get().aimProgress();

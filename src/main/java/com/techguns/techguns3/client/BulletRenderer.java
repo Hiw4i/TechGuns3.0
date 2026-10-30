@@ -63,10 +63,6 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
         public boolean main;
     }
 
-    private static net.minecraft.resources.Identifier id(String path) {
-        return net.minecraft.resources.Identifier.fromNamespaceAndPath(TechGuns3.MODID, path);
-    }
-
     /** CE projectile art (RenderTextureProjectile/RenderSonicShotgunProjectile 1:1). */
     private static final net.minecraft.resources.Identifier TEX_FIREBALL =
             net.minecraft.resources.Identifier.fromNamespaceAndPath(TechGuns3.MODID, "textures/fx/fireball.png");
@@ -134,18 +130,13 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
         }
     }
 
-    /** Called from entity removal paths to drop history eagerly. */
-    public static void dropTrail(UUID uuid) {
-        TRAILS.remove(uuid);
-    }
-
     @Override
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
         Vector3f dir = DIR.set(state.motion).normalize();
         float speed = state.motion.length();
 
-        Vector3f up = Math.abs(dir.y) > 0.94f ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
+        Vector3f up = Math.abs(dir.y) > FxGeometry.UP_AXIS_FALLBACK ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
         Vector3f u = SIDE_U.set(dir).cross(up).normalize();
         Vector3f w = SIDE_W.set(dir).cross(u).normalize();
 
@@ -203,10 +194,11 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
             // The plasma flare is a 4x4 sheet, the soft edge has to follow the cell.
             bodyStyle = FxRenderTypes.Style.ATLAS_GLOW;
             int frame = Math.abs(state.age) % 16;
-            bodyU0 = (frame % 4) / 4.0f;
-            bodyV0 = (frame / 4) / 4.0f;
-            bodyU1 = bodyU0 + 0.25f;
-            bodyV1 = bodyV0 + 0.25f;
+            float[] cell = FxGeometry.atlasCell(frame, 4);
+            bodyU0 = cell[0];
+            bodyV0 = cell[1];
+            bodyU1 = cell[2];
+            bodyV1 = cell[3];
             bodySize = 0.62f + 0.08f * (float) Math.sin(state.age * 0.6);
         } else if (rocket) {
             // Nuke = max bulk flag, HV = fast flight (mirror of combat logic).

@@ -27,23 +27,6 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
     private static final Identifier FLASH_TEXTURE = Identifier.fromNamespaceAndPath(
             TechGuns3.MODID, "textures/fx/muzzle_flash.png");
 
-    /**
-     * CE muzzle art (IScreenEffect 1:1): texture path, grid divisions and used
-     * frames. Rendered additively as crossed quads, frame advancing over life.
-     */
-    private static final java.util.Map<Integer, MuzzleFlashArt.Art> FLASH_ART = java.util.Map.ofEntries(
-            java.util.Map.entry(1, MuzzleFlashArt.art(1)),
-            java.util.Map.entry(2, MuzzleFlashArt.art(2)),
-            java.util.Map.entry(3, MuzzleFlashArt.art(3)),
-            java.util.Map.entry(4, MuzzleFlashArt.art(4)),
-            java.util.Map.entry(5, MuzzleFlashArt.art(5)),
-            java.util.Map.entry(6, MuzzleFlashArt.art(6)),
-            java.util.Map.entry(7, MuzzleFlashArt.art(7)),
-            java.util.Map.entry(8, MuzzleFlashArt.art(8)),
-            java.util.Map.entry(9, MuzzleFlashArt.art(9)),
-            java.util.Map.entry(10, MuzzleFlashArt.art(10)),
-            java.util.Map.entry(11, MuzzleFlashArt.art(11)));
-
     public MuzzleFlashRenderer(EntityRendererProvider.Context context) {
         super(context);
         shadowRadius = 0.0f;
@@ -87,7 +70,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
         if (state.fade <= 0.01f) return;
-        MuzzleFlashArt.Art art = FLASH_ART.get(state.texture);
+        MuzzleFlashArt.Art art = MuzzleFlashArt.art(state.texture);
         if (art != null) {
             submitTextured(state, poseStack, collector, art);
             return;
@@ -103,11 +86,11 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
                                        SubmitNodeCollector collector, MuzzleFlashArt.Art art) {
         float age = MuzzleFlashEntity.MAX_LIFE * (1.0f - state.fade);
         int frame = Math.min(art.frames() - 1, (int) (age / MuzzleFlashEntity.MAX_LIFE * art.frames()));
-        int grid = art.grid();
-        float u0 = (frame % grid) / (float) grid;
-        float v0 = (frame / grid) / (float) grid;
-        float u1 = u0 + 1.0f / grid;
-        float v1 = v0 + 1.0f / grid;
+        float[] cell = FxGeometry.atlasCell(frame, art.grid());
+        final float u0 = cell[0];
+        final float v0 = cell[1];
+        final float u1 = cell[2];
+        final float v1 = cell[3];
         float r = ((state.color >> 16) & 0xFF) / 255.0f;
         float g = ((state.color >> 8) & 0xFF) / 255.0f;
         float b = (state.color & 0xFF) / 255.0f;
@@ -118,7 +101,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
         if (guard < 1.0f) {
             s *= (0.45f + 0.55f * guard);
             alpha *= guard;
-            if (alpha < 0.02f) return;
+            if (alpha < FxGeometry.MIN_VISIBLE_ALPHA) return;
         }
         final float fs = s;
         final float fa = alpha;
@@ -147,14 +130,14 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
 
         // Seeded TG2 jitter: roll + per-arm length so no two shots match.
         Random rand = new Random(state.seed);
-        float roll = rand.nextFloat() * (float) (Math.PI * 2);
+        float roll = rand.nextFloat() * FxGeometry.TWO_PI;
         float armJitter = 0.82f + 0.36f * rand.nextFloat();
         float armJitter2 = 0.82f + 0.36f * rand.nextFloat();
 
         // Pop: full size on tick 0, shrink as it fades.
         float s = state.scale * armJitter * (0.55f + 0.45f * state.fade);
         float s2 = state.scale * armJitter2 * (0.55f + 0.45f * state.fade);
-        float core = s * 0.45f;
+        float core = s * FxGeometry.CORE_SCALE;
 
         float alpha = state.fade * state.fade;
         float coreAlpha = Math.min(1.0f, state.fade * 1.2f);
@@ -167,7 +150,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
             core *= (0.45f + 0.55f * guard);
             alpha *= guard;
             coreAlpha *= guard;
-            if (alpha < 0.02f) return;
+            if (alpha < FxGeometry.MIN_VISIBLE_ALPHA) return;
         }
 
         final float fs = s;
@@ -182,7 +165,7 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
                 (pose, consumer) -> {
             var matrix = pose.pose();
             // Rolled star (XY) + two crossed planes sharing the same sprite.
-            starRolled(matrix, consumer, fs, r, g, b, fa, cos, sin);
+            FxGeometry.rolledQuad(matrix, consumer, fs, r, g, b, fa, cos, sin, 0, 0, 1, 1);
             FxGeometry.uvQuad(matrix, consumer,
                     0, -fs2, -fs2, 0, -fs2, fs2, 0, fs2, fs2, 0, fs2, -fs2,
                     0, 0, 1, 0, 1, 1, 0, 1, r, g, b, fa, FxGeometry.FULLBRIGHT);
@@ -190,25 +173,8 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
                     -fs2, 0, -fs2, fs2, 0, -fs2, fs2, 0, fs2, -fs2, 0, fs2,
                     0, 0, 1, 0, 1, 1, 0, 1, r, g, b, fa * 0.8f, FxGeometry.FULLBRIGHT);
             // White-hot heart: smaller star so the tinted arms read around it.
-            starRolled(matrix, consumer, fcore, 1, 1, 1, fca, cos, sin);
+            FxGeometry.rolledQuad(matrix, consumer, fcore, 1, 1, 1, fca, cos, sin, 0, 0, 1, 1);
         });
-    }
-
-    private static void starRolled(org.joml.Matrix4fc pose,
-                                   com.mojang.blaze3d.vertex.VertexConsumer consumer,
-                                   float s, float r, float g, float b, float a,
-                                   float cos, float sin) {
-        float x1 = -s * cos + s * sin;
-        float y1 = -s * sin - s * cos;
-        float x2 = s * cos + s * sin;
-        float y2 = s * sin - s * cos;
-        float x3 = s * cos - s * sin;
-        float y3 = s * sin + s * cos;
-        float x4 = -s * cos - s * sin;
-        float y4 = -s * sin + s * cos;
-        FxGeometry.uvQuad(pose, consumer,
-                x1, y1, 0, x2, y2, 0, x3, y3, 0, x4, y4, 0,
-                0, 0, 1, 0, 1, 1, 0, 1, r, g, b, a, FxGeometry.FULLBRIGHT);
     }
 
     /**
@@ -220,24 +186,15 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
      * flash, faded down so it does not fill the screen.</p>
      */
     private static float firstPersonGuard(State state) {
-        try {
-            var mc = Minecraft.getInstance();
-            if (mc == null || mc.player == null) return 1.0f;
-            var cam = mc.player.getEyePosition();
-            double dx = cam.x - state.wx;
-            double dy = cam.y - state.wy;
-            double dz = cam.z - state.wz;
-            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist >= 1.8) return 1.0f;
-            if (state.modelled) {
-                // The shooter draws the flash on the weapon model itself, the
-                // world flash would only be a blob in their face.
-                return dist <= 0.8 ? 0.0f : (float) (dist - 0.8);
-            }
-            if (dist <= 0.35) return 0.12f;
-            return (float) ((dist - 0.35) / (1.45) * 0.88 + 0.12);
-        } catch (Exception e) {
-            return 1.0f;
+        double dist = FxGeometry.cameraDistanceTo(state.wx, state.wy, state.wz);
+        if (dist < 0) return 1.0f;
+        if (dist >= 1.8) return 1.0f;
+        if (state.modelled) {
+            // The shooter draws the flash on the weapon model itself, the
+            // world flash would only be a blob in their face.
+            return dist <= 0.8 ? 0.0f : (float) (dist - 0.8);
         }
+        if (dist <= 0.35) return 0.12f;
+        return (float) ((dist - 0.35) / (1.45) * 0.88 + 0.12);
     }
 }

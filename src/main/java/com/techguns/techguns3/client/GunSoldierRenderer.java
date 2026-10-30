@@ -23,26 +23,27 @@ import java.util.Map;
 public final class GunSoldierRenderer extends HumanoidMobRenderer<TGArmedMob,
         HumanoidRenderState, HumanoidModel<HumanoidRenderState>> {
 
-    private static final Map<EntityType<?>, Identifier> TEXTURES = new HashMap<>();
+    private static final Map<EntityType<?>, Identifier> TEXTURES;
 
     static {
-        put(TGEntities.ZOMBIE_SOLDIER.get(), "zombie_soldier");
-        put(TGEntities.BANDIT.get(), "bandit");
-        put(TGEntities.ARMY_SOLDIER.get(), "army_soldier");
-        put(TGEntities.COMMANDO.get(), "commando");
-        put(TGEntities.OUTCAST.get(), "outcast");
-        put(TGEntities.ZOMBIE_POLICEMAN.get(), "zombie_policeman");
-        put(TGEntities.ZOMBIE_MINER.get(), "zombie_miner");
-        put(TGEntities.PSYCHO_STEVE.get(), "psycho_steve");
-        put(TGEntities.SKELETON_SOLDIER.get(), "skeleton_soldier");
-        put(TGEntities.ZOMBIE_PIGMAN_SOLDIER.get(), "zombie_pigman_soldier");
-        put(TGEntities.SUPER_MUTANT.get(), "super_mutant");
-        put(TGEntities.ZOMBIE_FARMER.get(), "zombie_farmer");
+        Map<EntityType<?>, Identifier> textures = new HashMap<>();
+        textures.put(TGEntities.ZOMBIE_SOLDIER.get(), skin("zombie_soldier"));
+        textures.put(TGEntities.BANDIT.get(), skin("bandit"));
+        textures.put(TGEntities.ARMY_SOLDIER.get(), skin("army_soldier"));
+        textures.put(TGEntities.COMMANDO.get(), skin("commando"));
+        textures.put(TGEntities.OUTCAST.get(), skin("outcast"));
+        textures.put(TGEntities.ZOMBIE_POLICEMAN.get(), skin("zombie_policeman"));
+        textures.put(TGEntities.ZOMBIE_MINER.get(), skin("zombie_miner"));
+        textures.put(TGEntities.PSYCHO_STEVE.get(), skin("psycho_steve"));
+        textures.put(TGEntities.SKELETON_SOLDIER.get(), skin("skeleton_soldier"));
+        textures.put(TGEntities.ZOMBIE_PIGMAN_SOLDIER.get(), skin("zombie_pigman_soldier"));
+        textures.put(TGEntities.SUPER_MUTANT.get(), skin("super_mutant"));
+        textures.put(TGEntities.ZOMBIE_FARMER.get(), skin("zombie_farmer"));
+        TEXTURES = java.util.Collections.unmodifiableMap(textures);
     }
 
-    private static void put(EntityType<?> type, String texture) {
-        TEXTURES.put(type, Identifier.fromNamespaceAndPath("techguns3",
-                "textures/entity/" + texture + ".png"));
+    private static Identifier skin(String texture) {
+        return Identifier.fromNamespaceAndPath("techguns3", "textures/entity/" + texture + ".png");
     }
 
     private static final Identifier FALLBACK = Identifier.fromNamespaceAndPath(

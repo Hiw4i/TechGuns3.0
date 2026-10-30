@@ -1,5 +1,6 @@
 package com.techguns.techguns3.client;
 
+import com.techguns.techguns3.TechGuns3;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
@@ -8,7 +9,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,13 +24,13 @@ import java.util.UUID;
  * {@code BlastEntity} detonations scaled by radius/distance. Nothing here
  * touches gameplay or networking.
  */
-@EventBusSubscriber(value = Dist.CLIENT)
+@EventBusSubscriber(modid = TechGuns3.MODID, value = Dist.CLIENT)
 public final class TGShake {
     private TGShake() {}
 
     private static float trauma;
     private static float flash;
-    private static final Set<UUID> SEEN_BLASTS = new HashSet<>();
+    private static final SequencedSet<UUID> SEEN_BLASTS = new LinkedHashSet<>();
 
     /** 0..1 trauma bump (clamped). */
     public static void addTrauma(float amount) {
@@ -50,7 +52,11 @@ public final class TGShake {
      */
     public static void onBlastSeen(UUID id, double x, double y, double z, float radius) {
         if (!SEEN_BLASTS.add(id)) return;
-        if (SEEN_BLASTS.size() > 128) SEEN_BLASTS.clear();
+        if (SEEN_BLASTS.size() > 128) {
+            // Evict the oldest instead of forgetting every blast: a long-lived
+            // blast entity must not re-trigger the flash for players nearby.
+            SEEN_BLASTS.removeFirst();
+        }
         try {
             var mc = Minecraft.getInstance();
             if (mc.player == null) return;

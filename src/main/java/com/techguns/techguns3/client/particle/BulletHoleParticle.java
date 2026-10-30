@@ -65,9 +65,12 @@ public final class BulletHoleParticle extends SingleQuadParticle {
         return q;
     }
 
+    private final SingleQuadParticle.FacingCameraMode facing = (target, camera, partialTickTime) ->
+            target.set(rotation);
+
     @Override
     public SingleQuadParticle.FacingCameraMode getFacingCameraMode() {
-        return (target, camera, partialTickTime) -> target.set(rotation);
+        return facing;
     }
 
     @Override

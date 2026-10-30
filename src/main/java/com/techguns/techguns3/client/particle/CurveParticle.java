@@ -1,5 +1,6 @@
 package com.techguns.techguns3.client.particle;
 
+import com.techguns.techguns3.client.fx.FxGeometry;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
@@ -61,7 +62,7 @@ public final class CurveParticle extends SingleQuadParticle {
 
     @Override
     protected int getLightCoords(float partialTick) {
-        return emissive ? 0xF000F0 : super.getLightCoords(partialTick);
+        return emissive ? FxGeometry.FULLBRIGHT : super.getLightCoords(partialTick);
     }
 
     @Override
