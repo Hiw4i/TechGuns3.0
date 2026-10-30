@@ -537,8 +537,9 @@ public final class GunServerLogic {
 
     private static boolean isExtraAmmo(GenericGunItem gun, Item item) {
         if (!gun.extras().hasExtraAmmo()) return false;
-        for (String id : gun.extras().extraAmmoIds()) {
-            if (BuiltInRegistries.ITEM.getKey(item).getPath().equals(id)) return true;
+        Identifier ammoId = BuiltInRegistries.ITEM.getKey(item);
+        for (Identifier id : gun.extras().extraAmmoIds()) {
+            if (ammoId.equals(id)) return true;
         }
         return false;
     }

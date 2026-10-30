@@ -2,6 +2,7 @@ package com.techguns.techguns3.registry;
 
 import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.item.GunDefinition;
+import com.techguns.techguns3.item.GunExtras;
 import net.minecraft.resources.Identifier;
 
 import java.util.Collections;
@@ -82,35 +83,34 @@ public final class GunRegistry {
             return Identifier.fromNamespaceAndPath(TechGuns3.MODID, path);
         }
 
-        public static final GunDefinition EMERGENCY = GunDefinition.builtin(
-                "pistol_magazine", "pistol_magazine_empty",
-                8.0f, 4, 18, 35, 40, 0.025f, 2.0f, 0.0, 1, 0.0f,
-                18.0f, 25.0f, 5.0f, 0.0f, true, true,
-                "pistol_fire", "pistol_reload", null, "BALLISTIC",
-                true, 0.85f, 0.5f, 0.7f, 0.3f, 0.55f, false, 0.0f, null, 0, 0.85f,
-                null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
-                null, 2, 0, false).withTwoHanded(false);
+        /** Last-resort generic gun for a missing id: a copy of the pistol. */
+        public static final GunDefinition EMERGENCY = buildPistol();
+
+        private static GunDefinition buildPistol() {
+            return GunDefinition.builtin(
+                    "pistol_magazine", "pistol_magazine_empty",
+                    8.0f, 4, 18, 35, 40, 0.025f, 2.0f, 0.0, 1, 0.0f,
+                    18.0f, 25.0f, 5.0f, 0.0f, true, true,
+                    "pistol_fire", "pistol_reload", null, "BALLISTIC",
+                    true, 0.85f, 0.5f, 0.7f, 0.3f, 0.55f, false, 0.0f, null, 0, 0.85f,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false,
+                    GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
+                    null, 2, 0, false).withTwoHanded(false);
+        }
 
         public static final Map<Identifier, GunDefinition> ALL = buildAll();
 
         private static Map<Identifier, GunDefinition> buildAll() {
             Map<Identifier, GunDefinition> m = new HashMap<>();
             // wave-1 (mirrors old TGItems.java)
-            m.put(id("pistol"), GunDefinition.builtin(
-                    "pistol_magazine", "pistol_magazine_empty",
-                    8.0f, 4, 18, 35, 40, 0.025f, 2.0f, 0.0, 1, 0.0f,
-                    18.0f, 25.0f, 5.0f, 0.0f, true, true,
-                    "pistol_fire", "pistol_reload", null, "BALLISTIC",
-                    true, 0.85f, 0.5f, 0.7f, 0.3f, 0.55f, false, 0.0f, null, 0, 0.85f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
-                    null, 2, 0, false).withTwoHanded(false));
+            m.put(id("pistol"), buildPistol());
             m.put(id("revolver"), GunDefinition.builtin(
                     "pistol_rounds", null,
                     8.0f, 6, 6, 45, 40, 0.025f, 2.0f, 0.0, 1, 0.0f,
                     12.0f, 20.0f, 6.0f, 0.0f, true, false,
                     "revolver_fire", "revolver_reload", null, "BALLISTIC",
                     true, 0.85f, 0.5f, 1.0f, 0.4f, 0.6f, false, 0.0f, null, 0, 0.9f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 2, 0, false).withTwoHanded(false));
             m.put(id("ak47"), GunDefinition.builtin(
                     "assault_rifle_magazine", "assault_rifle_magazine_empty",
@@ -118,7 +118,7 @@ public final class GunRegistry {
                     20.0f, 30.0f, 4.5f, 0.5f, false, true,
                     "ak47_fire", "ak47_reload", null, "BALLISTIC",
                     true, 0.7f, 0.5f, 0.9f, 0.4f, 0.8f, false, 0.0f, null, 0, 1.0f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 1, 0, false));
             m.put(id("m4"), GunDefinition.builtin(
                     "assault_rifle_magazine", "assault_rifle_magazine_empty",
@@ -126,7 +126,7 @@ public final class GunRegistry {
                     25.0f, 40.0f, 7.0f, 0.5f, false, true,
                     "m4_fire", "m4_reload", null, "BALLISTIC",
                     true, 0.7f, 0.45f, 0.7f, 0.3f, 0.75f, false, 0.0f, null, 0, 1.0f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 1, 0, false));
             m.put(id("thompson"), GunDefinition.builtin(
                     "smg_magazine", "smg_magazine_empty",
@@ -134,7 +134,7 @@ public final class GunRegistry {
                     15.0f, 24.0f, 3.0f, 0.0f, false, true,
                     "thompson_fire", "thompson_reload", null, "BALLISTIC",
                     true, 0.8f, 0.5f, 0.6f, 0.35f, 0.6f, false, 0.0f, null, 0, 1.0f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 1, 0, false));
             m.put(id("combat_shotgun"), GunDefinition.builtin(
                     "shotgun_rounds", null,
@@ -142,7 +142,7 @@ public final class GunRegistry {
                     2.0f, 5.0f, 3.0f, 0.5f, true, false,
                     "combat_shotgun_fire", "combat_shotgun_reload", null, "BALLISTIC",
                     true, 0.8f, 0.5f, 2.8f, 0.8f, 0.9f, false, 0.0f, "combat_shotgun_pump", 14, 1.7f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 2, 0, false));
             m.put(id("minigun"), GunDefinition.builtin(
                     "minigun_drum", "minigun_drum_empty",
@@ -150,7 +150,7 @@ public final class GunRegistry {
                     30.0f, 50.0f, 7.0f, 0.5f, false, true,
                     "minigun_fire", "minigun_reload", null, "BALLISTIC",
                     true, 0.85f, 0.6f, 0.3f, 0.2f, 0.8f, true, 0.0f, null, 0, 1.05f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 3, 0, false));
             m.put(id("teslagun"), GunDefinition.builtin(
                     "energy_cell", "energy_cell_empty",
@@ -158,7 +158,7 @@ public final class GunRegistry {
                     0.0f, 0.0f, 9.0f, 0.0f, false, true,
                     "teslagun_fire", "teslagun_reload", null, "ELECTRIC",
                     true, 0.8f, 0.5f, 0.4f, 0.1f, 0.6f, false, 0.09f, null, 0, 1.0f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 6, 0, false));
             m.put(id("bolt_action"), GunDefinition.builtin(
                     "rifle_rounds", null,
@@ -166,7 +166,7 @@ public final class GunRegistry {
                     40.0f, 60.0f, 20.0f, 1.0f, true, false,
                     "bolt_action_fire", "bolt_action_reload", null, "BALLISTIC",
                     true, 0.35f, 0.25f, 2.2f, 0.5f, 0.9f, false, 0.0f, "bolt_action_rechamber", 20, 1.15f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 2, 0, false));
             m.put(id("biogun"), GunDefinition.builtin(
                     "bio_tank", "bio_tank_empty",
@@ -174,7 +174,7 @@ public final class GunRegistry {
                     8.0f, 15.0f, 20.0f, 0.5f, false, true,
                     "biogun_fire", "biogun_reload", null, "BIO",
                     true, 0.8f, 0.5f, 0.8f, 0.3f, 0.7f, false, 0.34f, null, 0, 1.6f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 11, 0, false));
             m.put(id("flamethrower"), GunDefinition.builtin(
                     "fuel_tank", "fuel_tank_empty",
@@ -182,7 +182,7 @@ public final class GunRegistry {
                     5.0f, 22.0f, 4.0f, 0.0f, false, true,
                     "flamethrower_fire", "flamethrower_reload", "flamethrower_start", "FIRE",
                     true, 0.8f, 0.6f, 0.5f, 0.25f, 0.8f, false, 0.0f, null, 0, 1.3f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 10, 10, false));
             // wave-2
             m.put(id("tfg"), GunDefinition.builtin(
@@ -192,7 +192,7 @@ public final class GunRegistry {
                     "tfg_fire", "biogun_reload", "tfg_charge", "PLASMA",
                     true, 0.8f, 0.5f, 1.2f, 0.4f, 1.0f, false, 0.0f, null, 0, 2.0f,
                     new GunDefinition.ExplosiveDef(46.0f, 23.0f, 5.0f, 10.0f, 0.5f, false),
-                    false, 60, 1, 5, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    false, 60, 1, 5, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 9, 0, false));
             m.put(id("nucleardeathray"), GunDefinition.builtin(
                     "nuclear_powercell", "nuclear_powercell_empty",
@@ -208,7 +208,7 @@ public final class GunRegistry {
                     90.0f, 90.0f, 90.0f, 3.5f, true, true,
                     "gauss_fire", "gauss_reload", null, "GAUSS",
                     true, 0.35f, 0.0f, 2.4f, 0.5f, 0.9f, false, 0.0f, "gauss_rechamber", 12, 1.1f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 7, 0, false));
             m.put(id("rocketlauncher"), GunDefinition.builtin(
                     "rocket", null,
@@ -217,7 +217,7 @@ public final class GunRegistry {
                     "rocket_fire", "rocket_reload", null, "EXPLOSIVE",
                     true, 0.8f, 0.6f, 2.0f, 0.5f, 1.0f, false, 0.0f, null, 0, 2.2f,
                     new GunDefinition.ExplosiveDef(60.0f, 50.0f, 3.0f, 5.0f, 0.5f, false),
-                    false, 0, 1, 1, 3.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    false, 0, 1, 1, 3.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     List.of("rocket_nuke", "rocket_hv"), 2, 0, false));
             m.put(id("guidedmissilelauncher"), GunDefinition.builtin(
                     "rocket", null,
@@ -226,7 +226,7 @@ public final class GunRegistry {
                     "guided_fire", "rocket_reload", null, "EXPLOSIVE",
                     true, 0.8f, 0.6f, 2.0f, 0.5f, 1.0f, false, 0.0f, null, 0, 2.2f,
                     new GunDefinition.ExplosiveDef(60.0f, 50.0f, 2.0f, 4.0f, 0.25f, false),
-                    false, 0, 1, 1, 2.0f, false, 0.16f, true, 20, 80, 150.0, 0,
+                    false, 0, 1, 1, 2.0f, false, 0.16f, true, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     List.of("rocket_hv"), 2, 0, false));
             m.put(id("grimreaper"), GunDefinition.builtin(
                     "rocket", null,
@@ -235,7 +235,7 @@ public final class GunRegistry {
                     "guided_fire", "rocket_reload", null, "EXPLOSIVE",
                     true, 0.8f, 0.6f, 1.6f, 0.4f, 1.0f, false, 0.0f, null, 0, 2.2f,
                     new GunDefinition.ExplosiveDef(60.0f, 50.0f, 3.0f, 5.0f, 0.25f, false),
-                    false, 0, 1, 1, 2.0f, false, 0.16f, true, 20, 80, 150.0, 0,
+                    false, 0, 1, 1, 2.0f, false, 0.16f, true, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     List.of("rocket_hv"), 2, 0, false));
             m.put(id("sonicshotgun"), GunDefinition.builtin(
                     "energy_cell", "energy_cell_empty",
@@ -243,7 +243,7 @@ public final class GunRegistry {
                     5.0f, 15.0f, 35.0f, 1.0f, true, true,
                     "sonic_fire", "sonic_reload", null, "SONIC",
                     true, 0.8f, 0.6f, 2.4f, 0.7f, 0.9f, false, 0.0f, null, 0, 1.4f,
-                    null, false, 0, 1, 1, 2.0f, true, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 2.0f, true, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 7, 0, false));
             m.put(id("lasergun"), GunDefinition.builtin(
                     "energy_cell", "energy_cell_empty",
@@ -251,7 +251,7 @@ public final class GunRegistry {
                     90.0f, 90.0f, 16.0f, 0.0f, false, true,
                     "laser_fire", "laser_reload", null, "LASER",
                     true, 0.75f, 0.75f, 0.5f, 0.15f, 0.7f, false, 0.0f, null, 0, 1.0f,
-                    null, true, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, true, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 5, 0, false));
             m.put(id("laserpistol"), GunDefinition.builtin(
                     "redstone_battery", "redstone_battery_empty",
@@ -259,7 +259,7 @@ public final class GunRegistry {
                     90.0f, 90.0f, 9.0f, 0.0f, false, true,
                     "laserpistol_fire", "laserpistol_reload", null, "LASER",
                     true, 0.8f, 0.5f, 0.5f, 0.2f, 0.6f, false, 0.0f, null, 0, 0.9f,
-                    null, true, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, true, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 5, 0, false).withTwoHanded(false));
             m.put(id("pulserifle"), GunDefinition.builtin(
                     "advanced_magazine", "advanced_magazine_empty",
@@ -267,7 +267,7 @@ public final class GunRegistry {
                     30.0f, 45.0f, 15.0f, 1.0f, false, true,
                     "pulse_fire", "pulse_reload", null, "ADVANCED",
                     true, 0.35f, 0.5f, 0.8f, 0.3f, 0.75f, false, 0.0f, null, 0, 1.0f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 4, 0, false));
             m.put(id("vector"), GunDefinition.builtin(
                     "smg_magazine", "smg_magazine_empty",
@@ -275,7 +275,7 @@ public final class GunRegistry {
                     17.0f, 25.0f, 8.0f, 0.5f, false, true,
                     "vector_fire", "vector_reload", null, "BALLISTIC",
                     true, 0.75f, 0.35f, 0.5f, 0.3f, 0.65f, false, 0.0f, null, 0, 1.0f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 1, 0, false));
             m.put(id("pdw"), GunDefinition.builtin(
                     "advanced_magazine", "advanced_magazine_empty",
@@ -283,7 +283,7 @@ public final class GunRegistry {
                     18.0f, 25.0f, 7.0f, 1.0f, false, true,
                     "pdw_fire", "pdw_reload", null, "ADVANCED",
                     true, 0.8f, 0.5f, 0.4f, 0.25f, 0.6f, false, 0.0f, null, 0, 1.0f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     null, 4, 0, false));
             m.put(id("as50"), GunDefinition.builtin(
                     "as50_magazine", "as50_magazine_empty",
@@ -291,7 +291,7 @@ public final class GunRegistry {
                     40.0f, 60.0f, 35.0f, 2.0f, true, true,
                     "as50_fire", "as50_reload", null, "BALLISTIC",
                     true, 0.35f, 0.125f, 2.2f, 0.5f, 0.9f, false, 0.0f, null, 0, 1.15f,
-                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0,
+                    null, false, 0, 1, 1, 0.0f, false, 0.0f, false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE, 0,
                     List.of("as50_magazine_explosive", "as50_magazine_incendiary"), 1, 0, false));
             return Collections.unmodifiableMap(m);
         }

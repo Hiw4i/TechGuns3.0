@@ -26,6 +26,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * <p>{@code blood} is the gore counterpart of {@code glow}: same dot sprite,
  * but shaded (not fullbright) so arterial spray reads as liquid, darkening
  * as it flies, instead of glowing sparks. Flesh chunks reuse {@code puff}.</p>
+ *
+ * <p>The four curve records are deliberately separate Java types with identical
+ * fields: they cross the network as typed options and the client binds a
+ * different sprite set per registry type. A shared class with a type field
+ * would push type selection into every spawn call for no functional gain.</p>
  */
 public final class TGParticles {
     private TGParticles() {}
@@ -52,9 +57,20 @@ public final class TGParticles {
      *             {@link net.minecraft.core.Direction#values()}
      */
     public record BulletHoleOptions(net.minecraft.core.BlockPos pos, int face) implements ParticleOptions {
+        /** Directions in Minecraft: down, up, north, south, west, east. */
+        private static final int FACE_COUNT = net.minecraft.core.Direction.values().length;
+
+        public BulletHoleOptions {
+            // Bounds a crafted/desynced payload: the client indexes rotation tables by face.
+            if (face < 0 || face >= FACE_COUNT) {
+                throw new IllegalArgumentException("bullet hole face " + face + " out of 0.." + (FACE_COUNT - 1));
+            }
+        }
+
         public static final MapCodec<BulletHoleOptions> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
                 net.minecraft.core.BlockPos.CODEC.fieldOf("pos").forGetter(BulletHoleOptions::pos),
-                Codec.INT.fieldOf("face").forGetter(BulletHoleOptions::face)
+                // Direction ordinal: bounded so a crafted payload cannot index out of the array client-side.
+                Codec.intRange(0, FACE_COUNT - 1).fieldOf("face").forGetter(BulletHoleOptions::face)
         ).apply(inst, BulletHoleOptions::new));
         public static final StreamCodec<RegistryFriendlyByteBuf, BulletHoleOptions> STREAM_CODEC =
                 StreamCodec.composite(net.minecraft.core.BlockPos.STREAM_CODEC, BulletHoleOptions::pos,
@@ -148,6 +164,33 @@ public final class TGParticles {
         }
     }
 
+    public record BloodOptions(int color, int endColor, float size0, float size1,
+                               int life, float gravity, float drag) implements ParticleOptions {
+        public static final MapCodec<BloodOptions> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
+                ExtraCodecs.RGB_COLOR_CODEC.fieldOf("color").forGetter(BloodOptions::color),
+                ExtraCodecs.RGB_COLOR_CODEC.fieldOf("end_color").forGetter(BloodOptions::endColor),
+                com.mojang.serialization.Codec.FLOAT.fieldOf("size0").forGetter(BloodOptions::size0),
+                com.mojang.serialization.Codec.FLOAT.fieldOf("size1").forGetter(BloodOptions::size1),
+                ExtraCodecs.POSITIVE_INT.fieldOf("life").forGetter(BloodOptions::life),
+                com.mojang.serialization.Codec.FLOAT.fieldOf("gravity").forGetter(BloodOptions::gravity),
+                com.mojang.serialization.Codec.FLOAT.fieldOf("drag").forGetter(BloodOptions::drag)
+        ).apply(inst, BloodOptions::new));
+        public static final StreamCodec<RegistryFriendlyByteBuf, BloodOptions> STREAM_CODEC =
+                StreamCodec.composite(ByteBufCodecs.INT, BloodOptions::color,
+                        ByteBufCodecs.INT, BloodOptions::endColor,
+                        ByteBufCodecs.FLOAT, BloodOptions::size0,
+                        ByteBufCodecs.FLOAT, BloodOptions::size1,
+                        ByteBufCodecs.INT, BloodOptions::life,
+                        ByteBufCodecs.FLOAT, BloodOptions::gravity,
+                        ByteBufCodecs.FLOAT, BloodOptions::drag,
+                        BloodOptions::new);
+
+        @Override
+        public ParticleType<?> getType() {
+            return BLOOD.get();
+        }
+    }
+
     private static final class GlowType extends ParticleType<GlowOptions> {
         GlowType() {
             super(false);
@@ -196,32 +239,7 @@ public final class TGParticles {
         }
     }
 
-    public record BloodOptions(int color, int endColor, float size0, float size1,
-                               int life, float gravity, float drag) implements ParticleOptions {
-        public static final MapCodec<BloodOptions> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
-                ExtraCodecs.RGB_COLOR_CODEC.fieldOf("color").forGetter(BloodOptions::color),
-                ExtraCodecs.RGB_COLOR_CODEC.fieldOf("end_color").forGetter(BloodOptions::endColor),
-                com.mojang.serialization.Codec.FLOAT.fieldOf("size0").forGetter(BloodOptions::size0),
-                com.mojang.serialization.Codec.FLOAT.fieldOf("size1").forGetter(BloodOptions::size1),
-                ExtraCodecs.POSITIVE_INT.fieldOf("life").forGetter(BloodOptions::life),
-                com.mojang.serialization.Codec.FLOAT.fieldOf("gravity").forGetter(BloodOptions::gravity),
-                com.mojang.serialization.Codec.FLOAT.fieldOf("drag").forGetter(BloodOptions::drag)
-        ).apply(inst, BloodOptions::new));
-        public static final StreamCodec<RegistryFriendlyByteBuf, BloodOptions> STREAM_CODEC =
-                StreamCodec.composite(ByteBufCodecs.INT, BloodOptions::color,
-                        ByteBufCodecs.INT, BloodOptions::endColor,
-                        ByteBufCodecs.FLOAT, BloodOptions::size0,
-                        ByteBufCodecs.FLOAT, BloodOptions::size1,
-                        ByteBufCodecs.INT, BloodOptions::life,
-                        ByteBufCodecs.FLOAT, BloodOptions::gravity,
-                        ByteBufCodecs.FLOAT, BloodOptions::drag,
-                        BloodOptions::new);
 
-        @Override
-        public ParticleType<?> getType() {
-            return BLOOD.get();
-        }
-    }
 
     private static final class BloodType extends ParticleType<BloodOptions> {
         BloodType() {

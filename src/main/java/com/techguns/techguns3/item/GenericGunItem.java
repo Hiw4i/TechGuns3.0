@@ -40,6 +40,16 @@ import java.util.function.Supplier;
  * and projectiles are owned by the server; this class only describes the gun.</p>
  */
 public class GenericGunItem extends Item {
+    /** Vanilla bow-style "hold indefinitely" use duration (aim pose). */
+    private static final int USE_DURATION_INFINITE = 72000;
+    /** Ammo bar geometry and thresholds. */
+    private static final float BAR_WIDTH = 13.0f;
+    private static final float BAR_FULL_FRACTION = 0.5f;
+    private static final float BAR_LOW_FRACTION = 0.2f;
+    private static final int BAR_COLOR_FULL = 0x55FF55;
+    private static final int BAR_COLOR_MID = 0xFFAA00;
+    private static final int BAR_COLOR_LOW = 0xFF5555;
+
     private final Identifier gunId;
     private final Supplier<Item> ammoItem;
     private final String ammoId;
@@ -79,19 +89,7 @@ public class GenericGunItem extends Item {
             if (resolved != null && resolved != net.minecraft.world.item.Items.AIR) return resolved;
         }
         // Legacy family mapping (kept as fallback when JSON omits empty_magazine).
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.PISTOL_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.PISTOL_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.ASSAULT_RIFLE_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.ASSAULT_RIFLE_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.SMG_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.SMG_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.MINIGUN_DRUM.get()) return com.techguns.techguns3.registry.TGItems.MINIGUN_DRUM_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.ENERGY_CELL.get()) return com.techguns.techguns3.registry.TGItems.ENERGY_CELL_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.BIO_TANK.get()) return com.techguns.techguns3.registry.TGItems.BIO_TANK_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.FUEL_TANK.get()) return com.techguns.techguns3.registry.TGItems.FUEL_TANK_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.NUCLEAR_POWERCELL.get()) return com.techguns.techguns3.registry.TGItems.NUCLEAR_POWERCELL_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.ADVANCED_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.ADVANCED_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.AS50_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.AS50_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.GAUSS_MAGAZINE.get()) return com.techguns.techguns3.registry.TGItems.GAUSS_MAGAZINE_EMPTY.get();
-        if (ammoItem.get() == com.techguns.techguns3.registry.TGItems.REDSTONE_BATTERY.get()) return com.techguns.techguns3.registry.TGItems.REDSTONE_BATTERY_EMPTY.get();
-        return null;
+        return com.techguns.techguns3.registry.TGItems.emptyMagazineOf(ammoItem.get());
     }
 
     /**
@@ -103,17 +101,12 @@ public class GenericGunItem extends Item {
         out.add(ammoItem());
         GunExtras ex = extras();
         if (ex.hasExtraAmmo()) {
-            for (String id : ex.extraAmmoIds()) {
-                try {
-                    var loc = Identifier.fromNamespaceAndPath(
-                            TechGuns3.MODID, id);
-                    var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(loc);
-                    if (item != null && item != net.minecraft.world.item.Items.AIR && !out.contains(item)) {
-                        out.add(item);
-                    }
-                } catch (Exception e) {
-                    TechGuns3.LOGGER.debug("[TechGuns3] skipping unknown extra ammo {} for {}",
-                            id, gunId, e);
+            for (Identifier id : ex.extraAmmoIds()) {
+                Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(id);
+                if (item == net.minecraft.world.item.Items.AIR) {
+                    TechGuns3.LOGGER.debug("[TechGuns3] skipping unknown extra ammo {} for {}", id, gunId);
+                } else if (!out.contains(item)) {
+                    out.add(item);
                 }
             }
         }
@@ -126,10 +119,6 @@ public class GenericGunItem extends Item {
 
     public int loadedRounds(ItemStack gun) {
         return gun.getOrDefault(TGDataComponents.AMMO.get(), def().magazine());
-    }
-
-    public boolean isReloading(Player player, ItemStack gun) {
-        return player.getCooldowns().isOnCooldown(gun);
     }
 
     // --- RMB hold = aim/zoom (vanilla use system, BOW pose gives aiming arms for free) ---
@@ -145,7 +134,7 @@ public class GenericGunItem extends Item {
 
     @Override
     public int getUseDuration(ItemStack stack, LivingEntity user) {
-        return 72000;
+        return USE_DURATION_INFINITE;
     }
 
     @Override
@@ -193,13 +182,14 @@ public class GenericGunItem extends Item {
     @Override
     public int getBarWidth(ItemStack stack) {
         int mag = def().magazine();
-        return Math.round(13.0f * stack.getOrDefault(TGDataComponents.AMMO.get(), mag) / (float) mag);
+        return Math.round(BAR_WIDTH * stack.getOrDefault(TGDataComponents.AMMO.get(), mag) / (float) mag);
     }
 
     @Override
     public int getBarColor(ItemStack stack) {
         int mag = def().magazine();
         float fraction = stack.getOrDefault(TGDataComponents.AMMO.get(), mag) / (float) mag;
-        return fraction > 0.5f ? 0x55FF55 : fraction > 0.2f ? 0xFFAA00 : 0xFF5555;
+        return fraction > BAR_FULL_FRACTION ? BAR_COLOR_FULL
+                : fraction > BAR_LOW_FRACTION ? BAR_COLOR_MID : BAR_COLOR_LOW;
     }
 }

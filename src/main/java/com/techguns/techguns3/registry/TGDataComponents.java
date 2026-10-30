@@ -22,7 +22,7 @@ public final class TGDataComponents {
     /** Rounds currently loaded in the gun. Absent = full magazine (freshly crafted / creative). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> AMMO =
             DATA_COMPONENTS.registerComponentType("ammo",
-                    builder -> builder.persistent(com.mojang.serialization.Codec.INT)
+                    builder -> builder.persistent(com.mojang.serialization.Codec.intRange(0, Integer.MAX_VALUE))
                             .networkSynchronized(ByteBufCodecs.INT));
 
     /**

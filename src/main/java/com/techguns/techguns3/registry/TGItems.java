@@ -4,10 +4,15 @@ import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.item.AnimatedGunItem;
 import com.techguns.techguns3.item.GenericGunItem;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Items. Gun tunables live in {@code data/techguns3/guns/*.json}
@@ -181,28 +186,49 @@ public final class TGItems {
     // the time these item factories run. The entity binding itself lives in
     // the ENTITY_DATA component that Properties.spawnEgg attaches.
 
-    public static final DeferredItem<SpawnEggItem> ZOMBIE_SOLDIER_SPAWN_EGG = ITEMS.registerItem("zombie_soldier_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_SOLDIER.get())));
-    public static final DeferredItem<SpawnEggItem> BANDIT_SPAWN_EGG = ITEMS.registerItem("bandit_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.BANDIT.get())));
-    public static final DeferredItem<SpawnEggItem> ARMY_SOLDIER_SPAWN_EGG = ITEMS.registerItem("army_soldier_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ARMY_SOLDIER.get())));
-    public static final DeferredItem<SpawnEggItem> COMMANDO_SPAWN_EGG = ITEMS.registerItem("commando_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.COMMANDO.get())));
-    public static final DeferredItem<SpawnEggItem> OUTCAST_SPAWN_EGG = ITEMS.registerItem("outcast_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.OUTCAST.get())));
-    public static final DeferredItem<SpawnEggItem> ZOMBIE_POLICEMAN_SPAWN_EGG = ITEMS.registerItem("zombie_policeman_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_POLICEMAN.get())));
-    public static final DeferredItem<SpawnEggItem> ZOMBIE_MINER_SPAWN_EGG = ITEMS.registerItem("zombie_miner_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_MINER.get())));
-    public static final DeferredItem<SpawnEggItem> PSYCHO_STEVE_SPAWN_EGG = ITEMS.registerItem("psycho_steve_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.PSYCHO_STEVE.get())));
-    public static final DeferredItem<SpawnEggItem> SKELETON_SOLDIER_SPAWN_EGG = ITEMS.registerItem("skeleton_soldier_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.SKELETON_SOLDIER.get())));
-    public static final DeferredItem<SpawnEggItem> ZOMBIE_PIGMAN_SOLDIER_SPAWN_EGG = ITEMS.registerItem("zombie_pigman_soldier_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_PIGMAN_SOLDIER.get())));
-    public static final DeferredItem<SpawnEggItem> SUPER_MUTANT_SPAWN_EGG = ITEMS.registerItem("super_mutant_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.SUPER_MUTANT.get())));
-    public static final DeferredItem<SpawnEggItem> ZOMBIE_FARMER_SPAWN_EGG = ITEMS.registerItem("zombie_farmer_spawn_egg",
-            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_FARMER.get())));
+    private static DeferredItem<SpawnEggItem> spawnEgg(String name, Supplier<? extends EntityType<?>> type) {
+        return ITEMS.registerItem(name, props -> new SpawnEggItem(props.spawnEgg(type.get())));
+    }
+
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_SOLDIER_SPAWN_EGG = spawnEgg("zombie_soldier_spawn_egg", TGEntities.ZOMBIE_SOLDIER);
+    public static final DeferredItem<SpawnEggItem> BANDIT_SPAWN_EGG = spawnEgg("bandit_spawn_egg", TGEntities.BANDIT);
+    public static final DeferredItem<SpawnEggItem> ARMY_SOLDIER_SPAWN_EGG = spawnEgg("army_soldier_spawn_egg", TGEntities.ARMY_SOLDIER);
+    public static final DeferredItem<SpawnEggItem> COMMANDO_SPAWN_EGG = spawnEgg("commando_spawn_egg", TGEntities.COMMANDO);
+    public static final DeferredItem<SpawnEggItem> OUTCAST_SPAWN_EGG = spawnEgg("outcast_spawn_egg", TGEntities.OUTCAST);
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_POLICEMAN_SPAWN_EGG = spawnEgg("zombie_policeman_spawn_egg", TGEntities.ZOMBIE_POLICEMAN);
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_MINER_SPAWN_EGG = spawnEgg("zombie_miner_spawn_egg", TGEntities.ZOMBIE_MINER);
+    public static final DeferredItem<SpawnEggItem> PSYCHO_STEVE_SPAWN_EGG = spawnEgg("psycho_steve_spawn_egg", TGEntities.PSYCHO_STEVE);
+    public static final DeferredItem<SpawnEggItem> SKELETON_SOLDIER_SPAWN_EGG = spawnEgg("skeleton_soldier_spawn_egg", TGEntities.SKELETON_SOLDIER);
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_PIGMAN_SOLDIER_SPAWN_EGG = spawnEgg("zombie_pigman_soldier_spawn_egg", TGEntities.ZOMBIE_PIGMAN_SOLDIER);
+    public static final DeferredItem<SpawnEggItem> SUPER_MUTANT_SPAWN_EGG = spawnEgg("super_mutant_spawn_egg", TGEntities.SUPER_MUTANT);
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_FARMER_SPAWN_EGG = spawnEgg("zombie_farmer_spawn_egg", TGEntities.ZOMBIE_FARMER);
+
+    // --- magazine family mapping (ammo item -> its empty counterpart) ---
+
+    private static volatile Map<Item, Item> EMPTY_MAGAZINES;
+
+    /**
+     * Empty item returned when a magazine is consumed, or null for loose
+     * rounds. Built lazily on first use, after item registration.
+     */
+    public static Item emptyMagazineOf(Item ammo) {
+        Map<Item, Item> map = EMPTY_MAGAZINES;
+        if (map == null) {
+            Map<Item, Item> built = new HashMap<>();
+            built.put(PISTOL_MAGAZINE.get(), PISTOL_MAGAZINE_EMPTY.get());
+            built.put(ASSAULT_RIFLE_MAGAZINE.get(), ASSAULT_RIFLE_MAGAZINE_EMPTY.get());
+            built.put(SMG_MAGAZINE.get(), SMG_MAGAZINE_EMPTY.get());
+            built.put(MINIGUN_DRUM.get(), MINIGUN_DRUM_EMPTY.get());
+            built.put(ENERGY_CELL.get(), ENERGY_CELL_EMPTY.get());
+            built.put(BIO_TANK.get(), BIO_TANK_EMPTY.get());
+            built.put(FUEL_TANK.get(), FUEL_TANK_EMPTY.get());
+            built.put(NUCLEAR_POWERCELL.get(), NUCLEAR_POWERCELL_EMPTY.get());
+            built.put(ADVANCED_MAGAZINE.get(), ADVANCED_MAGAZINE_EMPTY.get());
+            built.put(AS50_MAGAZINE.get(), AS50_MAGAZINE_EMPTY.get());
+            built.put(GAUSS_MAGAZINE.get(), GAUSS_MAGAZINE_EMPTY.get());
+            built.put(REDSTONE_BATTERY.get(), REDSTONE_BATTERY_EMPTY.get());
+            EMPTY_MAGAZINES = map = Map.copyOf(built);
+        }
+        return map.get(ammo);
+    }
 }

@@ -1,5 +1,7 @@
 package com.techguns.techguns3.item;
 
+import net.minecraft.resources.Identifier;
+
 /**
  * Wave-2 exotic mechanics, ported from Techguns2-CE gun classes.
  *
@@ -30,7 +32,7 @@ public record GunExtras(
         int lockPersist,
         double lockRange,
         int radiationTicks,
-        String[] extraAmmoIds,
+        Identifier[] extraAmmoIds,
         // --- wave-2 visuals (1:1 from ClientProxy/ScreenEffect) ---
         int muzzleFlash,
         int loopTicks,
@@ -56,20 +58,24 @@ public record GunExtras(
 
     /** Turn rate for guns that declare guided without a homing_turn (GuidedMissileLauncher). */
     public static final float GUIDED_DEFAULT_TURN = 0.16f;
+    /** Guided lock-on defaults (GuidedMissileLauncher): acquire in 1s, persist 4s, range 150 blocks. */
+    public static final int LOCK_TIME = 20;
+    public static final int LOCK_PERSIST = 80;
+    public static final double LOCK_RANGE = 150.0;
 
     public static final GunExtras DEFAULT = new GunExtras(
-            null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0, null,
+            null, false, 0, 1, 1, 0.0f, false, 0.0f, false, LOCK_TIME, LOCK_PERSIST, LOCK_RANGE, 0, null,
             FLASH_AUTO, 0, false);
 
     public static GunExtras explosive(float max, float min, float r1, float r2, float blockDamage) {
         return new GunExtras(new ExplosiveSpec(max, min, r1, r2, blockDamage, false),
-                false, 0, 1, 1, 1.0f, false, 0.0f, false, 20, 80, 150.0, 0, null,
+                false, 0, 1, 1, 1.0f, false, 0.0f, false, LOCK_TIME, LOCK_PERSIST, LOCK_RANGE, 0, null,
                 FLASH_AUTO, 0, false);
     }
 
     public static GunExtras nuke(float max, float min, float r1, float r2) {
         return new GunExtras(new ExplosiveSpec(max, min, r1, r2, 0.5f, true),
-                false, 0, 1, 1, 3.0f, false, 0.0f, false, 20, 80, 150.0, 1200, null,
+                false, 0, 1, 1, 3.0f, false, 0.0f, false, LOCK_TIME, LOCK_PERSIST, LOCK_RANGE, 1200, null,
                 FLASH_AUTO, 0, false);
     }
 
@@ -110,7 +116,7 @@ public record GunExtras(
                 muzzleFlash, loopTicks, continuousBeam);
     }
 
-    public GunExtras withExtraAmmo(String... ids) {
+    public GunExtras withExtraAmmo(Identifier... ids) {
         return new GunExtras(explosive, beam, chargeTicks, ammoBase, ammoFull, knockback, ignoreIframes,
                 homingTurn, guided, lockTime, lockPersist, lockRange, radiationTicks, ids,
                 muzzleFlash, loopTicks, continuousBeam);

@@ -12,6 +12,8 @@ import net.minecraft.world.item.Items;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -21,21 +23,49 @@ import java.util.function.Supplier;
  * <p>Loaded from {@code data/<namespace>/guns/*.json} via datapack reload
  * (see {@code resource.GunDataLoader}), synced to clients as JSON text.
  * Combat code keeps using {@link GunStats}/{@link GunExtras} via
- * {@link #toStats()} / {@link #toExtras()} so ballistics stay untouched.</p>
+ * {@link #toStats} / {@link #toExtras} so ballistics stay untouched.</p>
  *
  * <p>Split into nested blocks because {@code RecordCodecBuilder.group} caps at
  * 16 fields. JSON shape: {@code ammo, empty_magazine?, ballistic{}, sounds{},
  * handling{}, extras{}} — see {@code data/techguns3/guns/pistol.json}.</p>
+ *
+ * <p>A definition is immutable, so the combat-facing projections are built once
+ * and cached. {@code /reload} swaps whole {@code GunDefinition} objects instead
+ * of mutating them, so the cache can never go stale.</p>
  */
-public record GunDefinition(
-        int schemaVersion,
-        Identifier ammo,
-        Optional<Identifier> emptyMagazine,
-        Ballistic ballistic,
-        SoundSet sounds,
-        Handling handling,
-        Extras extras
-) {
+public final class GunDefinition {
+    public static final int CURRENT_SCHEMA = 1;
+
+    private final int schemaVersion;
+    private final Identifier ammo;
+    private final Optional<Identifier> emptyMagazine;
+    private final Ballistic ballistic;
+    private final SoundSet sounds;
+    private final Handling handling;
+    private final Extras extras;
+
+    private GunStats statsCache;
+    private GunExtras extrasCache;
+
+    public GunDefinition(int schemaVersion, Identifier ammo, Optional<Identifier> emptyMagazine,
+                         Ballistic ballistic, SoundSet sounds, Handling handling, Extras extras) {
+        this.schemaVersion = schemaVersion;
+        this.ammo = ammo;
+        this.emptyMagazine = emptyMagazine;
+        this.ballistic = ballistic;
+        this.sounds = sounds;
+        this.handling = handling;
+        this.extras = extras;
+    }
+
+    public int schemaVersion() { return schemaVersion; }
+    public Identifier ammo() { return ammo; }
+    public Optional<Identifier> emptyMagazine() { return emptyMagazine; }
+    public Ballistic ballistic() { return ballistic; }
+    public SoundSet sounds() { return sounds; }
+    public Handling handling() { return handling; }
+    public Extras extras() { return extras; }
+
     public record ExplosiveDef(float max, float min, float r1, float r2, float block, boolean nuke) {
         public static final Codec<ExplosiveDef> CODEC = RecordCodecBuilder.create(inst -> inst.group(
                 Codec.FLOAT.fieldOf("max").forGetter(ExplosiveDef::max),
@@ -144,8 +174,6 @@ public record GunDefinition(
         ).apply(inst, Extras::new));
     }
 
-    public static final int CURRENT_SCHEMA = 1;
-
     public static final Codec<GunDefinition> CODEC = RecordCodecBuilder.create(inst -> inst.group(
             Codec.INT.optionalFieldOf("schema_version", CURRENT_SCHEMA).forGetter(GunDefinition::schemaVersion),
             Identifier.CODEC.fieldOf("ammo").forGetter(GunDefinition::ammo),
@@ -161,7 +189,8 @@ public record GunDefinition(
                     .forGetter(GunDefinition::handling),
             Extras.CODEC.optionalFieldOf("extras", new Extras(
                     Optional.empty(), false, 0, 1, 1, 0.0f, false, 0.0f,
-                    false, 20, 80, 150.0, 0, List.of(), false))
+                    false, GunExtras.LOCK_TIME, GunExtras.LOCK_PERSIST, GunExtras.LOCK_RANGE,
+                    0, List.of(), false))
                     .forGetter(GunDefinition::extras)
     ).apply(inst, GunDefinition::new));
 
@@ -201,7 +230,15 @@ public record GunDefinition(
     public int loopTicks() { return handling.loopTicks(); }
     public boolean twoHanded() { return handling.twoHanded(); }
 
-    /** Basic sanity: returns error string or null when valid. */
+    /** Sound ids already warned about (a broken sound must not spam every shot). */
+    private static final Set<Identifier> WARNED_SOUNDS = ConcurrentHashMap.newKeySet();
+    /** Projectile kinds already warned about. */
+    private static final Set<String> WARNED_PROJECTILES = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Basic sanity: returns an error string or null when valid. Runs at datapack
+     * load; builtins skip it and are trusted to be correct.
+     */
     public String validate() {
         if (ballistic.magazine() <= 0) return "ballistic.magazine must be > 0";
         if (ballistic.cooldownTicks() < 1) return "ballistic.cooldown_ticks must be >= 1";
@@ -209,9 +246,20 @@ public record GunDefinition(
         if (ballistic.rangeTtl() < 1) return "ballistic.range_ttl must be >= 1";
         if (ballistic.pellets() < 1) return "ballistic.pellets must be >= 1";
         if (ballistic.spread() < 0 || ballistic.pelletSpread() < 0) return "spread must be >= 0";
+        if (ballistic.speed() <= 0) return "ballistic.speed must be > 0";
+        if (ballistic.dropEnd() < ballistic.dropStart()) return "ballistic.drop_end must be >= drop_start";
+        if (handling.zoomFov() <= 0) return "handling.zoom_fov must be > 0";
+        if (extras.explosive().isPresent()) {
+            var e = extras.explosive().get();
+            if (e.r1() <= 0 || e.r2() < e.r1()) return "extras.explosive needs r2 >= r1 > 0";
+            if (e.block() < 0.0f || e.block() > 1.0f) return "extras.explosive.block must be 0..1";
+        }
+        if (extras.chargeTicks() > 0 && (extras.ammoBase() < 1 || extras.ammoFull() < 1)) {
+            return "extras.ammo_base/ammo_full must be >= 1 for charged guns";
+        }
         try {
             GunStats.ProjectileKind.valueOf(handling.projectile());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return "unknown handling.projectile: " + handling.projectile();
         }
         return null;
@@ -223,19 +271,39 @@ public record GunDefinition(
         return () -> {
             SoundEvent resolved = BuiltInRegistries.SOUND_EVENT.getValue(loc);
             if (resolved == null) {
-                TechGuns3.LOGGER.warn("[TechGuns3] missing sound {}, falling back", loc);
+                if (WARNED_SOUNDS.add(loc)) {
+                    TechGuns3.LOGGER.warn("[TechGuns3] missing sound {}, falling back", loc);
+                }
                 return fallback == null ? null : fallback.get();
             }
             return resolved;
         };
     }
 
-    /** Convert to the combat-facing stats (sounds resolved live so /reload swaps them). */
+    /**
+     * Convert to the combat-facing stats (sounds resolved live so /reload swaps
+     * them). Built once per definition and cached; the suppliers inside stay
+     * lazy, so live resolution survives the cache.
+     */
     public GunStats toStats(Supplier<SoundEvent> fallbackFire, Supplier<SoundEvent> fallbackReload) {
+        GunStats stats = statsCache;
+        if (stats == null) {
+            stats = buildStats(fallbackFire, fallbackReload);
+            statsCache = stats;
+        }
+        return stats;
+    }
+
+    private GunStats buildStats(Supplier<SoundEvent> fallbackFire, Supplier<SoundEvent> fallbackReload) {
         GunStats.ProjectileKind kind;
         try {
             kind = GunStats.ProjectileKind.valueOf(handling.projectile());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            // validate() rejects this at load; builtins and unvalidated paths land here.
+            if (WARNED_PROJECTILES.add(handling.projectile())) {
+                TechGuns3.LOGGER.warn("[TechGuns3] unknown projectile kind '{}', using BALLISTIC",
+                        handling.projectile());
+            }
             kind = GunStats.ProjectileKind.BALLISTIC;
         }
         Supplier<SoundEvent> fire = soundSupplier(sounds.fire(), fallbackFire);
@@ -271,6 +339,8 @@ public record GunDefinition(
     }
 
     public GunExtras toExtras() {
+        GunExtras cached = extrasCache;
+        if (cached != null) return cached;
         GunExtras base;
         if (extras.explosive().isPresent()) {
             var e = extras.explosive().get();
@@ -284,24 +354,16 @@ public record GunDefinition(
         if (extras.beam()) base = base.withBeam(extras.radiationTicks());
         else if (extras.radiationTicks() > 0) base = base.withRadiation(extras.radiationTicks());
         if (extras.knockback() != 0.0f || extras.ignoreIframes()) base = base.withKnockback(extras.knockback(), extras.ignoreIframes());
-        if (extras.guided()) base = base.withGuided(extras.homingTurn() == 0.0f ? 0.16f : extras.homingTurn(),
+        if (extras.guided()) base = base.withGuided(extras.homingTurn() == 0.0f ? GunExtras.GUIDED_DEFAULT_TURN : extras.homingTurn(),
                 extras.lockTime(), extras.lockPersist(), extras.lockRange());
         else if (extras.homingTurn() != 0.0f) base = base.withHoming(extras.homingTurn());
         if (!extras.extraAmmo().isEmpty()) {
-            String[] ids = extras.extraAmmo().stream().map(Identifier::getPath).toArray(String[]::new);
-            base = base.withExtraAmmo(ids);
-        }
-        if (extras.explosive().isPresent() && extras.explosive().get().nuke() && extras.radiationTicks() > 0) {
-            final int want = extras.radiationTicks();
-            GunExtras.ExplosiveSpec spec = base.explosive();
-            base = new GunExtras(spec, base.beam(), base.chargeTicks(), base.ammoBase(), base.ammoFull(),
-                    base.knockback(), base.ignoreIframes(), base.homingTurn(), base.guided(),
-                    base.lockTime(), base.lockPersist(), base.lockRange(), want, base.extraAmmoIds(),
-                    base.muzzleFlash(), base.loopTicks(), base.continuousBeam());
+            base = base.withExtraAmmo(extras.extraAmmo().toArray(Identifier[]::new));
         }
         if (handling.muzzleFlash() != GunExtras.FLASH_AUTO) base = base.withMuzzle(handling.muzzleFlash());
         if (handling.loopTicks() > 0) base = base.withLoop(handling.loopTicks());
         if (extras.continuousBeam()) base = base.withContinuous();
+        extrasCache = base;
         return base;
     }
 
