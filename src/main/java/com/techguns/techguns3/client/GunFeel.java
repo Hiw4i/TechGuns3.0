@@ -30,6 +30,16 @@ public final class GunFeel {
     /** Camera punch, drives the zoom FOV spike on every shot. */
     private final Spring fovPunch = new Spring(170.0f, 19.0f);
     /**
+     * The push of the weapon toward the shooter's shoulder on every shot.
+     *
+     * <p>A spring on purpose, and deliberately NOT part of the kick stack: the
+     * stack sums every shot still alive so the muzzle climbs through a burst,
+     * and a push that climbed the same way would slide the weapon into the
+     * camera and off the bottom of the screen. The old single-spring recoil
+     * was bounded, this restores exactly that bound.</p>
+     */
+    private final Spring recoilPush = new Spring(120.0f, 17.0f);
+    /**
      * Scope zoom: 1 = no zoom, below 1 = zoomed in.
      *
      * <p>It starts at one, not at zero: the zoom multiplies the field of view
@@ -142,6 +152,11 @@ public final class GunFeel {
         return Mth.clamp(fovPunch.value(), 0.0f, 1.0f);
     }
 
+    /** Weapon push toward the shoulder, in blocks of view-model space. */
+    public float recoilPush() {
+        return recoilPush.value();
+    }
+
     /** The scope zoom factor, 1 = no zoom. */
     public float zoom() {
         return zoom.value();
@@ -196,6 +211,9 @@ public final class GunFeel {
         kick.wobbleAmount = 0.12f * Math.abs(pitch);
         kicks.add(kick);
 
+        // The push gets the same impulse the old single recoil spring received,
+        // so its peak stays the per-shot bound the weapon was tuned with.
+        recoilPush.kick(pitch * 38.0f);
         fovPunch.kick(1.0f * scale * jitter);
     }
 
@@ -212,6 +230,7 @@ public final class GunFeel {
         aim.update(dt);
         sprint.update(dt);
         fovPunch.update(dt);
+        recoilPush.update(dt);
         zoom.update(dt);
         swayPitch.update(dt);
         swayYaw.update(dt);

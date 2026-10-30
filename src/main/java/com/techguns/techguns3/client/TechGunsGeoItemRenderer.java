@@ -49,8 +49,11 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
             return;
         }
         // Only the hip pose is measured: while aiming the weapon is already
-        // moved, so its sight would report the aimed position instead.
-        if (GunFeel.get().aimProgress() > 0.02f) {
+        // moved, so its sight would report the aimed position instead. An
+        // active recoil kick is skipped for the same reason - the measured
+        // offset must be the rest pose, or aiming slides the weapon by the
+        // kicked position and the shot throws the sights off.
+        if (GunFeel.get().aimProgress() > 0.02f || GunFeel.get().recoilPitch() != 0.0f) {
             return;
         }
         // The rear sight. The position the listener reports is relative to the
@@ -134,12 +137,13 @@ public final class TechGunsGeoItemRenderer extends GeoItemRenderer<AnimatedGunIt
             poseStack.rotateDegrees(Axis.ZP, (float) Math.sin(phase) * 2.5f * amount);
         }
 
-        // Recoil: the weapon is pushed back and the muzzle climbs.
+        // Recoil: the muzzle climbs through the burst (the kick stack), while
+        // the push toward the shoulder stays bounded per shot (the spring).
         float kick = feel.recoilPitch();
-        if (kick != 0.0f || feel.recoilYaw() != 0.0f) {
+        if (kick != 0.0f || feel.recoilYaw() != 0.0f || feel.recoilPush() != 0.0f) {
             poseStack.rotateDegrees(Axis.XP, (float) Math.toDegrees(kick));
             poseStack.rotateDegrees(Axis.YP, (float) Math.toDegrees(feel.recoilYaw()));
-            poseStack.translate(0.0f, 0.0f, kick * 0.55f);
+            poseStack.translate(0.0f, 0.0f, feel.recoilPush() * 0.55f);
         }
     }
 
