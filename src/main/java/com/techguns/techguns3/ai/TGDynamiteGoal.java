@@ -32,6 +32,14 @@ import java.util.EnumSet;
 public final class TGDynamiteGoal extends Goal {
     private static final int RETREAT_TICKS = 90;
     private static final int BREACH_COOLDOWN = 200;
+    /** Short breather after the wall turned out to be gone already. */
+    private static final int WALL_GONE_COOLDOWN = 60;
+    /**
+     * No-LOS ticks before this goal may grab the situation. Deliberately later
+     * than the combat goal's handoff (40) so the shooter gets the first word
+     * and dynamite is the escalation, not the reflex.
+     */
+    private static final int HANDOFF_NO_LOS = 50;
 
     private final TGArmedMob mob;
     private int cooldown;
@@ -63,7 +71,7 @@ public final class TGDynamiteGoal extends Goal {
         TGCombatMemory memory = mob.memory();
         if (memory.requestSuicideTNT) return true;
         double distSq = mob.distanceToSqr(target);
-        return (memory.requestTNT || memory.noLosTicks > 50)
+        return (memory.requestTNT || memory.noLosTicks > HANDOFF_NO_LOS)
                 && distSq <= profile.abilities().dynamiteRange() * profile.abilities().dynamiteRange();
     }
 
@@ -110,7 +118,7 @@ public final class TGDynamiteGoal extends Goal {
         }
 
         if (retreating) {
-            if (mob.memory().dynamiteRetreatTicks <= 0 || mob.memory().dynamiteRetreatTicks > RETREAT_TICKS) {
+            if (mob.memory().dynamiteRetreatTicks <= 0) {
                 retreating = false;
                 cooldown = BREACH_COOLDOWN;
             }
@@ -121,7 +129,6 @@ public final class TGDynamiteGoal extends Goal {
             prime(level, mob.blockPosition());
             mob.consumeDynamite();
             mob.memory().requestSuicideTNT = false;
-            mob.memory().dynamiteCooldown = 600;
             suicidePhase = true;
             return;
         }
@@ -130,7 +137,7 @@ public final class TGDynamiteGoal extends Goal {
         BlockHitResult wallHit = TGCoverFinder.blockingHit(mob, target);
         if (wallHit == null) {
             mob.memory().requestTNT = false;
-            cooldown = 60;
+            cooldown = WALL_GONE_COOLDOWN;
             return;
         }
         BlockPos place = TGCoverFinder.towardMob(wallHit, mob);
@@ -143,7 +150,6 @@ public final class TGDynamiteGoal extends Goal {
         prime(level, place);
         mob.consumeDynamite();
         mob.memory().requestTNT = false;
-        mob.memory().dynamiteCooldown = BREACH_COOLDOWN;
 
         Vec3 away = mob.position().subtract(target.position());
         Vec3 dest = away.lengthSqr() < 0.01

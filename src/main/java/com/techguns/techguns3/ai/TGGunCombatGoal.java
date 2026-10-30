@@ -34,11 +34,24 @@ public final class TGGunCombatGoal extends Goal {
     private static final int AIM_SETTLE_TICKS = 4;
     /** No-LOS ticks before handing the situation to the siege goals. */
     private static final int SIEGE_NO_LOS = 40;
+    /** Strafe-side flip timer, opening burst vs mid-fight band (deliberately different). */
+    private static final int FLIP_TICKS_OPENING = 40;
+    private static final int FLIP_JITTER_OPENING = 40;
+    private static final int FLIP_TICKS_BAND = 40;
+    private static final int FLIP_JITTER_BAND = 50;
+    /** Ticks between failed-path re-paths while chasing. */
+    private static final int REPATH_TICKS = 5;
+    /** Stop walking at the cover block (squared; BlockPos distances are integers). */
+    private static final double AT_COVER_DIST_SQ = 2.5;
+    /** Reload-length wait before giving a failed cover search another try. */
+    private static final int COVER_SCAN_RETRY_TICKS = 20;
 
     private final TGArmedMob mob;
     /** Tick of the last shot; -1 sentinel avoids int overflow vs MIN_VALUE. */
     private int lastShotTick = -1;
     private int repathCooldown;
+    /** Ticks until a failed cover search may run again (no cover found backoff). */
+    private int coverScanCooldown;
     @Nullable
     private Vec3 lastKnownTargetPos;
 
@@ -74,8 +87,9 @@ public final class TGGunCombatGoal extends Goal {
         TGCombatMemory memory = mob.memory();
         memory.aimTicks = 0;
         memory.burstShots = 0;
-        memory.strafeFlipTicks = 40 + mob.getRandom().nextInt(40);
+        memory.strafeFlipTicks = FLIP_TICKS_OPENING + mob.getRandom().nextInt(FLIP_JITTER_OPENING);
         repathCooldown = 0;
+        coverScanCooldown = 0;
     }
 
     @Override
@@ -105,7 +119,7 @@ public final class TGGunCombatGoal extends Goal {
         TGCombatMemory memory = mob.memory();
 
         double dist = mob.distanceTo(target);
-        boolean los = mob.hasLineOfSight(target);
+        boolean los = memory.hasLos;
         if (los) {
             lastKnownTargetPos = target.position();
         }
@@ -124,8 +138,7 @@ public final class TGGunCombatGoal extends Goal {
                 memory.requestDig = true;
                 return;
             }
-            if (TGConfig.mobsGriefing() && abilities.build()
-                    && mob.buildMaterials() > 0 && lastKnownTargetPos != null) {
+            if (canBridge(profile) && lastKnownTargetPos != null) {
                 memory.requestBuild = true;
                 return;
             }
@@ -161,22 +174,24 @@ public final class TGGunCombatGoal extends Goal {
         }
 
         // --- movement ---
-        move(dist, los, profile);
+        move(dist, los, profile, target);
     }
 
     /** Range keeping + flanking sidestep; hides behind cover between bursts. */
-    private void move(double dist, boolean los, MobProfile profile) {
+    private void move(double dist, boolean los, MobProfile profile, LivingEntity target) {
         TGCombatMemory memory = mob.memory();
         double preferred = profile.combat().preferredRange();
 
         if (--repathCooldown > 0) return;
-        repathCooldown = 5;
+        repathCooldown = REPATH_TICKS;
 
         // Chase when out of range or blind to the target.
         if (dist > profile.combat().maxRange() || !los) {
-            boolean moving = mob.getNavigation().moveTo(mob.getTarget(), 1.05);
-            if (!moving && los && canBridge(profile)) {
+            boolean moving = mob.getNavigation().moveTo(target, 1.05);
+            if (!moving && los && canBridge(profile) && memory.buildCooldown <= 0) {
                 // Pathfinder says no route (gap/cliff): ask the builder to bridge.
+                // Suppressed while the builder cools down, or the request would
+                // keep the combat goal yielded with nobody to serve it.
                 memory.requestBuild = true;
             }
             return;
@@ -194,8 +209,8 @@ public final class TGGunCombatGoal extends Goal {
         // target here (canyon, moat) is also the builder's problem.
         if (dist > preferred) {
             if (mob.getNavigation().isDone()) {
-                boolean moving = mob.getNavigation().moveTo(mob.getTarget(), 1.0);
-                if (!moving && canBridge(profile)) {
+                boolean moving = mob.getNavigation().moveTo(target, 1.0);
+                if (!moving && canBridge(profile) && memory.buildCooldown <= 0) {
                     memory.requestBuild = true;
                 }
             }
@@ -205,7 +220,7 @@ public final class TGGunCombatGoal extends Goal {
         // Inside the band: flank sideways, flipping sides periodically.
         if (memory.strafeFlipTicks <= 0) {
             memory.flankSide = -memory.flankSide;
-            memory.strafeFlipTicks = 40 + mob.getRandom().nextInt(50);
+            memory.strafeFlipTicks = FLIP_TICKS_BAND + mob.getRandom().nextInt(FLIP_JITTER_BAND);
         }
         if (mob.getNavigation().isDone()) {
             mob.getMoveControl().strafe(0.0f, 0.6f * memory.flankSide);
@@ -222,14 +237,26 @@ public final class TGGunCombatGoal extends Goal {
         TGCombatMemory memory = mob.memory();
         if (!profile.abilities().cover()) return;
         BlockPos cover = memory.coverPos;
-        if (cover == null || memory.coverPosAge > 100
+        if (cover == null) {
+            // Nothing found yet: retry on a backoff, a multi-second reload must
+            // not run a full raytrace sweep every tick.
+            if (coverScanCooldown > 0) {
+                coverScanCooldown--;
+            } else {
+                memory.coverPos = TGCoverFinder.findCover(mob, target);
+                memory.coverPosAge = 0;
+                cover = memory.coverPos;
+                coverScanCooldown = COVER_SCAN_RETRY_TICKS;
+            }
+        } else if (memory.coverPosAge > 100
                 || !mob.level().getBlockState(cover).isSolidRender()) {
+            // The spot went stale (mined, despawned): replace it immediately.
             memory.coverPos = TGCoverFinder.findCover(mob, target);
             memory.coverPosAge = 0;
             cover = memory.coverPos;
         }
         if (cover != null) {
-            if (mob.blockPosition().distSqr(cover) > 2.5) {
+            if (mob.blockPosition().distSqr(cover) > AT_COVER_DIST_SQ) {
                 mob.getNavigation().moveTo(cover.getX() + 0.5, cover.getY() + 1.0,
                         cover.getZ() + 0.5, 1.2);
             } else {

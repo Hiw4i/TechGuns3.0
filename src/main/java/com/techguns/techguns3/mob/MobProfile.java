@@ -8,6 +8,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+
+import javax.annotation.Nullable;
 import net.minecraft.world.item.Items;
 
 import java.util.List;
@@ -176,8 +178,10 @@ public record MobProfile(
     }
 
     /** Weighted-free pick: NPCs pick a random service weapon per spawn. */
+    @Nullable
     public Identifier pickWeapon(RandomSource random) {
         List<Identifier> pool = combat.weapons();
+        if (pool.isEmpty()) return null;
         return pool.get(random.nextInt(pool.size()));
     }
 
@@ -195,6 +199,12 @@ public record MobProfile(
     public String validate() {
         if (stats.maxHealth() <= 0.0 || stats.maxHealth() > 1024.0) return "max_health out of range";
         if (stats.movementSpeed() < 0.0 || stats.movementSpeed() > 4.0) return "movement_speed out of range";
+        if (stats.attackDamage() < 0.0) return "attack_damage must not be negative";
+        if (stats.armor() < 0.0 || stats.armor() > 30.0) return "armor out of range (0..30)";
+        if (stats.knockbackResistance() < 0.0 || stats.knockbackResistance() > 1.0) {
+            return "knockback_resistance must be 0..1";
+        }
+        if (stats.stepHeight() < 0.0 || stats.stepHeight() > 10.0) return "step_height out of range (0..10)";
         if (stats.followRange() < 1.0) return "follow_range must be positive";
         if (stats.scale() < 0.0625 || stats.scale() > 16.0) return "scale out of range";
         if (stats.blockBreakSpeed() < 0.0) return "block_break_speed must not be negative";

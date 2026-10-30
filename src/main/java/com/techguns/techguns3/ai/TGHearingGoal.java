@@ -19,6 +19,13 @@ import javax.annotation.Nullable;
  */
 public final class TGHearingGoal extends TargetGoal {
     private static final int SCAN_INTERVAL = 4;
+    /** Louder movement = larger hearing radius (sprint 24, walk 12, sneak 3). */
+    private static final double SPRINT_RADIUS = 24.0;
+    private static final double WALK_RADIUS = 12.0;
+    private static final double SNEAK_RADIUS = 3.0;
+    /** Horizontal speed squared tiers between the radius bands. */
+    private static final double SPRINT_SPEED_SQ = 0.10;
+    private static final double WALK_SPEED_SQ = 0.004;
 
     /** No sight or invisibility games: ears work through walls, full stop. */
     private static final TargetingConditions HEARD =
@@ -32,17 +39,23 @@ public final class TGHearingGoal extends TargetGoal {
         this.mob = mob;
     }
 
+    /**
+     * TargetGoal idiom: the scan runs on the tick this gate opens, and the
+     * cooldown is decremented HERE — the only place. {@code canContinueToUse}
+     * delegates to {@code canUse}, so a decrement inside {@code tick()} as
+     * well would tick the timer at a different rate depending on whether the
+     * goal happens to be running.
+     */
     @Override
     public boolean canUse() {
         if (!TGConfig.mobsAiEnabled()) return false;
         MobProfile profile = mob.profile();
         if (profile == null || !profile.abilities().hearPlayers()) return false;
-        return scanCooldown-- <= 0;
-    }
-
-    @Override
-    public void start() {
-        scanCooldown = 0;
+        if (scanCooldown > 0) {
+            scanCooldown--;
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -52,18 +65,18 @@ public final class TGHearingGoal extends TargetGoal {
 
     @Override
     public void tick() {
-        if (--scanCooldown > 0) return;
         scanCooldown = SCAN_INTERVAL;
         if (!(mob.level() instanceof ServerLevel level)) return;
 
         LivingEntity current = mob.getTarget();
         if (current != null && current.isAlive()) return;
 
+        // hearPlayer/hearGunfire already run every candidate through canAttack.
         Player heard = hearPlayer(level);
         if (heard == null) {
             heard = hearGunfire(level);
         }
-        if (heard != null && canAttack(heard, HEARD)) {
+        if (heard != null) {
             mob.setTarget(heard);
         }
     }
@@ -89,9 +102,9 @@ public final class TGHearingGoal extends TargetGoal {
 
     private double hearRadius(Player player) {
         double speedSq = player.getDeltaMovement().horizontalDistanceSqr();
-        if (player.isSprinting() || speedSq > 0.10) return 24.0;
-        if (speedSq > 0.004) return 12.0;
-        if (player.isShiftKeyDown()) return 3.0;
+        if (player.isSprinting() || speedSq > SPRINT_SPEED_SQ) return SPRINT_RADIUS;
+        if (speedSq > WALK_SPEED_SQ) return WALK_RADIUS;
+        if (player.isShiftKeyDown()) return SNEAK_RADIUS;
         return 0.0;
     }
 

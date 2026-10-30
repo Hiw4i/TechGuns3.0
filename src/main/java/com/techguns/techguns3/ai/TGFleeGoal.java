@@ -1,6 +1,7 @@
 package com.techguns.techguns3.ai;
 
 import com.techguns.techguns3.TGConfig;
+import com.techguns.techguns3.item.GenericGunItem;
 import com.techguns.techguns3.mob.MobProfile;
 import com.techguns.techguns3.mob.TGArmedMob;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,10 +22,14 @@ import java.util.EnumSet;
 public final class TGFleeGoal extends Goal {
     private static final int FLEE_TICKS = 120;
     private static final int COOLDOWN = 200;
+    /** Parting-shot attempt cadence; the weapon's own cooldown paces the actual fire. */
+    private static final int PARTING_SHOT_EVERY_TICKS = 15;
 
     private final TGArmedMob mob;
     private int fleeTicks;
     private int cooldown;
+    /** Tick of the last parting shot; keeps bolt-action weapons honest. */
+    private int lastShotTick = -1;
 
     public TGFleeGoal(TGArmedMob mob) {
         this.mob = mob;
@@ -91,10 +96,15 @@ public final class TGFleeGoal extends Goal {
             mob.getJumpControl().jump();
         }
 
-        // Parting shot while backing off (CE NPCs shoot on the retreat).
-        if (fleeTicks % 15 == 0 && mob.hasLineOfSight(target) && !mob.isReloading()
-                && mob.loadedRounds() > 0 && mob.profile() != null) {
+        // Parting shot while backing off (CE NPCs shoot on the retreat), paced
+        // by the weapon's own fire cooldown like the combat goal does.
+        GenericGunItem gun = mob.heldGun();
+        if (gun != null && fleeTicks % PARTING_SHOT_EVERY_TICKS == 0
+                && mob.hasLineOfSight(target) && !mob.isReloading()
+                && mob.loadedRounds() > 0 && mob.profile() != null
+                && mob.tickCount - lastShotTick >= gun.stats().fireCooldownTicks()) {
             mob.fireGunAt(target);
+            lastShotTick = mob.tickCount;
         }
     }
 }

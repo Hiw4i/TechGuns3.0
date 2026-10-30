@@ -14,9 +14,12 @@ import com.techguns.techguns3.combat.GunServerLogic;
 import com.techguns.techguns3.item.GenericGunItem;
 import com.techguns.techguns3.item.GunStats;
 import com.techguns.techguns3.registry.TGDataComponents;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -59,6 +62,27 @@ import javax.annotation.Nullable;
  * used when the profile is missing or lists no weapons.</p>
  */
 public class TGArmedMob extends Monster {
+    /** Equipment/resource caps (CE NPC behaviour: scrounging has a ceiling). */
+    public static final int MAX_SPARE_MAGAZINES = 64;
+    public static final int MAX_BUILD_MATERIALS = 256;
+    /** Equipment drop chance for NPCs that do not keep their guns (vanilla default). */
+    private static final float NPC_GUN_DROP_CHANCE = 0.085f;
+    /** Weapon behaviour defaults for profiles missing the combat block. */
+    private static final float DEFAULT_ACCURACY = 0.4f;
+    private static final double DEFAULT_DAMAGE_MULTIPLIER = 0.5;
+    private static final int DEFAULT_REACTION_TICKS = 10;
+    private static final int MIN_REACTION_TICKS = 2;
+    /** Aim error at accuracy 0 (degrees); sharpshooter accuracy 1 has none. */
+    private static final float MAX_AIM_JITTER_DEG = 6.0f;
+    private static final float SPREAD_WILD = 2.5f;
+    private static final float SPREAD_TIGHT = 0.4f;
+    /** Velocity lead is deliberately under full so dodging stays viable. */
+    private static final double LEAD_FACTOR = 0.85;
+    private static final float MIN_LEAD_SPEED = 0.1f;
+    /** Floors for the difficulty-scaled stats. */
+    private static final float MIN_ACCURACY = 0.05f;
+    private static final double MIN_DIFFICULTY_DIVISOR = 0.25;
+
     private final TGCombatMemory memory = new TGCombatMemory();
 
     /** Spare magazines; -1 = unlimited (the CE NPC behaviour). */
@@ -153,9 +177,8 @@ public class TGArmedMob extends Monster {
         spareMagazines = profile.combat().ammoMagazines();
         buildMaterials = profile.abilities().build() ? profile.abilities().buildBlocks() : 0;
         dynamiteLeft = profile.abilities().dynamite();
-        if (TGConfig.mobsKeepGunsOnDeath()) {
-            setDropChance(EquipmentSlot.MAINHAND, 1.0f);
-        }
+        // The drop chance itself is decided in equipGun (the one place that
+        // knows whether a gun is actually carried).
     }
 
     @Nullable
@@ -169,10 +192,15 @@ public class TGArmedMob extends Monster {
 
     /** Full magazine into main hand. */
     public void equipGun(GenericGunItem gun) {
+        setItemSlot(EquipmentSlot.MAINHAND, loadedGunStack(gun, gun.def().magazine()));
+        setDropChance(EquipmentSlot.MAINHAND, TGConfig.mobsKeepGunsOnDeath() ? 1.0f : NPC_GUN_DROP_CHANCE);
+    }
+
+    /** A fresh gun stack loaded with {@code rounds} (spawn/equip path only). */
+    private static ItemStack loadedGunStack(GenericGunItem gun, int rounds) {
         ItemStack stack = new ItemStack(gun);
-        stack.set(TGDataComponents.AMMO.get(), gun.def().magazine());
-        setItemSlot(EquipmentSlot.MAINHAND, stack);
-        setDropChance(EquipmentSlot.MAINHAND, TGConfig.mobsKeepGunsOnDeath() ? 1.0f : 0.085f);
+        stack.set(TGDataComponents.AMMO.get(), rounds);
+        return stack;
     }
 
     private void equipFallbackWeapon() {
@@ -183,8 +211,7 @@ public class TGArmedMob extends Monster {
         }
     }
 
-    private void setBaseAttribute(net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute,
-                                  double value) {
+    private void setBaseAttribute(Holder<Attribute> attribute, double value) {
         AttributeInstance instance = getAttribute(attribute);
         if (instance != null) {
             instance.setBaseValue(value);
@@ -226,10 +253,12 @@ public class TGArmedMob extends Monster {
         if (spareMagazines == 0) return false;
         GenericGunItem gun = heldGun();
         if (gun == null) return false;
-        memory.reloadTicks = gun.stats().reloadTimeTicks();
-        if (level() instanceof ServerLevel serverLevel) {
+        GunStats stats = gun.stats();
+        memory.reloadTicks = stats.reloadTimeTicks();
+        SoundEvent reloadSound = stats.reloadSound().get();
+        if (reloadSound != null && level() instanceof ServerLevel serverLevel) {
             serverLevel.playSound(null, getX(), getY(), getZ(),
-                    gun.stats().reloadSound().get(), getSoundSource(), 1.0f, 1.0f);
+                    reloadSound, getSoundSource(), 1.0f, 1.0f);
         }
         return true;
     }
@@ -259,14 +288,14 @@ public class TGArmedMob extends Monster {
         float pitch = (float) Math.toDegrees(-Math.atan2(direction.y, horizontal));
 
         float accuracy = effectiveAccuracy(profile);
-        // Angular aim error: 6 degrees at accuracy 0, sharpshooter at 1.
-        float jitterDeg = (1.0f - accuracy) * 6.0f;
+        // Angular aim error: full jitter at accuracy 0, sharpshooter at 1.
+        float jitterDeg = (1.0f - accuracy) * MAX_AIM_JITTER_DEG;
         yaw += (random.nextFloat() - 0.5f) * 2.0f * jitterDeg;
         pitch += (random.nextFloat() - 0.5f) * 2.0f * jitterDeg;
-        // Projectile spread multiplier: 2.5 = wild, 0.4 = tight.
-        float spreadMult = Mth.lerp(accuracy, 2.5f, 0.4f);
+        // Projectile spread multiplier: wild hip fire vs tight aimed shots.
+        float spreadMult = Mth.lerp(accuracy, SPREAD_WILD, SPREAD_TIGHT);
 
-        double damageMult = profile != null ? profile.combat().damageMultiplier() : 0.5;
+        double damageMult = profile != null ? profile.combat().damageMultiplier() : DEFAULT_DAMAGE_MULTIPLIER;
         GunStats scaled = stats.withDamage((float) (stats.baseDamage() * damageMult));
         BallisticCombat.fire(serverLevel, this, scaled, gun.extras(), null,
                 0.0f, 1.0f, -1, muzzle, yaw, pitch, getSoundSource(), spreadMult);
@@ -278,10 +307,10 @@ public class TGArmedMob extends Monster {
     /** Point ahead of a moving target: distance / bullet speed ticks of velocity. */
     private Vec3 leadPoint(LivingEntity target, Vec3 muzzle, float bulletSpeed) {
         Vec3 targetPos = target.getEyePosition();
-        if (bulletSpeed <= 0.1f) return targetPos;
+        if (bulletSpeed <= MIN_LEAD_SPEED) return targetPos;
         double ticksToHit = targetPos.distanceTo(muzzle) / bulletSpeed;
         // Lead slightly under full: feels smart, keeps dodging viable.
-        return targetPos.add(target.getDeltaMovement().scale(ticksToHit * 0.85));
+        return targetPos.add(target.getDeltaMovement().scale(ticksToHit * LEAD_FACTOR));
     }
 
     // --- targeting -----------------------------------------------------------
@@ -304,25 +333,27 @@ public class TGArmedMob extends Monster {
 
     /** Profile accuracy clamped through the global difficulty slider. */
     public float effectiveAccuracy(@Nullable MobProfile profile) {
-        double base = profile != null ? profile.combat().accuracy() : 0.4;
-        return (float) Mth.clamp(base * TGConfig.mobsDifficulty(), 0.05, 1.0);
+        double base = profile != null ? profile.combat().accuracy() : DEFAULT_ACCURACY;
+        return (float) Mth.clamp(base * TGConfig.mobsDifficulty(), MIN_ACCURACY, 1.0);
     }
 
     /** Reaction delay in ticks, scaled by difficulty (higher difficulty = faster). */
     public int reactionTicks(@Nullable MobProfile profile) {
-        int base = profile != null ? profile.combat().reactionTicks() : 10;
-        return Math.max(2, (int) Math.round(base / TGConfig.mobsDifficulty()));
+        int base = profile != null ? profile.combat().reactionTicks() : DEFAULT_REACTION_TICKS;
+        // The divisor floor keeps a mis-set config from zeroing the delay.
+        return Math.max(MIN_REACTION_TICKS,
+                (int) Math.round(base / Math.max(MIN_DIFFICULTY_DIVISOR, TGConfig.mobsDifficulty())));
     }
 
     // --- resources ---------------------------------------------------------
 
     public int spareMagazines() { return spareMagazines; }
     public void addSpareMagazines(int count) {
-        if (spareMagazines != -1) spareMagazines = Math.min(64, spareMagazines + count);
+        if (spareMagazines != -1) spareMagazines = Math.min(MAX_SPARE_MAGAZINES, spareMagazines + count);
     }
 
     public int buildMaterials() { return buildMaterials; }
-    public void addBuildMaterials(int count) { buildMaterials = Math.min(256, buildMaterials + count); }
+    public void addBuildMaterials(int count) { buildMaterials = Math.min(MAX_BUILD_MATERIALS, buildMaterials + count); }
     public void consumeBuildMaterial() { if (buildMaterials > 0) buildMaterials--; }
 
     public int dynamiteLeft() { return dynamiteLeft; }
@@ -342,6 +373,8 @@ public class TGArmedMob extends Monster {
         }
         LivingEntity target = getTarget();
         boolean hasLos = target != null && hasLineOfSight(target);
+        // One raytrace per tick per mob: the goals read memory.hasLos instead
+        // of repeating the raytrace (goals tick after aiStep, so it is fresh).
         memory.onTickWithTarget(target, hasLos);
     }
 

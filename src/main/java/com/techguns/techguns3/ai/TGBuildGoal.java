@@ -25,9 +25,14 @@ import java.util.EnumSet;
 public final class TGBuildGoal extends Goal {
     private static final int MAX_BUILD_TICKS = 300;
     private static final int COOLDOWN = 100;
+    /** Repath cadence while the causeway grows underfoot. */
+    private static final int REPATH_EVERY_TICKS = 30;
+    private static final int PLACE_COOLDOWN_TICKS = 8;
+    /** Vertical step that flips the builder from causeway to staircase mode. */
+    private static final double ELEVATED_TARGET_STEP = 2.0;
+    private static final float PLACE_SOUND_VOLUME = 0.8f;
 
     private final TGArmedMob mob;
-    private int cooldown;
     private int buildTicks;
     private int placeCooldown;
 
@@ -42,8 +47,13 @@ public final class TGBuildGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (cooldown > 0) {
-            cooldown--;
+        // The cooldown lives in the shared memory so the combat goal can stop
+        // re-flagging bridge requests nobody can serve yet.
+        if (mob.memory().buildCooldown > 0) {
+            // Rejecting while cooling down must also drop the stale request:
+            // otherwise anySiegeRequest() keeps the combat goal yielded and
+            // the mob stalls in 5-second idle cycles.
+            mob.memory().requestBuild = false;
             return false;
         }
         if (!basicsAllow()) return false;
@@ -71,7 +81,7 @@ public final class TGBuildGoal extends Goal {
     @Override
     public void stop() {
         mob.memory().requestBuild = false;
-        cooldown = COOLDOWN;
+        mob.memory().buildCooldown = COOLDOWN;
     }
 
     @Override
@@ -88,7 +98,7 @@ public final class TGBuildGoal extends Goal {
         if (placeCooldown > 0) placeCooldown--;
 
         // Keep walking toward the target while the blocks appear underfoot.
-        if (mob.getNavigation().isDone() || buildTicks % 30 == 0) {
+        if (mob.getNavigation().isDone() || buildTicks % REPATH_EVERY_TICKS == 0) {
             mob.getNavigation().moveTo(target, 1.05);
         }
 
@@ -105,12 +115,12 @@ public final class TGBuildGoal extends Goal {
         BlockPos ahead = feet.relative(dir);
         BlockPos aheadGround = ahead.below();
 
-        boolean elevated = target.getY() - mob.getY() >= 2;
+        boolean elevated = target.getY() - mob.getY() >= ELEVATED_TARGET_STEP;
         BlockPos place = elevated ? ahead : aheadGround;
 
         if (tryPlace(level, place)) {
             mob.consumeBuildMaterial();
-            placeCooldown = 8;
+            placeCooldown = PLACE_COOLDOWN_TICKS;
             if (elevated) {
                 mob.getJumpControl().jump();
             }
@@ -130,7 +140,7 @@ public final class TGBuildGoal extends Goal {
         BlockState placeState = blockItem.getBlock().defaultBlockState();
         if (!level.setBlock(pos, placeState, 3)) return false;
         level.playSound(null, pos, placeState.getSoundType(level, pos, mob).getPlaceSound(),
-                mob.getSoundSource(), 0.8f, 1.0f);
+                mob.getSoundSource(), PLACE_SOUND_VOLUME, 1.0f);
         return true;
     }
 }

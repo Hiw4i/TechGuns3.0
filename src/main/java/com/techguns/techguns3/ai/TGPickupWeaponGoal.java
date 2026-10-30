@@ -5,7 +5,9 @@ import com.techguns.techguns3.item.GenericGunItem;
 import com.techguns.techguns3.item.GunStats;
 import com.techguns.techguns3.mob.MobProfile;
 import com.techguns.techguns3.mob.TGArmedMob;
+import com.techguns.techguns3.registry.TGDataComponents;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -25,6 +27,10 @@ public final class TGPickupWeaponGoal extends Goal {
     /** Held weapon must beat a candidate by this factor to keep it. */
     private static final double UPGRADE_FACTOR = 1.2;
     private static final int COOLDOWN = 60;
+    /** Magazine size weighs into the gun score with this divisor. */
+    private static final double MAGAZINE_SCORE_WEIGHT = 64.0;
+    /** Pick reach at the drop (squared). */
+    private static final double PICKUP_REACH_SQ = 2.2;
 
     private final TGArmedMob mob;
     private int cooldown;
@@ -57,7 +63,7 @@ public final class TGPickupWeaponGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         return wanted != null && wanted.isAlive() && !wanted.isRemoved()
-                && TGConfig.mobsPickupWeapons();
+                && TGConfig.mobsAiEnabled() && TGConfig.mobsPickupWeapons();
     }
 
     @Override
@@ -77,7 +83,7 @@ public final class TGPickupWeaponGoal extends Goal {
         if (mob.getNavigation().isDone()) {
             mob.getNavigation().moveTo(wanted, 1.1);
         }
-        if (mob.distanceToSqr(wanted) < 2.2) {
+        if (mob.distanceToSqr(wanted) < PICKUP_REACH_SQ) {
             grab(wanted);
             wanted = null;
         }
@@ -93,6 +99,8 @@ public final class TGPickupWeaponGoal extends Goal {
 
         ItemEntity best = null;
         double bestScore = urgentThreshold(heldScore);
+        ItemEntity bestAmmo = null;
+        double bestAmmoDist = Double.MAX_VALUE;
         for (ItemEntity entity : items) {
             ItemStack stack = entity.getItem();
             if (stack.getItem() instanceof GenericGunItem gun) {
@@ -101,20 +109,28 @@ public final class TGPickupWeaponGoal extends Goal {
                     bestScore = score;
                     best = entity;
                 }
-            } else if (held != null && stack.is(held.ammoItem()) && stack.getCount() > 0) {
-                // Magazine restock beats nothing when spares are finite and low.
-                if (best == null && mob.spareMagazines() == 0) {
-                    best = entity;
+            } else if (held != null && stack.is(held.ammoItem()) && stack.getCount() > 0
+                    && mob.spareMagazines() == 0) {
+                // Magazine restock (only when the pouch is empty): nearest pile wins,
+                // not whichever the entity scan happened to list first.
+                double dist = mob.distanceToSqr(entity);
+                if (dist < bestAmmoDist) {
+                    bestAmmoDist = dist;
+                    bestAmmo = entity;
                 }
             }
         }
-        return best;
+        return best != null ? best : bestAmmo;
+    }
+
+    /** Unarmed or out of ammo: the scavenging loop runs urgent. */
+    private boolean urgent() {
+        return mob.heldGun() == null || mob.weaponDry();
     }
 
     private double urgentThreshold(double heldScore) {
         // Unarmed or dry: any gun. Otherwise require a real upgrade.
-        boolean urgent = mob.heldGun() == null || mob.weaponDry();
-        return urgent ? 0.0 : heldScore * UPGRADE_FACTOR;
+        return urgent() ? 0.0 : heldScore * UPGRADE_FACTOR;
     }
 
     private void grab(ItemEntity entity) {
@@ -129,11 +145,10 @@ public final class TGPickupWeaponGoal extends Goal {
             }
             ItemStack taken = stack.copy();
             taken.setCount(1);
-            if (!taken.has(com.techguns.techguns3.registry.TGDataComponents.AMMO.get())) {
-                taken.set(com.techguns.techguns3.registry.TGDataComponents.AMMO.get(),
-                        gun.def().magazine());
+            if (!taken.has(TGDataComponents.AMMO.get())) {
+                taken.set(TGDataComponents.AMMO.get(), gun.def().magazine());
             }
-            mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, taken);
+            mob.setItemSlot(EquipmentSlot.MAINHAND, taken);
             stack.shrink(1);
             if (stack.isEmpty()) entity.discard();
         } else {
@@ -146,6 +161,6 @@ public final class TGPickupWeaponGoal extends Goal {
     }
 
     static double gunScore(GunStats stats) {
-        return stats.baseDamage() * stats.pellets() * (1.0 + stats.magazineSize() / 64.0);
+        return stats.baseDamage() * stats.pellets() * (1.0 + stats.magazineSize() / MAGAZINE_SCORE_WEIGHT);
     }
 }

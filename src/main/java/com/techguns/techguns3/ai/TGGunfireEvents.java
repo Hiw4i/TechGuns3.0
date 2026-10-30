@@ -35,19 +35,25 @@ public final class TGGunfireEvents {
         }
     }
 
+    private static final List<Shot> NO_SHOTS = List.of();
+
     /** Shots in {@code radius} around {@code ear} that are at most 1 second old. */
     public static List<Shot> recent(ServerLevel level, Vec3 ear, double radius) {
-        long now = level.getGameTime();
-        double radiusSq = radius * radius;
-        List<Shot> out = new ArrayList<>();
         synchronized (RECENT) {
+            if (RECENT.isEmpty()) return NO_SHOTS;
+            long now = level.getGameTime();
+            double radiusSq = radius * radius;
+            List<Shot> out = new ArrayList<>();
             for (Shot shot : RECENT) {
-                if (shot.level() != level || now - shot.tick() > EXPIRY_TICKS) continue;
+                // The tick upper bound rejects entries carried over from a
+                // previous world whose game time started larger.
+                if (shot.level() != level || shot.tick() > now
+                        || now - shot.tick() > EXPIRY_TICKS) continue;
                 if (shot.pos().distanceToSqr(ear) <= radiusSq) {
                     out.add(shot);
                 }
             }
+            return out;
         }
-        return out;
     }
 }
