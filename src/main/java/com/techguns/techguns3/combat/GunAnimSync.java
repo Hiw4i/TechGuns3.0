@@ -45,6 +45,10 @@ public final class GunAnimSync {
         if (!(stack.getItem() instanceof AnimatedGunItem gun)) {
             return;
         }
+        // TEMP DIAGNOSTIC: every local animation trigger, so a stray replay of
+        // the draw track cannot hide behind the weapon-switch guard.
+        com.techguns.techguns3.TechGuns3.LOGGER.info(
+                "[TechGuns3] anim trigger local: {} / {} (id {})", controller, anim, GeoItem.getId(stack));
         long instanceId = GeoItem.getId(stack);
         gun.getAnimatableInstanceCache().getManagerForId(instanceId)
                 .tryTriggerAnimation(controller, anim);
