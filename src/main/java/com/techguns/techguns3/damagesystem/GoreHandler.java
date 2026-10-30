@@ -33,8 +33,15 @@ public final class GoreHandler {
     public static final float TESLA_GORE_CHANCE = 1.0f;
 
     /**
+     * Gib part order: torso and head first — the two biggest reads of
+     * "it came apart" — then the rest (FlyingGibEntity part ids).
+     */
+    private static final int[] GIB_ORDER = {1, 0, 2, 3, 4, 5};
+
+    /**
      * A Techguns hit just killed {@code victim}. Always a dense blood explosion;
-     * flying chunks on the {@code goreChance} roll (scaled by config).
+     * flying chunks on the {@code goreChance} roll (scaled by config; the roll
+     * saturates above 1.0, so a multiplier > 1 only guards against float drift).
      */
     public static void onKill(ServerLevel level, LivingEntity victim, Vec3 killDir,
                              float goreChance, int bloodOverride) {
@@ -50,8 +57,6 @@ public final class GoreHandler {
         int count = Math.min(TGConfig.maxGibs(), GoreRegistry.gibCount(victim));
         if (count <= 0) return;
         float scale = GoreRegistry.gibScale(victim);
-        // Torso and head first: the two biggest reads of "it came apart".
-        int[] order = {1, 0, 2, 3, 4, 5};
         Vec3 d = killDir.lengthSqr() < 1e-6 ? new Vec3(0, 0.4, 0) : killDir.normalize();
         var random = level.getRandom();
         for (int i = 0; i < count; i++) {
@@ -64,7 +69,7 @@ public final class GoreHandler {
                     d.z * (0.2 + random.nextDouble() * 0.3) + (random.nextDouble() * 2 - 1) * 0.5);
             float variance = 0.85f + random.nextFloat() * 0.3f;
             level.addFreshEntity(new FlyingGibEntity(level, pos, vel,
-                    order[i % order.length], bloodColor, scale * variance));
+                    GIB_ORDER[i % GIB_ORDER.length], bloodColor, scale * variance));
         }
         level.playSound(null, center.x, center.y, center.z, TGSounds.GORE_SPLIT.get(),
                 SoundSource.HOSTILE, 1.3f, 0.85f + random.nextFloat() * 0.3f);

@@ -23,6 +23,19 @@ public final class GoreRegistry {
     /** Victim has no blood: robots, iron golems — sparks instead. */
     public static final int NO_BLOOD = -1;
 
+    // Gib count tiers by victim height (CE gore stats).
+    private static final float SMALL_HEIGHT = 0.7f;
+    private static final float MEDIUM_HEIGHT = 1.4f;
+    private static final float LARGE_HEIGHT = 2.2f;
+    private static final int SMALL_GIB_COUNT = 5;
+    private static final int MEDIUM_GIB_COUNT = 7;
+    private static final int LARGE_GIB_COUNT = 8;
+    private static final int HUGE_GIB_COUNT = 10;
+    /** Chunk scale from victim volume, clamped so chickens don't throw logs. */
+    private static final float GIB_SCALE_DIVISOR = 1.05f;
+    private static final float MIN_GIB_SCALE = 0.7f;
+    private static final float MAX_GIB_SCALE = 2.5f;
+
     /**
      * Blood color for a victim, or {@link #NO_BLOOD} for bloodless machines.
      */
@@ -39,7 +52,7 @@ public final class GoreRegistry {
         if (path.contains("spider") || path.contains("silverfish") || path.contains("bee")) return 0x5A7A1F;
         if (path.contains("squid") || path.contains("tadpole") || path.contains("axolotl")) return 0x1A3A6A;
         if (path.contains("warden")) return 0x1A8A7A;
-        if (path.contains("snow_golem") || path.equals("snowman")) return 0xF0F0F0;
+        if (path.contains("snow_golem")) return 0xF0F0F0;
         if (path.contains("ghast")) return 0xD8D0C0;
         return BLOOD_RED;
     }
@@ -47,24 +60,21 @@ public final class GoreRegistry {
     /** How many chunks a gibbed victim of this size throws (before the config cap). */
     public static int gibCount(LivingEntity victim) {
         float height = victim.getBbHeight();
-        if (height < 0.7f) return 5;
-        if (height < 1.4f) return 7;
-        if (height < 2.2f) return 8;
-        return 10;
+        if (height < SMALL_HEIGHT) return SMALL_GIB_COUNT;
+        if (height < MEDIUM_HEIGHT) return MEDIUM_GIB_COUNT;
+        if (height < LARGE_HEIGHT) return LARGE_GIB_COUNT;
+        return HUGE_GIB_COUNT;
     }
 
     /** Chunk scale from victim volume, clamped so chickens don't throw logs. */
     public static float gibScale(LivingEntity victim) {
         float volume = (victim.getBbWidth() + victim.getBbHeight()) / 2.0f;
-        return Math.max(0.7f, Math.min(2.5f, volume / 1.05f));
+        return Math.max(MIN_GIB_SCALE, Math.min(MAX_GIB_SCALE, volume / GIB_SCALE_DIVISOR));
     }
 
     private static String entityPath(LivingEntity victim) {
-        try {
-            var id = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(victim.getType());
-            return id == null ? "" : id.getPath();
-        } catch (Exception e) {
-            return "";
-        }
+        // Registry lookup: getKey returns null for unregistered types, never throws.
+        var id = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(victim.getType());
+        return id == null ? "" : id.getPath();
     }
 }

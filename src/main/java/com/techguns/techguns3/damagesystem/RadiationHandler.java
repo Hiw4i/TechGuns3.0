@@ -18,16 +18,22 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
 public final class RadiationHandler {
     private RadiationHandler() {}
 
+    /** Dose interval in ticks (TGRadiationSystem 2s rhythm). */
+    private static final int RADIATION_INTERVAL_TICKS = 40;
+    /** Per-dose damage: amplifier 0 vs amplifier 1+ (nuke). */
+    private static final float RADIATION_DAMAGE = 1.0f;
+    private static final float RADIATION_DAMAGE_STRONG = 2.0f;
+
     @SubscribeEvent
     public static void onEntityTick(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof LivingEntity living)) return;
         if (!(living.level() instanceof ServerLevel level)) return;
-        var instance = living.getEffect(TGEffects.RADIATION);
-        if (instance == null) return;
         if (living.isSpectator()) return;
         if (living instanceof net.minecraft.world.entity.player.Player player && player.isCreative()) return;
-        if (living.tickCount % 40 != 0) return;
-        float dmg = instance.getAmplifier() >= 1 ? 2.0f : 1.0f;
+        var instance = living.getEffect(TGEffects.RADIATION);
+        if (instance == null) return;
+        if (living.tickCount % RADIATION_INTERVAL_TICKS != 0) return;
+        float dmg = instance.getAmplifier() >= 1 ? RADIATION_DAMAGE_STRONG : RADIATION_DAMAGE;
         living.hurtServer(level, level.damageSources().magic(), dmg);
         var at = living.position().add(0, living.getBbHeight() * 0.6, 0);
         FxParticles.glow(level, at.x, at.y, at.z, 2,

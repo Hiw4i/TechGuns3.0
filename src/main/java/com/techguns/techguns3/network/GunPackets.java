@@ -1,6 +1,8 @@
 package com.techguns.techguns3.network;
 
 import com.techguns.techguns3.TechGuns3;
+import com.techguns.techguns3.client.GunCrosshairOverlay;
+import com.techguns.techguns3.client.GunSyncHandler;
 import com.techguns.techguns3.combat.GunServerLogic;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -131,16 +133,43 @@ public final class GunPackets {
      * Server -&gt; client gun definition sync. Carries definitions as JSON text
      * (encoded with the same {@code GunDefinition.CODEC} the datapack uses) so
      * the network schema never drifts from the file schema when fields change.
+     *
+     * <p>Decoded by hand instead of via {@code ByteBufCodecs.map} so the entry
+     * count is validated <em>before</em> anything is allocated: a hostile or
+     * buggy peer cannot balloon client memory. Wire format is unchanged
+     * (varint count, then key/value pairs).</p>
      */
     public record GunSync(java.util.Map<Identifier, String> gunsJson) implements CustomPacketPayload {
+        /** Hard cap: every shipped pack stays far below this (25 guns today). */
+        private static final int MAX_GUN_ENTRIES = 256;
+
         public static final Type<GunSync> TYPE =
                 new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(TechGuns3.MODID, "gun_sync"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, GunSync> CODEC =
-                StreamCodec.composite(
-                        ByteBufCodecs.map(i -> new java.util.HashMap<Identifier, String>(),
-                                Identifier.STREAM_CODEC,
-                                ByteBufCodecs.STRING_UTF8),
-                        GunSync::gunsJson, GunSync::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, GunSync> CODEC = StreamCodec.of(
+                GunSync::encode, GunSync::decode);
+
+        private static void encode(RegistryFriendlyByteBuf buf, GunSync msg) {
+            buf.writeVarInt(msg.gunsJson.size());
+            for (var entry : msg.gunsJson.entrySet()) {
+                Identifier.STREAM_CODEC.encode(buf, entry.getKey());
+                ByteBufCodecs.STRING_UTF8.encode(buf, entry.getValue());
+            }
+        }
+
+        private static GunSync decode(RegistryFriendlyByteBuf buf) {
+            int count = buf.readVarInt();
+            if (count > MAX_GUN_ENTRIES) {
+                throw new io.netty.handler.codec.DecoderException(
+                        "GunSync carries " + count + " guns, max is " + MAX_GUN_ENTRIES);
+            }
+            java.util.Map<Identifier, String> guns = new java.util.HashMap<>(count * 2);
+            for (int i = 0; i < count; i++) {
+                Identifier id = Identifier.STREAM_CODEC.decode(buf);
+                String json = ByteBufCodecs.STRING_UTF8.decode(buf);
+                guns.put(id, json);
+            }
+            return new GunSync(guns);
+        }
 
         @Override
         public Type<? extends CustomPacketPayload> type() {
@@ -148,7 +177,7 @@ public final class GunPackets {
         }
 
         public static void handle(GunSync msg, IPayloadContext ctx) {
-            ctx.enqueueWork(() -> com.techguns.techguns3.client.GunSyncHandler.apply(msg));
+            ctx.enqueueWork(() -> GunSyncHandler.apply(msg));
         }
     }
 
@@ -168,7 +197,7 @@ public final class GunPackets {
         }
 
         public static void handle(HitConfirm msg, IPayloadContext ctx) {
-            ctx.enqueueWork(() -> com.techguns.techguns3.client.GunCrosshairOverlay.onHit(msg.killed()));
+            ctx.enqueueWork(() -> GunCrosshairOverlay.onHit(msg.killed()));
         }
     }
 
