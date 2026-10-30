@@ -35,8 +35,6 @@ public final class TGMineGoal extends Goal {
     private static final int STOP_COOLDOWN = ABORT_COOLDOWN / 4;
     private static final int WALL_GONE_COOLDOWN = 40;
     private static final int NEXT_BLOCK_COOLDOWN = 8;
-    /** Ticks between wall rescans while still walking to the wall. */
-    private static final int PATH_RESCAN_TICKS = 10;
     /** Vanilla player break pacing constants. */
     private static final int MIN_BREAK_TICKS = 8;
     private static final double TICKS_PER_SECOND = 20.0;
@@ -50,10 +48,6 @@ public final class TGMineGoal extends Goal {
     private BlockPos miningPos;
     private int progress;
     private int totalTicks;
-    /** Cached eye-line hit while walking in; a wall does not move each tick. */
-    @Nullable
-    private BlockHitResult lastScan;
-    private int rescanTimer;
 
     public TGMineGoal(TGArmedMob mob) {
         this.mob = mob;
@@ -96,7 +90,6 @@ public final class TGMineGoal extends Goal {
     @Override
     public void stop() {
         miningPos = null;
-        lastScan = null;
         mob.memory().requestDig = false;
         cooldown = STOP_COOLDOWN;
     }
@@ -112,7 +105,7 @@ public final class TGMineGoal extends Goal {
         LivingEntity target = mob.getTarget();
         if (target == null) return;
 
-        BlockHitResult hit = scanWall(target);
+        BlockHitResult hit = TGCoverFinder.blockingHit(mob, target);
         if (hit == null) {
             cooldown = WALL_GONE_COOLDOWN;
             return;
@@ -159,25 +152,7 @@ public final class TGMineGoal extends Goal {
             level.destroyBlock(pos, false, mob, BLOCK_DROP_CHANCE);
             mob.addBuildMaterials(1);
             miningPos = null;
-            lastScan = null;
             cooldown = NEXT_BLOCK_COOLDOWN;
         }
-    }
-
-    /**
-     * Eye-line hit on the blocking wall. While still walking toward a known
-     * wall the scan result is reused for {@link #PATH_RESCAN_TICKS} — the
-     * per-tick raytrace only pays off at the wall face.
-     */
-    @Nullable
-    private BlockHitResult scanWall(LivingEntity target) {
-        boolean walking = !mob.getNavigation().isDone();
-        if (lastScan != null && walking && rescanTimer > 0) {
-            rescanTimer--;
-            return lastScan;
-        }
-        lastScan = TGCoverFinder.blockingHit(mob, target);
-        rescanTimer = PATH_RESCAN_TICKS;
-        return lastScan;
     }
 }

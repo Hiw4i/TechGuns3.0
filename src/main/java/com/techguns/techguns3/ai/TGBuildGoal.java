@@ -33,6 +33,7 @@ public final class TGBuildGoal extends Goal {
     private static final float PLACE_SOUND_VOLUME = 0.8f;
 
     private final TGArmedMob mob;
+    private int cooldown;
     private int buildTicks;
     private int placeCooldown;
 
@@ -47,13 +48,8 @@ public final class TGBuildGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        // The cooldown lives in the shared memory so the combat goal can stop
-        // re-flagging bridge requests nobody can serve yet.
-        if (mob.memory().buildCooldown > 0) {
-            // Rejecting while cooling down must also drop the stale request:
-            // otherwise anySiegeRequest() keeps the combat goal yielded and
-            // the mob stalls in 5-second idle cycles.
-            mob.memory().requestBuild = false;
+        if (cooldown > 0) {
+            cooldown--;
             return false;
         }
         if (!basicsAllow()) return false;
@@ -81,7 +77,7 @@ public final class TGBuildGoal extends Goal {
     @Override
     public void stop() {
         mob.memory().requestBuild = false;
-        mob.memory().buildCooldown = COOLDOWN;
+        cooldown = COOLDOWN;
     }
 
     @Override

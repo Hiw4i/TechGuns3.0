@@ -373,8 +373,6 @@ public class TGArmedMob extends Monster {
         }
         LivingEntity target = getTarget();
         boolean hasLos = target != null && hasLineOfSight(target);
-        // One raytrace per tick per mob: the goals read memory.hasLos instead
-        // of repeating the raytrace (goals tick after aiStep, so it is fresh).
         memory.onTickWithTarget(target, hasLos);
     }
 

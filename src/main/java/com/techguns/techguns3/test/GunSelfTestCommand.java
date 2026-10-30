@@ -154,7 +154,7 @@ public final class GunSelfTestCommand {
                 case 585 -> phaseNSetup();
                 case 586 -> phaseNFire();
                 case 600 -> phaseNSample();
-                case 610 -> finish(true);
+                case 610 -> finish(allOk);
                 default -> {
                     // While a hold-phase is active, deliver the same event the bus
                     // would deliver for a real ticking player (fakes are not in
@@ -243,7 +243,7 @@ public final class GunSelfTestCommand {
                     && b1.branches().size() == b2.branches().size()
                     && b1.main().length > 60;
             TechGuns3.LOGGER.info("[TGTEST] bolt determinism: points={} branches={} => {}",
-                    b1.main().length / 3, b1.branches().size(), deterministic ? "PASS" : "FAIL");
+                    b1.main().length / 3, b1.branches().size(), mark(deterministic));
             iron_golemA.hurtServer(level, level.damageSources().magic(), 5.0f);
             TechGuns3.LOGGER.info("[TGTEST] setup: fake at {} iron_golems A({}) B({}) C({}) probeA hp={}",
                     fake.blockPosition(), iron_golemA.blockPosition(), iron_golemB.blockPosition(),
@@ -339,7 +339,7 @@ public final class GunSelfTestCommand {
             boolean fired = ammo <= ammoA0 - 90;
             boolean pass = fired && (bullets > 0 || hp < iron_golemAHp || !alive);
             TechGuns3.LOGGER.info("[TGTEST] A end: ammo {}->{} bulletsAlive={} golemA hp {}->{} alive={} => {}",
-                    ammoA0, ammo, bullets, iron_golemAHp, hp, alive, pass ? "PASS" : "FAIL");
+                    ammoA0, ammo, bullets, iron_golemAHp, hp, alive, mark(pass));
         }
 
         // --- phase B: teslagun hold-fire for 100 ticks ---
@@ -376,7 +376,7 @@ public final class GunSelfTestCommand {
             boolean fired = ammo <= ammoB0 - 10;
             boolean pass = fired && (hp < iron_golemBHp || !alive);
             TechGuns3.LOGGER.info("[TGTEST] B end: ammo {}->{} golemB hp {}->{} alive={} => {}",
-                    ammoB0, ammo, iron_golemBHp, hp, alive, pass ? "PASS" : "FAIL");
+                    ammoB0, ammo, iron_golemBHp, hp, alive, mark(pass));
         }
 
         // --- phase C: shotgun semi control (2 presses, 30 ticks apart) ---
@@ -402,7 +402,7 @@ public final class GunSelfTestCommand {
             boolean alive = iron_golemC.isAlive();
             boolean pass = ammo == 6 && (hp < iron_golemCHp || !alive);
             TechGuns3.LOGGER.info("[TGTEST] C end: ammo {} (expect 6) golemC hp {}->{} alive={} => {}",
-                    ammo, iron_golemCHp, hp, alive, pass ? "PASS" : "FAIL");
+                    ammo, iron_golemCHp, hp, alive, mark(pass));
         }
 
         // --- phase D: reload from empty ---
@@ -415,7 +415,7 @@ public final class GunSelfTestCommand {
             int after = ammoOf(mg);
             boolean passD = started && after == 200;
             TechGuns3.LOGGER.info("[TGTEST] D reload: started={} ammo={} (expect 200) => {}",
-                    started, after, passD ? "PASS" : "FAIL");
+                    started, after, mark(passD));
         }
 
         // --- phase E: curved flight (weave deviation + homing hit) ---
@@ -467,7 +467,7 @@ public final class GunSelfTestCommand {
             double lateral = Math.sqrt(lx * lx + ly * ly + lz * lz);
             boolean pass = lateral > 0.4;
             TechGuns3.LOGGER.info("[TGTEST] E weave: lateral={} (expect >0.4) => {}",
-                    String.format("%.2f", lateral), pass ? "PASS" : "FAIL");
+                    String.format("%.2f", lateral), mark(pass));
         }
 
         private void phaseEHomeSetup() {
@@ -539,7 +539,7 @@ public final class GunSelfTestCommand {
                     hp, golemD.isAlive(), String.format("%.2f", dist),
                     String.format("%.1f", Math.toDegrees(homingAngle0)),
                     Double.isNaN(angleNow) ? "contact" : String.format("%.1f", Math.toDegrees(angleNow)),
-                    pass ? "PASS" : "FAIL");
+                    mark(pass));
         }
 
         // --- phase F: slime growth to pop ---
@@ -574,7 +574,7 @@ public final class GunSelfTestCommand {
             boolean crater = level.getBlockState(target).isAir();
             boolean pass = popped && gone && crater;
             TechGuns3.LOGGER.info("[TGTEST] F slime: rawNull={} rawFull={} popped={} gone={} crater={} => {}",
-                    crater1, crater2, popped, gone, crater, pass ? "PASS" : "FAIL");
+                    crater1, crater2, popped, gone, crater, mark(pass));
         }
 
         // --- phase G: biogun poison + slime feed through real firing ---
@@ -603,7 +603,7 @@ public final class GunSelfTestCommand {
             boolean pass = poisoned || hp < 100.0f || !golemE.isAlive();
             TechGuns3.LOGGER.info("[TGTEST] G poison: golemE hp 100->{} alive={} poisoned={} ammoLeft={} golemAt={} => {}",
                     hp, golemE.isAlive(), poisoned, ammoLeft, golemE.blockPosition(),
-                    pass ? "PASS" : "FAIL");
+                    mark(pass));
             // Face steep down at empty platform for the slime feed.
             Vec3 f = fake.position();
             fake.setYRot(-90.0f);
@@ -624,7 +624,7 @@ public final class GunSelfTestCommand {
             boolean grown = blobs.stream().anyMatch(b -> b.growth() > 0.3f);
             boolean pass = grown;
             TechGuns3.LOGGER.info("[TGTEST] G slime: blobs={} grown={} ammoLeft={} => {}",
-                    blobs.size(), grown, ammoLeft, pass ? "PASS" : "FAIL");
+                    blobs.size(), grown, ammoLeft, mark(pass));
             // Lane hygiene: E would body-block phase H at the same +3 spot.
             golemE.discard();
         }
@@ -665,7 +665,7 @@ public final class GunSelfTestCommand {
             boolean pass = burning || hp < 100.0f || !golemF.isAlive();
             TechGuns3.LOGGER.info("[TGTEST] H ignite: ammo={} flying={} traj={} golemF hp 100->{} alive={} burning={} golemAt={} => {}",
                     ammo, flying, traj.toString(), hp, golemF.isAlive(), burning, golemF.blockPosition(),
-                    pass ? "PASS" : "FAIL");
+                    mark(pass));
             golemF.discard();
         }
 
@@ -720,14 +720,14 @@ public final class GunSelfTestCommand {
             boolean gone = level.getEntitiesOfClass(com.techguns.techguns3.entity.ChargeOrbEntity.class,
                     new AABB(f.x - 15, f.y - 5, f.z - 15, f.x + 15, f.y + 5, f.z + 15)).isEmpty();
             TechGuns3.LOGGER.info("[TGTEST] I orb: tracked={} cleaned={} => {}",
-                    tracked, gone, tracked && gone ? "PASS" : "FAIL");
+                    tracked, gone, mark(tracked && gone));
         }
 
         private void phaseISample() {
             float hp = golemG.isAlive() ? golemG.getHealth() : 0.0f;
             boolean pass = hp < 100.0f || !golemG.isAlive();
             TechGuns3.LOGGER.info("[TGTEST] I tfg: golemG hp 100->{} alive={} => {}",
-                    hp, golemG.isAlive(), pass ? "PASS" : "FAIL");
+                    hp, golemG.isAlive(), mark(pass));
             golemG.discard();
             reviveFakeIfNeeded();
         }
@@ -752,7 +752,7 @@ public final class GunSelfTestCommand {
             float hp = golemH.isAlive() ? golemH.getHealth() : 0.0f;
             boolean pass = hp < 100.0f || !golemH.isAlive();
             TechGuns3.LOGGER.info("[TGTEST] J laser: golemH hp 100->{} alive={} => {}",
-                    hp, golemH.isAlive(), pass ? "PASS" : "FAIL");
+                    hp, golemH.isAlive(), mark(pass));
             golemH.discard();
             reviveFakeIfNeeded();
         }
@@ -782,7 +782,7 @@ public final class GunSelfTestCommand {
                     new AABB(c.x - 20, c.y - 5, c.z - 20, c.x + 20, c.y + 5, c.z + 20)).size();
             boolean pass = hp < 100.0f || !golemI.isAlive();
             TechGuns3.LOGGER.info("[TGTEST] K rocket: golemI hp 100->{} alive={} ammoLeft={} rocketsAlive={} => {}",
-                    hp, golemI.isAlive(), ammoLeft, rockets, pass ? "PASS" : "FAIL");
+                    hp, golemI.isAlive(), ammoLeft, rockets, mark(pass));
             golemI.discard();
             reviveFakeIfNeeded();
         }
@@ -806,7 +806,7 @@ public final class GunSelfTestCommand {
             float hp = golemJ.isAlive() ? golemJ.getHealth() : 0.0f;
             boolean pass = hp < 100.0f || !golemJ.isAlive();
             TechGuns3.LOGGER.info("[TGTEST] L sonic: golemJ hp 100->{} alive={} => {}",
-                    hp, golemJ.isAlive(), pass ? "PASS" : "FAIL");
+                    hp, golemJ.isAlive(), mark(pass));
             golemJ.discard();
             reviveFakeIfNeeded();
         }
@@ -841,7 +841,7 @@ public final class GunSelfTestCommand {
             // 20-tick hold => ~10 damage + radiation, 4 rounds drained (1/5 ticks).
             boolean pass = (hp < 100.0f || !golemK.isAlive() || radiated) && beamAlive && ammoLeft == 16;
             TechGuns3.LOGGER.info("[TGTEST] M ndr: golemK hp 100->{} alive={} radiated={} beamAlive={} ammoLeft={} => {}",
-                    hp, golemK.isAlive(), radiated, beamAlive, ammoLeft, pass ? "PASS" : "FAIL");
+                    hp, golemK.isAlive(), radiated, beamAlive, ammoLeft, mark(pass));
             reviveFakeIfNeeded();
         }
 
@@ -867,8 +867,18 @@ public final class GunSelfTestCommand {
             float hp = golemN.isAlive() ? golemN.getHealth() : 0.0f;
             boolean pass = hp < 100.0f || !golemN.isAlive();
             TechGuns3.LOGGER.info("[TGTEST] N pointblank: golemN hp 100->{} alive={} => {}",
-                    hp, golemN.isAlive(), pass ? "PASS" : "FAIL");
+                    hp, golemN.isAlive(), mark(pass));
             reviveFakeIfNeeded();
+        }
+
+        private boolean allOk = true;
+        private int failedCount;
+
+        /** Log marker with accounting: a FAIL is remembered for finish(). */
+        private String mark(boolean ok) {
+            if (!ok) failedCount++;
+            allOk &= ok;
+            return ok ? "PASS" : "FAIL";
         }
 
         private void finish(boolean ok) {

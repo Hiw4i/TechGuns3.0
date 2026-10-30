@@ -24,7 +24,8 @@ public final class TGConfig {
             .defineInRange("gunDamageMultiplier", 1.0, 0.1, 10.0);
     private static final ModConfigSpec.DoubleValue FX_DENSITY = COMMON
             .comment("Particle count multiplier for Techguns effects (sparks, smoke, embers).")
-            .defineInRange("fxDensity", 1.0, 0.1, 1.0);
+            .// Capped at 1.0 by design: this option throttles density down, it never multiplies past the tuned counts.
+                defineInRange("fxDensity", 1.0, 0.1, 1.0);
     private static final ModConfigSpec.BooleanValue BLOOD_ON_HIT = COMMON
             .comment("Spray blood when Techguns projectiles hit flesh. Turn off for a bloodless build.")
             .define("bloodOnHit", true);

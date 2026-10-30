@@ -26,14 +26,6 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
             net.minecraft.resources.Identifier.fromNamespaceAndPath(
                     com.techguns.techguns3.TechGuns3.MODID, "textures/fx/bolt.png");
 
-    // Reused vectors and channel offsets: one renderer instance, render thread only.
-    private static final Vector3f DIR = new Vector3f();
-    private static final Vector3f UP = new Vector3f();
-    private static final Vector3f SIDE_U = new Vector3f();
-    private static final Vector3f SIDE_W = new Vector3f();
-    /** Per-channel offsets, flat [x,y,z, x,y,z]; channel 0 rides the bolt itself. */
-    private final float[] channelOff = new float[6];
-
     public TeslaArcRenderer(EntityRendererProvider.Context context) {
         super(context);
         shadowRadius = 0.0f;
@@ -77,22 +69,23 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
         if (len < FxGeometry.MIN_EFFECT_LENGTH) return;
         BoltGeometry.Bolt bolt = BoltGeometry.tesla(state.seed, 0, 0, 0, state.end.x, state.end.y, state.end.z);
 
-        Vector3f dir = DIR.set(state.end).normalize();
-        Vector3f up = Math.abs(dir.y) > FxGeometry.UP_AXIS_FALLBACK ? UP.set(1, 0, 0) : UP.set(0, 1, 0);
-        Vector3f u = SIDE_U.set(dir).cross(up).normalize();
-        Vector3f w = SIDE_W.set(dir).cross(u).normalize();
+        // Per-submit locals, NOT shared scratch: the geometry lambdas below run
+        // later in the deferred render pass, so with two arcs in one frame the
+        // second submit would overwrite the first one's axes mid-frame.
+        Vector3f dir = new Vector3f(state.end).normalize();
+        Vector3f up = Math.abs(dir.y) > FxGeometry.UP_AXIS_FALLBACK ? new Vector3f(1, 0, 0) : new Vector3f(0, 1, 0);
+        Vector3f u = new Vector3f(dir).cross(up).normalize();
+        Vector3f w = new Vector3f(dir).cross(u).normalize();
 
         // Second channel offset, seeded so it matches on every client (the
         // first channel rides the bolt itself, no offset).
         Random chanRand = new Random(state.seed ^ 0x5EED1234L);
         float ang = chanRand.nextFloat() * (float) (Math.PI * 2);
         float mag = 0.04f + 0.03f * chanRand.nextFloat();
-        channelOff[0] = 0;
-        channelOff[1] = 0;
-        channelOff[2] = 0;
-        channelOff[3] = (u.x * (float) Math.cos(ang) + w.x * (float) Math.sin(ang)) * mag;
-        channelOff[4] = (u.y * (float) Math.cos(ang) + w.y * (float) Math.sin(ang)) * mag;
-        channelOff[5] = (u.z * (float) Math.cos(ang) + w.z * (float) Math.sin(ang)) * mag;
+        float[] channelOff = {0, 0, 0,
+                (u.x * (float) Math.cos(ang) + w.x * (float) Math.sin(ang)) * mag,
+                (u.y * (float) Math.cos(ang) + w.y * (float) Math.sin(ang)) * mag,
+                (u.z * (float) Math.cos(ang) + w.z * (float) Math.sin(ang)) * mag};
 
         float closeFade = closeFade(state);
         if (closeFade <= FxGeometry.MIN_VISIBLE_ALPHA) return;

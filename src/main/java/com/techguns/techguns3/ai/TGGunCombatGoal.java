@@ -43,15 +43,11 @@ public final class TGGunCombatGoal extends Goal {
     private static final int REPATH_TICKS = 5;
     /** Stop walking at the cover block (squared; BlockPos distances are integers). */
     private static final double AT_COVER_DIST_SQ = 2.5;
-    /** Reload-length wait before giving a failed cover search another try. */
-    private static final int COVER_SCAN_RETRY_TICKS = 20;
 
     private final TGArmedMob mob;
     /** Tick of the last shot; -1 sentinel avoids int overflow vs MIN_VALUE. */
     private int lastShotTick = -1;
     private int repathCooldown;
-    /** Ticks until a failed cover search may run again (no cover found backoff). */
-    private int coverScanCooldown;
     @Nullable
     private Vec3 lastKnownTargetPos;
 
@@ -89,7 +85,6 @@ public final class TGGunCombatGoal extends Goal {
         memory.burstShots = 0;
         memory.strafeFlipTicks = FLIP_TICKS_OPENING + mob.getRandom().nextInt(FLIP_JITTER_OPENING);
         repathCooldown = 0;
-        coverScanCooldown = 0;
     }
 
     @Override
@@ -119,7 +114,9 @@ public final class TGGunCombatGoal extends Goal {
         TGCombatMemory memory = mob.memory();
 
         double dist = mob.distanceTo(target);
-        boolean los = memory.hasLos;
+        // Fresh raytrace: goals tick inside super.aiStep(), BEFORE the memory's
+        // own LOS refresh below runs — a memory read here would be one tick stale.
+        boolean los = mob.hasLineOfSight(target);
         if (los) {
             lastKnownTargetPos = target.position();
         }
@@ -188,10 +185,8 @@ public final class TGGunCombatGoal extends Goal {
         // Chase when out of range or blind to the target.
         if (dist > profile.combat().maxRange() || !los) {
             boolean moving = mob.getNavigation().moveTo(target, 1.05);
-            if (!moving && los && canBridge(profile) && memory.buildCooldown <= 0) {
+            if (!moving && los && canBridge(profile)) {
                 // Pathfinder says no route (gap/cliff): ask the builder to bridge.
-                // Suppressed while the builder cools down, or the request would
-                // keep the combat goal yielded with nobody to serve it.
                 memory.requestBuild = true;
             }
             return;
@@ -210,7 +205,7 @@ public final class TGGunCombatGoal extends Goal {
         if (dist > preferred) {
             if (mob.getNavigation().isDone()) {
                 boolean moving = mob.getNavigation().moveTo(target, 1.0);
-                if (!moving && canBridge(profile) && memory.buildCooldown <= 0) {
+                if (!moving && canBridge(profile)) {
                     memory.requestBuild = true;
                 }
             }
@@ -237,20 +232,8 @@ public final class TGGunCombatGoal extends Goal {
         TGCombatMemory memory = mob.memory();
         if (!profile.abilities().cover()) return;
         BlockPos cover = memory.coverPos;
-        if (cover == null) {
-            // Nothing found yet: retry on a backoff, a multi-second reload must
-            // not run a full raytrace sweep every tick.
-            if (coverScanCooldown > 0) {
-                coverScanCooldown--;
-            } else {
-                memory.coverPos = TGCoverFinder.findCover(mob, target);
-                memory.coverPosAge = 0;
-                cover = memory.coverPos;
-                coverScanCooldown = COVER_SCAN_RETRY_TICKS;
-            }
-        } else if (memory.coverPosAge > 100
+        if (cover == null || memory.coverPosAge > 100
                 || !mob.level().getBlockState(cover).isSolidRender()) {
-            // The spot went stale (mined, despawned): replace it immediately.
             memory.coverPos = TGCoverFinder.findCover(mob, target);
             memory.coverPosAge = 0;
             cover = memory.coverPos;

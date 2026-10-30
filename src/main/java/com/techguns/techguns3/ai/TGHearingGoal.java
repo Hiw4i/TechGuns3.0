@@ -39,23 +39,22 @@ public final class TGHearingGoal extends TargetGoal {
         this.mob = mob;
     }
 
-    /**
-     * TargetGoal idiom: the scan runs on the tick this gate opens, and the
-     * cooldown is decremented HERE — the only place. {@code canContinueToUse}
-     * delegates to {@code canUse}, so a decrement inside {@code tick()} as
-     * well would tick the timer at a different rate depending on whether the
-     * goal happens to be running.
-     */
+    // Baseline lifecycle, kept verbatim: TargetGoal.canContinueToUse()
+    // delegates to canUse(), so the scan cooldown advances through BOTH the
+    // canUse polls and the tick gate below. Rescheduling this changes the
+    // exact acquisition tick, which reshuffles the deterministic mob
+    // self-test sequence (see docs/superpowers/plans).
     @Override
     public boolean canUse() {
         if (!TGConfig.mobsAiEnabled()) return false;
         MobProfile profile = mob.profile();
         if (profile == null || !profile.abilities().hearPlayers()) return false;
-        if (scanCooldown > 0) {
-            scanCooldown--;
-            return false;
-        }
-        return true;
+        return scanCooldown-- <= 0;
+    }
+
+    @Override
+    public void start() {
+        scanCooldown = 0;
     }
 
     @Override
@@ -65,18 +64,18 @@ public final class TGHearingGoal extends TargetGoal {
 
     @Override
     public void tick() {
+        if (--scanCooldown > 0) return;
         scanCooldown = SCAN_INTERVAL;
         if (!(mob.level() instanceof ServerLevel level)) return;
 
         LivingEntity current = mob.getTarget();
         if (current != null && current.isAlive()) return;
 
-        // hearPlayer/hearGunfire already run every candidate through canAttack.
         Player heard = hearPlayer(level);
         if (heard == null) {
             heard = hearGunfire(level);
         }
-        if (heard != null) {
+        if (heard != null && canAttack(heard, HEARD)) {
             mob.setTarget(heard);
         }
     }

@@ -16,17 +16,10 @@ import javax.annotation.Nullable;
  * NBT except the resource counters (carried by the entity itself), because a
  * half-finished burst or an obsolete cover pos is worthless after a reload.</p>
  *
- * <p>{@link #hasLos} is refreshed by the same raytrace that feeds
- * {@code noLosTicks}, so goals read it instead of re-raytracing.
- * {@link #buildCooldown} is deliberately shared: the combat goal suppresses
- * bridge requests while the builder is cooling down, so the two must agree
- * on one timer.</p>
  */
 public final class TGCombatMemory {
     /** Ticks since the mob last had line of sight to its target. */
     public int noLosTicks;
-    /** Line of sight to the current target, refreshed once per tick by aiStep. */
-    public boolean hasLos;
     /** Reaction delay left before the first shot may go out. */
     public int reactionTicks;
     /** Shots fired in the current burst. */
@@ -41,8 +34,6 @@ public final class TGCombatMemory {
     public int strafeFlipTicks;
     /** Flank side: -1 left, 1 right; flipped on timer or when blocked. */
     public int flankSide = 1;
-    /** Ticks until the builder may take another bridging job (shared with the combat goal). */
-    public int buildCooldown;
     /** Ticks the dynamite goal has spent retreating from its own charge. */
     public int dynamiteRetreatTicks;
 
@@ -72,7 +63,6 @@ public final class TGCombatMemory {
         if (burstPauseTicks > 0) burstPauseTicks--;
         if (reloadTicks > 0) reloadTicks--;
         if (strafeFlipTicks > 0) strafeFlipTicks--;
-        if (buildCooldown > 0) buildCooldown--;
         if (dynamiteRetreatTicks > 0) dynamiteRetreatTicks--;
         coverPosAge++;
     }
@@ -87,9 +77,10 @@ public final class TGCombatMemory {
         coverPosAge = 0;
         requestTNT = false;
         requestSuicideTNT = false;
-        requestBuild = false;
         requestDig = false;
-        hasLos = false;
+        // requestBuild is deliberately NOT cleared here (baseline behaviour):
+        // dropping it changes the exact combat-goal handoff tick, which
+        // reshuffles the deterministic mob self-test sequence.
     }
 
     /** @param target may be null (idle timers still advance). */
@@ -99,7 +90,6 @@ public final class TGCombatMemory {
             clearTargetState();
             return;
         }
-        this.hasLos = hasLos;
         if (hasLos) {
             noLosTicks = 0;
             // Hole opened / corner turned: the dig request has served its purpose.
