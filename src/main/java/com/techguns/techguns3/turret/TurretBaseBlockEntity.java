@@ -1,5 +1,6 @@
 package com.techguns.techguns3.turret;
 
+import com.techguns.techguns3.TechGuns3;
 import com.techguns.techguns3.registry.TGBlockEntities;
 import com.techguns.techguns3.registry.TGEntities;
 import com.techguns.techguns3.item.GenericGunItem;
@@ -12,12 +13,11 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
@@ -27,6 +27,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 
+import java.util.List;
 import java.util.UUID;
 
 /** Persistent base and ammunition inventory. The linked head is recreated only when absent. */
@@ -36,7 +37,13 @@ public final class TurretBaseBlockEntity extends BaseContainerBlockEntity implem
     public static final int OUTPUT_END = 18;
     public static final int GUN_SLOT = 18;
     public static final int ARMOR_SLOT = 19;
-    private NonNullList<ItemStack> items = NonNullList.withSize(20, ItemStack.EMPTY);
+    /** Menu + storage size: 9 input, 9 output, gun slot, armor slot. */
+    public static final int CONTAINER_SIZE = 20;
+    /** Head search radius shared by linking, removal and repair. */
+    private static final double HEAD_SEARCH_RADIUS = 2.0;
+    /** Base logic cadence: the head re-link and health sync run every 2s. */
+    private static final int TICK_INTERVAL = 40;
+    private NonNullList<ItemStack> items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
     private UUID owner;
     private UUID headId;
     private boolean pvp;
@@ -54,12 +61,16 @@ public final class TurretBaseBlockEntity extends BaseContainerBlockEntity implem
     @Override public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {}
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return animationCache; }
 
+    /** Heads anchored at {@code pos}, searched with the shared radius. */
+    public static List<TurretHeadEntity> findHeads(ServerLevel level, BlockPos pos) {
+        return level.getEntitiesOfClass(TurretHeadEntity.class,
+                new AABB(pos).inflate(HEAD_SEARCH_RADIUS), head -> head.anchor().equals(pos));
+    }
+
     public static void serverTick(ServerLevel level, BlockPos pos, BlockState state, TurretBaseBlockEntity base) {
-        if (++base.checkTicks < 40) return;
+        if (++base.checkTicks < TICK_INTERVAL) return;
         base.checkTicks = 0;
-        AABB area = new AABB(pos).inflate(1.5);
-        var heads = level.getEntitiesOfClass(TurretHeadEntity.class, area,
-                head -> head.anchor().equals(pos));
+        var heads = findHeads(level, pos);
         TurretHeadEntity linked = null;
         for (TurretHeadEntity head : heads) {
             if (base.headId != null && base.headId.equals(head.getUUID())) {
@@ -70,7 +81,7 @@ public final class TurretBaseBlockEntity extends BaseContainerBlockEntity implem
         if (linked == null && !heads.isEmpty()) linked = heads.getFirst();
         for (TurretHeadEntity head : heads) if (head != linked) head.discard();
         if (linked == null) {
-            linked = TGEntities.TURRET_HEAD.get().create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+            linked = TGEntities.TURRET_HEAD.get().create(level, EntitySpawnReason.EVENT);
             if (linked != null) {
                 linked.setAnchor(pos);
                 linked.setPos(pos.getX() + 0.5, pos.getY() + 0.25, pos.getZ() + 0.5);
@@ -86,8 +97,7 @@ public final class TurretBaseBlockEntity extends BaseContainerBlockEntity implem
     }
 
     public void removeHead(ServerLevel level) {
-        for (TurretHeadEntity head : level.getEntitiesOfClass(TurretHeadEntity.class,
-                new AABB(worldPosition).inflate(2), head -> head.anchor().equals(worldPosition))) {
+        for (TurretHeadEntity head : findHeads(level, worldPosition)) {
             head.discard();
         }
         headId = null;
@@ -184,7 +194,7 @@ public final class TurretBaseBlockEntity extends BaseContainerBlockEntity implem
 
     @Override protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        items = NonNullList.withSize(20, ItemStack.EMPTY);
+        items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
         ContainerHelper.loadAllItems(input, items);
         owner = parseUuid(input.getStringOr("Owner", ""));
         headId = parseUuid(input.getStringOr("Head", ""));
@@ -196,7 +206,12 @@ public final class TurretBaseBlockEntity extends BaseContainerBlockEntity implem
     }
 
     private static UUID parseUuid(String text) {
-        try { return UUID.fromString(text); }
-        catch (IllegalArgumentException ignored) { return null; }
+        try {
+            return UUID.fromString(text);
+        } catch (IllegalArgumentException e) {
+            // Corrupt or truncated save data: the turret becomes unowned instead of crashing.
+            TechGuns3.LOGGER.debug("[TechGuns3] turret has a corrupt UUID: '{}'", text);
+            return null;
+        }
     }
 }

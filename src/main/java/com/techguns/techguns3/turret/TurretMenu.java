@@ -15,13 +15,14 @@ import net.minecraft.world.item.ItemStack;
 
 /** Server-backed turret inventory and controls. Slot positions match the original GUI texture. */
 public final class TurretMenu extends AbstractContainerMenu {
-    private static final int BASE_SLOTS = 20;
+    private static final int CONTAINER_SIZE = TurretBaseBlockEntity.CONTAINER_SIZE;
+    private static final int DATA_COUNT = 5;
     private final Container container;
     private final ContainerData data;
     private final TurretBaseBlockEntity base;
 
     public TurretMenu(int id, Inventory playerInventory) {
-        this(id, playerInventory, new SimpleContainer(BASE_SLOTS), new SimpleContainerData(5), null);
+        this(id, playerInventory, new SimpleContainer(CONTAINER_SIZE), new SimpleContainerData(DATA_COUNT), null);
     }
 
     public TurretMenu(int id, Inventory playerInventory, TurretBaseBlockEntity base) {
@@ -31,8 +32,8 @@ public final class TurretMenu extends AbstractContainerMenu {
     private TurretMenu(int id, Inventory playerInventory, Container container, ContainerData data,
                        TurretBaseBlockEntity base) {
         super(TGMenus.TURRET.get(), id);
-        checkContainerSize(container, BASE_SLOTS);
-        checkContainerDataCount(data, 5);
+        checkContainerSize(container, CONTAINER_SIZE);
+        checkContainerDataCount(data, DATA_COUNT);
         this.container = container;
         this.data = data;
         this.base = base;
@@ -81,14 +82,14 @@ public final class TurretMenu extends AbstractContainerMenu {
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
         boolean moved;
-        if (index < BASE_SLOTS) {
-            moved = moveItemStackTo(stack, BASE_SLOTS, slots.size(), true);
+        if (index < CONTAINER_SIZE) {
+            moved = moveItemStackTo(stack, CONTAINER_SIZE, slots.size(), true);
         } else if (stack.getItem() instanceof GenericGunItem) {
-            moved = moveItemStackTo(stack, 18, 19, false);
+            moved = moveItemStackTo(stack, TurretBaseBlockEntity.GUN_SLOT, TurretBaseBlockEntity.ARMOR_SLOT, false);
         } else if (stack.is(TGItems.TURRET_ARMOR_IRON.get())) {
-            moved = moveItemStackTo(stack, 19, 20, false);
+            moved = moveItemStackTo(stack, TurretBaseBlockEntity.ARMOR_SLOT, TurretBaseBlockEntity.CONTAINER_SIZE, false);
         } else {
-            moved = moveItemStackTo(stack, 0, 18, false);
+            moved = moveItemStackTo(stack, 0, TurretBaseBlockEntity.GUN_SLOT, false);
         }
         if (!moved) return ItemStack.EMPTY;
         if (stack.isEmpty()) slot.set(ItemStack.EMPTY);

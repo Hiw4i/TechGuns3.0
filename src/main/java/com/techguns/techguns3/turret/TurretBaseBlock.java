@@ -20,6 +20,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.network.chat.Component;
 
 public final class TurretBaseBlock extends BaseEntityBlock {
+    /** Health restored per iron ingot. */
+    private static final float HEAL_PER_INGOT = 5.0f;
+
     public TurretBaseBlock(BlockBehaviour.Properties properties) {
         super(properties);
     }
@@ -70,16 +73,15 @@ public final class TurretBaseBlock extends BaseEntityBlock {
         if (!(level.getBlockEntity(pos) instanceof TurretBaseBlockEntity base) || !base.canConfigure(player)) {
             return InteractionResult.PASS;
         }
-        if (level instanceof ServerLevel server && stack.is(Items.FEATHER)) {
+        if (level instanceof ServerLevel && stack.is(Items.FEATHER)) {
             base.toggleAnimals();
             player.sendSystemMessage(Component.translatable("message.techguns3.turret.animals", base.attackAnimals()));
             return InteractionResult.SUCCESS;
         }
         if (level instanceof ServerLevel server && stack.is(Items.IRON_INGOT)) {
-            for (TurretHeadEntity head : server.getEntitiesOfClass(TurretHeadEntity.class,
-                    new net.minecraft.world.phys.AABB(pos).inflate(2), entity -> entity.anchor().equals(pos))) {
+            for (TurretHeadEntity head : TurretBaseBlockEntity.findHeads(server, pos)) {
                 if (head.getHealth() < head.getMaxHealth()) {
-                    head.heal(5.0f);
+                    head.heal(HEAL_PER_INGOT);
                     if (!player.isCreative()) stack.shrink(1);
                     return InteractionResult.SUCCESS;
                 }

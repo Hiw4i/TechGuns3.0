@@ -1,6 +1,7 @@
 package com.techguns.techguns3.turret;
 
 import com.techguns.techguns3.combat.BallisticCombat;
+import com.techguns.techguns3.combat.GunServerLogic;
 import com.techguns.techguns3.item.GenericGunItem;
 import com.techguns.techguns3.registry.TGItems;
 import net.minecraft.world.item.Item;
@@ -10,6 +11,7 @@ import com.geckolib.animatable.instance.AnimatableInstanceCache;
 import com.geckolib.util.GeckoLibUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -26,6 +28,11 @@ import net.minecraft.world.phys.Vec3;
 
 /** Damageable, anchored turret head. Combat and ammunition remain server authoritative. */
 public final class TurretHeadEntity extends Monster implements GeoEntity {
+    /** Acquisition range in blocks (also the query box half-size). */
+    private static final double TARGET_RANGE = 32;
+    /** Armor plating factor: an iron plate absorbs a quarter of the damage. */
+    private static final float TURRET_ARMOR_DR = 0.75f;
+
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     private BlockPos anchor = BlockPos.ZERO;
 
@@ -69,36 +76,34 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
         if (level.hasNeighborSignal(anchor)) return;
         GenericGunItem gun = base.gun();
         if (gun == null) return;
+        var stats = gun.stats();
         LivingEntity target = findTarget(level, base);
         if (target == null) return;
         if (base.loadedRounds() <= 0) {
             if (!reload(base, gun)) return;
-            var reloadStats = gun.stats();
-            base.setReloadTicks(reloadStats.reloadTimeTicks());
-            level.playSound(null, getX(), getY(), getZ(), reloadStats.reloadSound().get(), SoundSource.BLOCKS, 1, 1);
+            base.setReloadTicks(stats.reloadTimeTicks());
+            level.playSound(null, getX(), getY(), getZ(), stats.reloadSound().get(), SoundSource.BLOCKS, 1.0f, 1.0f);
             return;
         }
         // Barrel tip ahead of the housing: never spawn the flash inside the head.
-        Vec3 muzzle = com.techguns.techguns3.combat.GunServerLogic.muzzlePos(this);
+        Vec3 muzzle = GunServerLogic.muzzlePos(this);
         Vec3 delta = target.getEyePosition().subtract(muzzle);
         double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
         float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
         float pitch = (float) Math.toDegrees(-Math.atan2(delta.y, horizontal));
         setYRot(yaw);
         setXRot(pitch);
-        var fireStats = gun.stats();
-        var fireExtras = gun.extras();
-        BallisticCombat.fire(level, this, fireStats, fireExtras, null, 0.0f, 1.0f, -1,
+        BallisticCombat.fire(level, this, stats, gun.extras(), null, 0.0f, 1.0f, -1,
                 muzzle, yaw, pitch, SoundSource.BLOCKS, 1.0f);
         base.setLoadedRounds(base.loadedRounds() - 1);
-        base.setFireTicks(fireStats.fireCooldownTicks());
+        base.setFireTicks(stats.fireCooldownTicks());
     }
 
     private LivingEntity findTarget(ServerLevel level, TurretBaseBlockEntity base) {
         LivingEntity best = null;
-        double bestDistance = 32 * 32;
+        double bestDistance = TARGET_RANGE * TARGET_RANGE;
         for (LivingEntity candidate : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(anchor).inflate(32), this::canAttackTarget)) {
+                new AABB(anchor).inflate(TARGET_RANGE), c -> canAttackTarget(c, base))) {
             double distance = distanceToSqr(candidate);
             if (distance < bestDistance && hasLineOfSight(candidate)) {
                 best = candidate;
@@ -110,8 +115,12 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
 
     /** Apply the same target policy to direct bullets and chained electrical arcs. */
     public boolean canAttackTarget(LivingEntity candidate) {
+        return level().getBlockEntity(anchor) instanceof TurretBaseBlockEntity base
+                && canAttackTarget(candidate, base);
+    }
+
+    private boolean canAttackTarget(LivingEntity candidate, TurretBaseBlockEntity base) {
         if (!candidate.isAlive() || candidate == this) return false;
-        if (!(level().getBlockEntity(anchor) instanceof TurretBaseBlockEntity base)) return false;
         if (candidate instanceof Player player) {
             return base.pvp() && !player.isCreative() && !player.isSpectator()
                     && !player.getUUID().equals(base.owner());
@@ -141,11 +150,11 @@ public final class TurretHeadEntity extends Monster implements GeoEntity {
     }
 
     @Override
-    public boolean hurtServer(ServerLevel level, net.minecraft.world.damagesource.DamageSource source, float amount) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         if (level.getBlockEntity(anchor) instanceof TurretBaseBlockEntity base) {
             ItemStack armor = base.getItem(TurretBaseBlockEntity.ARMOR_SLOT);
             if (armor.is(TGItems.TURRET_ARMOR_IRON.get())) {
-                amount *= 0.75f;
+                amount *= TURRET_ARMOR_DR;
                 int nextDamage = armor.getDamageValue() + 1;
                 if (nextDamage >= armor.getMaxDamage()) armor.shrink(1);
                 else armor.setDamageValue(nextDamage);
