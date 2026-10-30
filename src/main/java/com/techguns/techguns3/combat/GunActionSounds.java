@@ -8,15 +8,16 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.PriorityQueue;
 import java.util.function.Supplier;
 
 /**
  * Delayed gun action sounds (shotgun pump, bolt rechamber). TG2 plays these
  * after the shot, not layered onto it; a tiny server-tick queue reproduces
- * that without per-gun tick state. Bounded and self-cleaning: entries for
- * unloaded dimensions expire instead of leaking.
+ * that without per-gun tick state. Entries are played in due-tick order, so a
+ * short-delay sound never waits behind an earlier-scheduled long-delay one.
+ * Bounded and self-cleaning: entries for unloaded dimensions expire instead
+ * of leaking. Server thread only (schedules arrive via enqueueWork).
  */
 @EventBusSubscriber(modid = com.techguns.techguns3.TechGuns3.MODID)
 public final class GunActionSounds {
@@ -26,13 +27,15 @@ public final class GunActionSounds {
                          SoundSource source, long dueTick) {}
 
     private static final int MAX_PENDING = 128;
-    private static final Deque<Entry> PENDING = new ArrayDeque<>();
+    private static final int MAX_LATE_TICKS = 200;
+    private static final PriorityQueue<Entry> PENDING =
+            new PriorityQueue<>(MAX_PENDING, java.util.Comparator.comparingLong(Entry::dueTick));
 
     public static void schedule(ServerLevel level, Vec3 pos, Supplier<SoundEvent> sound,
                                 SoundSource source, int delayTicks) {
         if (sound == null || delayTicks < 0) return;
-        if (PENDING.size() >= MAX_PENDING) PENDING.pollFirst();
-        PENDING.addLast(new Entry(level, pos, sound, source, level.getGameTime() + delayTicks));
+        if (PENDING.size() >= MAX_PENDING) PENDING.poll();
+        PENDING.add(new Entry(level, pos, sound, source, level.getGameTime() + delayTicks));
     }
 
     @SubscribeEvent
@@ -40,15 +43,17 @@ public final class GunActionSounds {
         if (PENDING.isEmpty()) return;
         var server = event.getServer();
         while (!PENDING.isEmpty()) {
-            Entry head = PENDING.peekFirst();
+            Entry head = PENDING.peek();
             ServerLevel level = head.level();
             // Drop entries whose dimension went away or that rotted (server lag safety).
-            if (server.getLevel(level.dimension()) != level || level.getGameTime() > head.dueTick() + 200) {
-                PENDING.pollFirst();
+            if (server.getLevel(level.dimension()) != level
+                    || level.getGameTime() > head.dueTick() + MAX_LATE_TICKS) {
+                PENDING.poll();
                 continue;
             }
+            // The head is the earliest due entry: if it is not due yet, nothing is.
             if (level.getGameTime() < head.dueTick()) break;
-            PENDING.pollFirst();
+            PENDING.poll();
             try {
                 level.playSound(null, head.pos().x, head.pos().y, head.pos().z,
                         head.sound().get(), head.source(), 1.0f, 1.0f);

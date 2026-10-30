@@ -42,8 +42,7 @@ public record GunExtras(
     public record ExplosiveSpec(float max, float min, float r1, float r2, float blockDamage, boolean nuke) {}
 
     /** Muzzle-flash texture ids (ScreenEffect↔renderer map). 0 = kind default. */
-    public static final int FLASH_AUTO = 0;
-    public static final int FLASH_RIFLE = 1;
+    public static final int FLASH_AUTO = 0;    public static final int FLASH_RIFLE = 1;
     public static final int FLASH_GUN = 2;
     public static final int FLASH_MINIGUN = 3;
     public static final int FLASH_BLUE = 4;
@@ -54,6 +53,9 @@ public record GunExtras(
     public static final int FLASH_TFG = 9;
     public static final int FLASH_FLAME = 10;
     public static final int FLASH_GREENFLARE = 11;
+
+    /** Turn rate for guns that declare guided without a homing_turn (GuidedMissileLauncher). */
+    public static final float GUIDED_DEFAULT_TURN = 0.16f;
 
     public static final GunExtras DEFAULT = new GunExtras(
             null, false, 0, 1, 1, 0.0f, false, 0.0f, false, 20, 80, 150.0, 0, null,

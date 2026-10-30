@@ -1,23 +1,40 @@
 package com.techguns.techguns3.combat;
 
+import com.techguns.techguns3.TechGuns3;
+import com.techguns.techguns3.entity.BeamEntity;
+import com.techguns.techguns3.entity.ChargeOrbEntity;
+import com.techguns.techguns3.entity.MuzzleFlashEntity;
+import com.techguns.techguns3.fx.GunFxPresets;
 import com.techguns.techguns3.item.AnimatedGunItem;
 import com.techguns.techguns3.item.GenericGunItem;
+import com.techguns.techguns3.item.GunExtras;
+import com.techguns.techguns3.item.GunStats;
 import com.techguns.techguns3.network.GunPackets;
 import com.techguns.techguns3.registry.TGDataComponents;
 import com.techguns.techguns3.registry.TGItems;
+import com.techguns.techguns3.registry.TGSounds;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,14 +48,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * this class owns fire rate, ammo and projectiles. Transient input state lives in a
  * plain map — it is intentionally <em>not</em> an attachment (no persistence, no sync).</p>
  */
-@EventBusSubscriber(modid = com.techguns.techguns3.TechGuns3.MODID)
+@EventBusSubscriber(modid = TechGuns3.MODID)
 public final class GunServerLogic {
     private GunServerLogic() {}
 
     private static final org.slf4j.Logger LOG = com.mojang.logging.LogUtils.getLogger();
 
     /** Visual-only tesla flicker between damage shots (damage shots keep their own arcs). */
-    private static final long TESLA_REGEN_TICKS = 4;
+    private static final long TESLA_FLICKER_TICKS = 4;
+    /** Empty trigger pull: haptic cooldown before the auto-reload kicks in. */
+    private static final long DRY_FIRE_COOLDOWN_TICKS = 5;
+    /** Rising charge whine replays at this cadence. */
+    private static final long CHARGE_WHINE_TICKS = 12;
+    /** Guided lock-on beeps: locked hum every 4t, search/coast every 12t (CE rhythm). */
+    private static final long LOCKED_BEEP_EVERY_TICKS = 4;
+    private static final long LOCKON_BEEP_EVERY_TICKS = 12;
 
     private record State(boolean firing, long nextShotTick, long reloadUntilTick, boolean zooming,
                            long spinId, long lastArcTick,
@@ -57,25 +81,36 @@ public final class GunServerLogic {
 
     private static final Map<UUID, State> STATES = new ConcurrentHashMap<>();
 
+    /** Shared idle state: immutable record, safe to hand out without allocating. */
+    private static final State DEFAULT_STATE =
+            new State(false, 0, 0, false, 0, 0, -1, -1, 0, 0, 0);
+
     /** Persistent sustained-beam entities (NDR) by shooter. Refreshed each tick, discarded on release. */
-    private static final Map<UUID, com.techguns.techguns3.entity.BeamEntity> BEAMS = new ConcurrentHashMap<>();
+    private static final Map<UUID, BeamEntity> BEAMS = new ConcurrentHashMap<>();
 
     /** TFG charge orbs by shooter. Grown each tick while held, discarded on release. */
-    private static final Map<UUID, com.techguns.techguns3.entity.ChargeOrbEntity> CHARGE_ORBS = new ConcurrentHashMap<>();
+    private static final Map<UUID, ChargeOrbEntity> CHARGE_ORBS = new ConcurrentHashMap<>();
 
     /** Drop the sustained beam when the trigger releases, the weapon changes or the player leaves. */
     private static void discardBeam(Player player) {
-        com.techguns.techguns3.entity.BeamEntity beam = BEAMS.remove(player.getUUID());
+        BeamEntity beam = BEAMS.remove(player.getUUID());
         if (beam != null) beam.discard();
     }
 
     private static void discardChargeOrb(Player player) {
-        com.techguns.techguns3.entity.ChargeOrbEntity orb = CHARGE_ORBS.remove(player.getUUID());
+        ChargeOrbEntity orb = CHARGE_ORBS.remove(player.getUUID());
         if (orb != null) orb.discard();
     }
 
+    /** Everything a held trigger keeps alive: barrel spin, sustained beam, charge orb. */
+    private static void releaseHoldEffects(ServerPlayer player) {
+        stopSpinIfNeeded(player);
+        discardBeam(player);
+        discardChargeOrb(player);
+    }
+
     private static State stateOf(Player player) {
-        return STATES.getOrDefault(player.getUUID(), new State(false, 0, 0, false, 0, 0, -1, -1, 0, 0, 0));
+        return STATES.getOrDefault(player.getUUID(), DEFAULT_STATE);
     }
 
     /** TFG-style hold-to-charge gun (charge extras without guided lock-on). Single extras lookup. */
@@ -86,6 +121,13 @@ public final class GunServerLogic {
 
     private static void setState(Player player, State state) {
         STATES.put(player.getUUID(), state);
+    }
+
+    /** Empty trigger pull: haptic cooldown, then the auto-reload. */
+    private static void dryFire(ServerPlayer player, State state, long now,
+                                ItemStack gunStack, GenericGunItem gun) {
+        setState(player, state.withNextShot(now + DRY_FIRE_COOLDOWN_TICKS));
+        startReload(player, gunStack, gun);
     }
 
     // --- packet entry points (already on server thread via enqueueWork) ---
@@ -101,8 +143,7 @@ public final class GunServerLogic {
             State state = stateOf(player);
             if (state.chargeStartTick() >= 0) return;
             if (gun.loadedRounds(held) <= 0) {
-                setState(player, state.withNextShot(now + 5));
-                startReload(serverPlayer, held, gun);
+                dryFire(serverPlayer, state, now, held, gun);
                 return;
             }
             setState(player, state.withCharge(now).withZooming(msg.zooming()).withFiring(true).withLoopTick(now));
@@ -144,9 +185,7 @@ public final class GunServerLogic {
         if (!state.firing() && state.spinId() == 0 && state.chargeStartTick() < 0) return;
         setState(player, state.withFiring(false).withCharge(-1).withLock(-1, 0, 0));
         LOG.debug("[TechGuns3] hold-fire stopped: {}", player.getScoreboardName());
-        stopSpinIfNeeded(serverPlayer);
-        discardBeam(serverPlayer);
-                discardChargeOrb(serverPlayer);
+        releaseHoldEffects(serverPlayer);
     }
 
     public static void onFirePressed(Player player, GunPackets.FirePressed msg) {
@@ -190,9 +229,7 @@ public final class GunServerLogic {
             State state = stateOf(player);
             if (state.firing() || state.spinId() != 0 || state.chargeStartTick() >= 0) {
                 setState(player, state.withFiring(false).withCharge(-1).withLock(-1, 0, 0));
-                stopSpinIfNeeded(serverPlayer);
-                discardBeam(serverPlayer);
-                discardChargeOrb(serverPlayer);
+                releaseHoldEffects(serverPlayer);
             }
             return;
         }
@@ -202,9 +239,7 @@ public final class GunServerLogic {
         if (!(held.getItem() instanceof GenericGunItem gun)) {
             if (state.firing() || state.chargeStartTick() >= 0) {
                 setState(player, state.withFiring(false).withCharge(-1).withLock(-1, 0, 0));
-                stopSpinIfNeeded(serverPlayer);
-                discardBeam(serverPlayer);
-                discardChargeOrb(serverPlayer);
+                releaseHoldEffects(serverPlayer);
             }
             return;
         }
@@ -235,15 +270,14 @@ public final class GunServerLogic {
             return;
         }
         if (now < state.reloadUntilTick() || now < state.nextShotTick()) return;
-        if (stats.projectileKind() == com.techguns.techguns3.item.GunStats.ProjectileKind.ELECTRIC
-                && now - state.lastArcTick() >= TESLA_REGEN_TICKS) {
+        if (stats.projectileKind() == GunStats.ProjectileKind.ELECTRIC
+                && now - state.lastArcTick() >= TESLA_FLICKER_TICKS) {
             // Flicker stream between damage shots: visual-only arcs, same aim.
             setState(player, state.withLastArc(now));
-            com.techguns.techguns3.combat.ElectricCombat.drawArcOnly(
+            ElectricCombat.drawArcOnly(
                     serverPlayer.level(), serverPlayer, stats, muzzlePos(player),
                     player.getYRot(), player.getXRot());
             state = stateOf(player);
-            if (now < state.nextShotTick()) return;
         }
         // Looping guns (flamethrower/NDR MaxLoopDelay): replay the fire sound
         // on a slow loop while held, independent of the per-shot rate.
@@ -253,14 +287,13 @@ public final class GunServerLogic {
                     stats.fireSound().get(), SoundSource.PLAYERS, 1.0f, 1.0f);
             state = stateOf(player);
         }
-        if (stats.projectileKind() == com.techguns.techguns3.item.GunStats.ProjectileKind.FIRE) {
+        if (stats.projectileKind() == GunStats.ProjectileKind.FIRE) {
             // Unbroken flame tongue: a 5-tick textured flame refreshed every tick
             // while held, so the jet never gaps between the 2-tick pellets.
             Vec3 tongue = muzzlePos(player).add(player.getLookAngle().scale(0.6));
-            player.level().addFreshEntity(new com.techguns.techguns3.entity.MuzzleFlashEntity(
+            player.level().addFreshEntity(new MuzzleFlashEntity(
                     player.level(), tongue.x, tongue.y, tongue.z,
-                    com.techguns.techguns3.fx.GunFxPresets.TRACER_FIRE, 0.9f,
-                    com.techguns.techguns3.item.GunExtras.FLASH_FLAME));
+                    GunFxPresets.TRACER_FIRE, 0.9f, GunExtras.FLASH_FLAME));
         }
         tryFireOnce(serverPlayer, held, gun, state.zooming());
     }
@@ -268,9 +301,9 @@ public final class GunServerLogic {
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         STATES.remove(event.getEntity().getUUID());
-        com.techguns.techguns3.entity.BeamEntity beam = BEAMS.remove(event.getEntity().getUUID());
+        BeamEntity beam = BEAMS.remove(event.getEntity().getUUID());
         if (beam != null) beam.discard();
-        com.techguns.techguns3.entity.ChargeOrbEntity orb = CHARGE_ORBS.remove(event.getEntity().getUUID());
+        ChargeOrbEntity orb = CHARGE_ORBS.remove(event.getEntity().getUUID());
         if (orb != null) orb.discard();
     }
 
@@ -293,7 +326,7 @@ public final class GunServerLogic {
         if (now >= state.nextShotTick()) {
             int loaded = gun.loadedRounds(gunStack);
             if (loaded <= 0) {
-                setState(player, stateOf(player).withNextShot(now + 5).withFiring(false));
+                setState(player, stateOf(player).withNextShot(now + DRY_FIRE_COOLDOWN_TICKS).withFiring(false));
                 discardBeam(player);
                 stopSpinIfNeeded(player);
                 startReload(player, gunStack, gun);
@@ -306,21 +339,17 @@ public final class GunServerLogic {
             state = stateOf(player);
         }
         Vec3 muzzle = muzzlePos(player);
-        com.techguns.techguns3.combat.BeamCombat.tickDamage(player.level(), player, stats,
+        BeamCombat.tickDamage(player.level(), player, stats,
                 extras, muzzle, player.getYRot(), player.getXRot());
         // Persistent visual: spawn once, re-anchor + re-aim every tick (CE teleport).
-        com.techguns.techguns3.entity.BeamEntity beam = BEAMS.get(player.getUUID());
+        BeamEntity beam = BEAMS.get(player.getUUID());
         Vec3 dir = player.getLookAngle().normalize();
-        double range = Math.max(10.0, stats.maxRange() * stats.bulletSpeed());
+        double range = CombatTargeting.beamRange(stats);
         Vec3 end = muzzle.add(dir.scale(range));
-        var wall = player.level().clip(new net.minecraft.world.level.ClipContext(muzzle, end,
-                net.minecraft.world.level.ClipContext.Block.COLLIDER,
-                net.minecraft.world.level.ClipContext.Fluid.NONE, player));
-        Vec3 beamEnd = wall.getType() == net.minecraft.world.phys.HitResult.Type.MISS
-                ? end : wall.getLocation();
+        HitResult wall = CombatTargeting.clipWall(player.level(), player, muzzle, end);
+        Vec3 beamEnd = wall.getType() == HitResult.Type.MISS ? end : wall.getLocation();
         if (beam == null || beam.isRemoved()) {
-            beam = new com.techguns.techguns3.entity.BeamEntity(player.level(), muzzle, beamEnd,
-                    com.techguns.techguns3.fx.GunFxPresets.TRACER_NDR);
+            beam = new BeamEntity(player.level(), muzzle, beamEnd, GunFxPresets.TRACER_NDR);
             player.level().addFreshEntity(beam);
             BEAMS.put(player.getUUID(), beam);
         } else {
@@ -341,9 +370,9 @@ public final class GunServerLogic {
         float charge = Math.min(1.0f, (now - state.chargeStartTick())
                 / (float) Math.max(1, extras.chargeTicks()));
         Vec3 muzzle = muzzlePos(player);
-        com.techguns.techguns3.entity.ChargeOrbEntity orb = CHARGE_ORBS.get(player.getUUID());
+        ChargeOrbEntity orb = CHARGE_ORBS.get(player.getUUID());
         if (orb == null || orb.isRemoved()) {
-            orb = new com.techguns.techguns3.entity.ChargeOrbEntity(player.level(), muzzle, charge);
+            orb = new ChargeOrbEntity(player.level(), muzzle, charge);
             player.level().addFreshEntity(orb);
             CHARGE_ORBS.put(player.getUUID(), orb);
             setState(player, stateOf(player).withLoopTick(now));
@@ -351,7 +380,7 @@ public final class GunServerLogic {
             orb.updateCharge(muzzle, charge);
         }
         // Rising whine: replay the charge loop higher as it grows.
-        if (stats.extraSound() != null && now - stateOf(player).loopTick() >= 12) {
+        if (stats.extraSound() != null && now - stateOf(player).loopTick() >= CHARGE_WHINE_TICKS) {
             setState(player, stateOf(player).withLoopTick(now));
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                     stats.extraSound().get(), SoundSource.PLAYERS, 1.0f, 0.75f + 0.65f * charge);
@@ -363,7 +392,6 @@ public final class GunServerLogic {
                     0x39FF5E, 0x1A7A2E, 0.14f, 0.03f, 12, -0.02f, 0.96f, 1.2, 0.8);
         }
     }
-
     /** Charged release (TFG): {@code heldTicks} scales damage/size/ammo like GenericGunCharge. */
     private static void tryFireCharged(ServerPlayer player, ItemStack gunStack, GenericGunItem gun,
                                        boolean zooming, long heldTicks) {
@@ -393,11 +421,10 @@ public final class GunServerLogic {
         if (loaded < want) {
             // Empty trigger pull: haptic cooldown + auto-reload, like the 1.12 dry-fire path.
             // Automatics keep the trigger held so the burst resumes after reloading.
-            setState(player, state.withNextShot(now + 5));
             stopSpinIfNeeded(player);
             LOG.debug("[TechGuns3] trigger on empty {} ({}), requesting reload",
                     gunStack.getItem(), player.getScoreboardName());
-            startReload(player, gunStack, gun);
+            dryFire(player, state, now, gunStack, gun);
             return;
         }
         if (!player.isCreative()) {
@@ -413,7 +440,7 @@ public final class GunServerLogic {
         }
         boolean zoomed = zooming && stats.canZoom();
         float spreadMult = zoomed ? stats.zoomSpreadMult() : 1.0f;
-        String variant = gunStack.getOrDefault(TGDataComponents.AMMO_VARIANT.get(), null);
+        String variant = gunStack.get(TGDataComponents.AMMO_VARIANT.get());
         int homingId = -1;
         if (extras.guided()) {
             homingId = stateOf(player).lockTargetId();
@@ -447,7 +474,7 @@ public final class GunServerLogic {
         }
         // Variant priority: extras-first (nuke > hv > normal, explosive > incendiary > normal),
         // so the strongest carried ammo loads automatically (CE toggleAmmoType, simplified).
-        java.util.List<Item> priority = new java.util.ArrayList<>(gun.acceptedAmmoItems());
+        List<Item> priority = new ArrayList<>(gun.acceptedAmmoItems());
         if (extras.hasExtraAmmo()) {
             priority.sort((a, b) -> {
                 boolean aExtra = isExtraAmmo(gun, a);
@@ -484,15 +511,15 @@ public final class GunServerLogic {
         if (stats.magazineFed() && emptyMagazine != null) {
             ItemStack returned = new ItemStack(emptyMagazine);
             if (!player.getInventory().add(returned)) {
-                player.drop(returned, false, net.minecraft.util.Prediction.SERVER_ONLY);
+                player.drop(returned, false, Prediction.SERVER_ONLY);
             }
         }
         int loaded = stats.magazineFed() ? stats.magazineSize()
                 : Math.min(consumed, stats.magazineSize());
         gunStack.set(TGDataComponents.AMMO.get(), loaded);
         // Remember the variant so fire() picks nuke/hv/explosive/incendiary projectiles.
-        String variantId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(wanted).getPath();
-        String defaultId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(gun.ammoItem()).getPath();
+        String variantId = BuiltInRegistries.ITEM.getKey(wanted).getPath();
+        String defaultId = BuiltInRegistries.ITEM.getKey(gun.ammoItem()).getPath();
         if (variantId.equals(defaultId)) {
             gunStack.remove(TGDataComponents.AMMO_VARIANT.get());
         } else {
@@ -511,7 +538,7 @@ public final class GunServerLogic {
     private static boolean isExtraAmmo(GenericGunItem gun, Item item) {
         if (!gun.extras().hasExtraAmmo()) return false;
         for (String id : gun.extras().extraAmmoIds()) {
-            if (net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getPath().equals(id)) return true;
+            if (BuiltInRegistries.ITEM.getKey(item).getPath().equals(id)) return true;
         }
         return false;
     }
@@ -520,16 +547,12 @@ public final class GunServerLogic {
         // Variant mags share the family's empty item where CE has no separate empty.
         Item base = gun.emptyMagazineItem();
         if (ammo == gun.ammoItem()) return base;
-        String path = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(ammo).getPath();
+        String path = BuiltInRegistries.ITEM.getKey(ammo).getPath();
         if (path.contains("as50")) {
-            try {
-                var loc = net.minecraft.resources.Identifier.fromNamespaceAndPath(
-                        com.techguns.techguns3.TechGuns3.MODID, "as50_magazine_empty");
-                var empty = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(loc);
-                if (empty != null && empty != net.minecraft.world.item.Items.AIR) return empty;
-            } catch (Exception e) {
-                LOG.debug("[TechGuns3] AS50 empty-mag lookup failed", e);
-            }
+            // getValue returns AIR for unknown ids, never throws.
+            Item empty = BuiltInRegistries.ITEM.getValue(
+                    Identifier.fromNamespaceAndPath(TechGuns3.MODID, "as50_magazine_empty"));
+            if (empty != Items.AIR) return empty;
         }
         return base;
     }
@@ -564,34 +587,21 @@ public final class GunServerLogic {
 
     private static void playCharge(ServerPlayer player, ItemStack gunStack, GenericGunItem gun) {
         // TFG charge loop: sound + looping charge anim (CE setChargeSound/ChargeFX).
-        try {
-            var charge = gun.stats().extraSound();
-            if (charge != null) {
-                player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                        charge.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-            }
-        } catch (Exception e) {
-            LOG.debug("[TechGuns3] charge sound failed for {}", gunStack.getItem(), e);
+        var charge = gun.stats().extraSound();
+        if (charge != null) {
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    charge.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
         }
         if (gun instanceof AnimatedGunItem animated && player.level() instanceof ServerLevel server) {
-            try {
-                animated.triggerAnim(player, com.geckolib.animatable.GeoItem.getOrAssignId(gunStack, server),
-                        AnimatedGunItem.CONTROLLER_CHARGE, "charge");
-            } catch (Exception e) {
-                LOG.debug("[TechGuns3] charge anim failed for {}", gunStack.getItem(), e);
-            }
+            animated.triggerAnim(player, com.geckolib.animatable.GeoItem.getOrAssignId(gunStack, server),
+                    AnimatedGunItem.CONTROLLER_CHARGE, "charge");
         }
     }
 
     private static void stopCharge(ServerPlayer player, ItemStack gunStack, GenericGunItem gun) {
-        if (gun instanceof AnimatedGunItem animated && player.level() instanceof ServerLevel) {
-            try {
-                long id = com.geckolib.animatable.GeoItem.getOrAssignId(gunStack,
-                        (ServerLevel) player.level());
-                animated.stopTriggeredAnim(player, id, AnimatedGunItem.CONTROLLER_CHARGE, "charge");
-            } catch (Exception e) {
-                LOG.debug("[TechGuns3] stop charge anim failed for {}", gunStack.getItem(), e);
-            }
+        if (gun instanceof AnimatedGunItem animated && player.level() instanceof ServerLevel server) {
+            long id = com.geckolib.animatable.GeoItem.getOrAssignId(gunStack, server);
+            animated.stopTriggeredAnim(player, id, AnimatedGunItem.CONTROLLER_CHARGE, "charge");
         }
     }
 
@@ -610,28 +620,28 @@ public final class GunServerLogic {
                 setState(player, stateOf(player).withLock(target.getId(), ticks, now));
                 if (ticks == extras.lockTime()) {
                     player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                            com.techguns.techguns3.registry.TGSounds.LOCKED_BEEP.get(),
+                            TGSounds.LOCKED_BEEP.get(),
                             SoundSource.PLAYERS, 1.0f, 1.0f);
-                } else if (ticks > extras.lockTime() && now % 4 == 0) {
+                } else if (ticks > extras.lockTime() && now % LOCKED_BEEP_EVERY_TICKS == 0) {
                     player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                            com.techguns.techguns3.registry.TGSounds.LOCKED_BEEP.get(),
+                            TGSounds.LOCKED_BEEP.get(),
                             SoundSource.PLAYERS, 0.5f, 1.0f);
                 }
             } else {
                 setState(player, stateOf(player).withLock(target.getId(), 1, now));
-                if (now % 12 == 0) {
+                if (now % LOCKON_BEEP_EVERY_TICKS == 0) {
                     player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                            com.techguns.techguns3.registry.TGSounds.LOCKON_BEEP.get(),
+                            TGSounds.LOCKON_BEEP.get(),
                             SoundSource.PLAYERS, 0.5f, 1.0f);
                 }
             }
         } else if (state.lockTargetId() >= 0 && now - state.lockSeenTick() < extras.lockPersist()) {
             // Coast: keep the lock while within persist window.
-            if (now % 12 == 0) {
-                player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                        com.techguns.techguns3.registry.TGSounds.LOCKON_BEEP.get(),
-                        SoundSource.PLAYERS, 0.4f, 1.0f);
-            }
+            if (now % LOCKON_BEEP_EVERY_TICKS == 0) {
+                    player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                            TGSounds.LOCKON_BEEP.get(),
+                            SoundSource.PLAYERS, 0.4f, 1.0f);
+                }
         } else if (state.lockTargetId() >= 0) {
             setState(player, stateOf(player).withLock(-1, 0, 0));
         }
@@ -645,22 +655,19 @@ public final class GunServerLogic {
         Vec3 dir = player.getLookAngle().normalize();
         double range = extras.lockRange();
         LivingEntity best = null;
-        double bestDist = range * range;
+        double bestDistSqr = range * range;
+        double coneCos = Math.cos(Math.toRadians(CombatTargeting.AIM_CONE_DEGREES));
         for (LivingEntity candidate : level.getEntitiesOfClass(LivingEntity.class,
-                new net.minecraft.world.phys.AABB(muzzle, muzzle.add(dir.scale(range))).inflate(3.0),
-                e -> e != player && e.isAlive() && !player.isAlliedTo(e)
-                        && e.canBeHitByProjectile())) {
+                new AABB(muzzle, muzzle.add(dir.scale(range))).inflate(3.0),
+                e -> CombatTargeting.isEngageable(player, e) && e.canBeHitByProjectile())) {
             Vec3 toTarget = candidate.getEyePosition().subtract(muzzle);
-            double dist = toTarget.lengthSqr();
-            if (dist < 0.25 || dist > bestDist) continue;
-            if (toTarget.normalize().dot(dir) < Math.cos(Math.toRadians(6.0))) continue;
-            var wall = level.clip(new net.minecraft.world.level.ClipContext(muzzle,
-                    candidate.getEyePosition(),
-                    net.minecraft.world.level.ClipContext.Block.COLLIDER,
-                    net.minecraft.world.level.ClipContext.Fluid.NONE, player));
-            if (wall.getType() != net.minecraft.world.phys.HitResult.Type.MISS) continue;
+            double distSqr = toTarget.lengthSqr();
+            if (distSqr < 0.25 || distSqr > bestDistSqr) continue;
+            if (toTarget.normalize().dot(dir) < coneCos) continue;
+            HitResult wall = CombatTargeting.clipWall(level, player, muzzle, candidate.getEyePosition());
+            if (wall.getType() != HitResult.Type.MISS) continue;
             best = candidate;
-            bestDist = dist;
+            bestDistSqr = distSqr;
         }
         return best;
     }
@@ -683,7 +690,7 @@ public final class GunServerLogic {
     }
 
     /** Barrel tip for non-player shooters (NPCs, turrets): ahead of the eye, same close rule. */
-    public static Vec3 muzzlePos(net.minecraft.world.entity.LivingEntity shooter) {
+    public static Vec3 muzzlePos(LivingEntity shooter) {
         if (shooter instanceof Player player) return muzzlePos(player);
         Vec3 eye = shooter.getEyePosition();
         Vec3 look = shooter.getLookAngle();
