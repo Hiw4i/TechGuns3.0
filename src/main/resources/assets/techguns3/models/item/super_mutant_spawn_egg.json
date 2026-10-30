@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "techguns3:item/super_mutant_spawn_egg"
+  }
+}

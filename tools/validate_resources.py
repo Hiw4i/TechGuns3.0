@@ -304,6 +304,46 @@ else:
         elif f"{name}.vsh" != SHARED_VERTEX and not (shader_dir / f"{name}.fsh").exists():
             errors.append(f"missing shader: core/{name}.fsh")
 
+# --- armed NPC profiles (data/techguns3/mobs) ---
+entities_java = (root / "src/main/java/com/techguns/techguns3/registry/TGEntities.java").read_text(encoding="utf-8")
+mob_ids = set(re.findall(r'registerEntityType\("([a-z0-9_]+)",\s*TGArmedMob::new', entities_java))
+mob_ids |= {"zombie_soldier", "bandit"}
+mobs_dir = resources / "data/techguns3/mobs"
+if not mobs_dir.is_dir():
+    errors.append("missing mobs datapack dir: data/techguns3/mobs")
+else:
+    gun_ids_json = {p.stem for p in (resources / "data/techguns3/guns").glob("*.json")}
+    vanilla_items = {"minecraft:tnt", "minecraft:cobblestone", "minecraft:oak_planks"}
+    for path in sorted(mobs_dir.glob("*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        name = path.stem
+        if name not in mob_ids:
+            errors.append(f"mob profile without entity type: {name}")
+        for weapon in data.get("combat", {}).get("weapons", []):
+            if weapon.split(":")[-1] not in gun_ids_json:
+                errors.append(f"mob {name}: weapon {weapon} has no gun definition")
+        for key in ("build_material", "dynamite_item"):
+            item = data.get("abilities", {}).get(key)
+            if item and item not in vanilla_items:
+                errors.append(f"mob {name}: {key} {item} is not a known block/item")
+        for lang in ("en_us.json", "ru_ru.json"):
+            lang_data = json.loads((assets / "lang" / lang).read_text(encoding="utf-8"))
+            if f"entity.techguns3.{name}" not in lang_data:
+                errors.append(f"mob {name}: missing lang entry in {lang}")
+        if not (assets / "textures/entity" / f"{name}.png").exists():
+            errors.append(f"mob {name}: missing texture textures/entity/{name}.png")
+        if not (resources / "data/techguns3/loot_table/entities" / f"{name}.json").exists():
+            errors.append(f"mob {name}: missing loot table")
+    for name in sorted(mob_ids):
+        if not (mobs_dir / f"{name}.json").exists():
+            errors.append(f"missing mob profile: {name}.json")
+    biome_mods = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted((resources / "data/techguns3/neoforge/biome_modifier").glob("*.json")))
+    for name in sorted(mob_ids):
+        if f"techguns3:{name}" not in biome_mods:
+            errors.append(f"mob {name}: not referenced by any biome modifier (natural spawn)")
+
 # --- crafting recipes ---
 for path in sorted((resources / "data/techguns3/recipe").glob("*.json")):
     data = json.loads(path.read_text(encoding="utf-8"))

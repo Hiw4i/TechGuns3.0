@@ -104,6 +104,19 @@ public final class TGTabs {
                         output.accept(TGBlocks.TITANIUM_ORE_ITEM.get());
                         output.accept(TGBlocks.METAL_PANEL_ITEM.get());
                         output.accept(TGBlocks.TURRET_BASE_ITEM.get());
+                        // Armed NPC spawn eggs
+                        output.accept(TGItems.ZOMBIE_SOLDIER_SPAWN_EGG.get());
+                        output.accept(TGItems.BANDIT_SPAWN_EGG.get());
+                        output.accept(TGItems.ARMY_SOLDIER_SPAWN_EGG.get());
+                        output.accept(TGItems.COMMANDO_SPAWN_EGG.get());
+                        output.accept(TGItems.OUTCAST_SPAWN_EGG.get());
+                        output.accept(TGItems.ZOMBIE_POLICEMAN_SPAWN_EGG.get());
+                        output.accept(TGItems.ZOMBIE_MINER_SPAWN_EGG.get());
+                        output.accept(TGItems.PSYCHO_STEVE_SPAWN_EGG.get());
+                        output.accept(TGItems.SKELETON_SOLDIER_SPAWN_EGG.get());
+                        output.accept(TGItems.ZOMBIE_PIGMAN_SOLDIER_SPAWN_EGG.get());
+                        output.accept(TGItems.SUPER_MUTANT_SPAWN_EGG.get());
+                        output.accept(TGItems.ZOMBIE_FARMER_SPAWN_EGG.get());
                     })
                     .build());
 }

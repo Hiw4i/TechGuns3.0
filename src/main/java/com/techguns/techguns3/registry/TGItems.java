@@ -5,6 +5,7 @@ import com.techguns.techguns3.item.AnimatedGunItem;
 import com.techguns.techguns3.item.GenericGunItem;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.SpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -174,4 +175,34 @@ public final class TGItems {
             props -> new AnimatedGunItem(props, gunId("as50"),
                     AS50_MAGAZINE::get, "as50_magazine",
                     TGSounds.AS50_FIRE::get, TGSounds.AS50_RELOAD::get));
+
+    // --- armed NPC spawn eggs ---
+    // ENTITY_TYPE registers before ITEM in 26.3, so the holders are filled by
+    // the time these item factories run. The entity binding itself lives in
+    // the ENTITY_DATA component that Properties.spawnEgg attaches.
+
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_SOLDIER_SPAWN_EGG = ITEMS.registerItem("zombie_soldier_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_SOLDIER.get())));
+    public static final DeferredItem<SpawnEggItem> BANDIT_SPAWN_EGG = ITEMS.registerItem("bandit_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.BANDIT.get())));
+    public static final DeferredItem<SpawnEggItem> ARMY_SOLDIER_SPAWN_EGG = ITEMS.registerItem("army_soldier_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ARMY_SOLDIER.get())));
+    public static final DeferredItem<SpawnEggItem> COMMANDO_SPAWN_EGG = ITEMS.registerItem("commando_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.COMMANDO.get())));
+    public static final DeferredItem<SpawnEggItem> OUTCAST_SPAWN_EGG = ITEMS.registerItem("outcast_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.OUTCAST.get())));
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_POLICEMAN_SPAWN_EGG = ITEMS.registerItem("zombie_policeman_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_POLICEMAN.get())));
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_MINER_SPAWN_EGG = ITEMS.registerItem("zombie_miner_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_MINER.get())));
+    public static final DeferredItem<SpawnEggItem> PSYCHO_STEVE_SPAWN_EGG = ITEMS.registerItem("psycho_steve_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.PSYCHO_STEVE.get())));
+    public static final DeferredItem<SpawnEggItem> SKELETON_SOLDIER_SPAWN_EGG = ITEMS.registerItem("skeleton_soldier_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.SKELETON_SOLDIER.get())));
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_PIGMAN_SOLDIER_SPAWN_EGG = ITEMS.registerItem("zombie_pigman_soldier_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_PIGMAN_SOLDIER.get())));
+    public static final DeferredItem<SpawnEggItem> SUPER_MUTANT_SPAWN_EGG = ITEMS.registerItem("super_mutant_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.SUPER_MUTANT.get())));
+    public static final DeferredItem<SpawnEggItem> ZOMBIE_FARMER_SPAWN_EGG = ITEMS.registerItem("zombie_farmer_spawn_egg",
+            props -> new SpawnEggItem(props.spawnEgg(TGEntities.ZOMBIE_FARMER.get())));
 }

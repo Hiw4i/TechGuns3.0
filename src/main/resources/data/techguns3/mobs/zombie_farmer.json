@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "stats": {
+    "max_health": 22.0,
+    "movement_speed": 0.26,
+    "attack_damage": 4.0,
+    "follow_range": 40.0
+  },
+  "combat": {
+    "weapons": ["techguns3:pistol"],
+    "accuracy": 0.45,
+    "reaction_ticks": 16,
+    "burst": 2,
+    "burst_pause_ticks": 24,
+    "preferred_range": 10.0,
+    "max_range": 22.0,
+    "damage_multiplier": 0.7,
+    "ammo_magazines": 2
+  },
+  "abilities": {
+    "cover": true,
+    "flank": false,
+    "flee_health": 0.35,
+    "pickup_weapons": true,
+    "pickup_radius": 8.0,
+    "build": true,
+    "build_blocks": 16,
+    "build_material": "minecraft:oak_planks",
+    "hear_players": true
+  },
+  "spawn": { "weight": 5, "min": 1, "max": 2 }
+}

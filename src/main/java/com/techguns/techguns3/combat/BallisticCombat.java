@@ -43,6 +43,8 @@ public final class BallisticCombat {
                             com.techguns.techguns3.item.GunExtras extras, String variantId,
                             float charge01, float chargeScale, int homingTargetId,
                             Vec3 muzzle, float yaw, float pitch, SoundSource source, float spreadMult) {
+        // Every server-side shot reports to the hearing AI (NPC ears).
+        com.techguns.techguns3.ai.TGGunfireEvents.emit(level, muzzle, shooter);
         if (stats.projectileKind() == GunStats.ProjectileKind.ELECTRIC) {
             ElectricCombat.fire(level, shooter, stats, muzzle, yaw, pitch);
             level.playSound(null, muzzle.x, muzzle.y, muzzle.z,

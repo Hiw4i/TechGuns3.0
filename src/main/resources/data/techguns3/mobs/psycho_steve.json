@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "stats": {
+    "max_health": 18.0,
+    "movement_speed": 0.38,
+    "attack_damage": 6.0,
+    "follow_range": 48.0
+  },
+  "combat": {
+    "weapons": ["techguns3:teslagun", "techguns3:combat_shotgun"],
+    "accuracy": 0.5,
+    "reaction_ticks": 4,
+    "burst": 6,
+    "burst_pause_ticks": 10,
+    "preferred_range": 8.0,
+    "max_range": 18.0,
+    "damage_multiplier": 0.7,
+    "ammo_magazines": -1
+  },
+  "abilities": {
+    "cover": false,
+    "flank": true,
+    "flee_health": 0.15,
+    "pickup_weapons": true,
+    "pickup_radius": 8.0,
+    "dynamite": 1,
+    "dynamite_item": "minecraft:tnt",
+    "dynamite_range": 12.0,
+    "dynamite_suicide": true,
+    "hear_players": true
+  },
+  "spawn": { "weight": 4, "min": 1, "max": 1 }
+}

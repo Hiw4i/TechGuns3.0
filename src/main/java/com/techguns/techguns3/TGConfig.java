@@ -59,6 +59,35 @@ public final class TGConfig {
                     + "Turn off to keep explosions entity-only (no grief).")
             .define("explosionsDamageBlocks", true);
 
+    // --- armed mobs (Techguns NPCs) ---
+    private static final ModConfigSpec.BooleanValue MOBS_ENABLED = COMMON
+            .comment("Master switch for Techguns armed NPCs. When off, they spawn but stay passive.")
+            .define("mobs.enabled", true);
+    private static final ModConfigSpec.BooleanValue MOBS_AI_ENABLED = COMMON
+            .comment("Run the Techguns combat AI (aim, cover, flank, reload). Off = vanilla stroll only.")
+            .define("mobs.aiEnabled", true);
+    private static final ModConfigSpec.BooleanValue MOBS_GRIEFING = COMMON
+            .comment("Allow armed NPCs to break and place blocks. Own AI feature; the per-mob profile "
+                    + "still has to enable mine_blocks / build.")
+            .define("mobs.griefing", true);
+    private static final ModConfigSpec.BooleanValue MOBS_DYNAMITE = COMMON
+            .comment("Allow armed NPCs to place and detonate TNT (breaching walls, suicide rushes).")
+            .define("mobs.dynamite", true);
+    private static final ModConfigSpec.BooleanValue MOBS_PICKUP_WEAPONS = COMMON
+            .comment("Allow armed NPCs to pick up dropped guns and upgrade their weapon.")
+            .define("mobs.pickupWeapons", true);
+    private static final ModConfigSpec.BooleanValue MOBS_KEEP_GUNS_ON_DEATH = COMMON
+            .comment("NPCs always drop their firearm on death (otherwise the vanilla low drop chance applies).")
+            .define("mobs.keepGunsOnDeath", true);
+    private static final ModConfigSpec.DoubleValue MOBS_DIFFICULTY = COMMON
+            .comment("Global mob AI difficulty multiplier. Scales accuracy and reaction speed, not health. "
+                    + "1.0 = profile values, 0.5 = sloppy, 2.0 = ruthless.")
+            .defineInRange("mobs.difficulty", 1.0, 0.25, 4.0);
+    private static final ModConfigSpec.DoubleValue MOBS_SPAWN_RATE = COMMON
+            .comment("Multiplier applied to the natural spawn weight of Techguns armed NPCs. "
+                    + "0 disables natural spawning (spawn eggs still work).")
+            .defineInRange("mobs.spawnRateMultiplier", 1.0, 0.0, 10.0);
+
     // --- client ---
     private static final ModConfigSpec.BooleanValue AMMO_HUD = CLIENT
             .comment("Show the TechGuns ammo HUD overlay (reworked HUD from CE, simplified in MVP).")
@@ -105,6 +134,14 @@ public final class TGConfig {
     private static volatile boolean generateUranium = true;
     private static volatile boolean generateTitanium = true;
     private static volatile boolean explosionsDamageBlocks = true;
+    private static volatile boolean mobsEnabled = true;
+    private static volatile boolean mobsAiEnabled = true;
+    private static volatile boolean mobsGriefing = true;
+    private static volatile boolean mobsDynamite = true;
+    private static volatile boolean mobsPickupWeapons = true;
+    private static volatile boolean mobsKeepGunsOnDeath = true;
+    private static volatile double mobsDifficulty = 1.0;
+    private static volatile double mobsSpawnRate = 1.0;
     private static volatile boolean ammoHud = true;
     private static volatile boolean cameraRecoil = true;
     private static volatile boolean cinematicFx = true;
@@ -126,6 +163,14 @@ public final class TGConfig {
     public static boolean generateUranium() { return generateUranium; }
     public static boolean generateTitanium() { return generateTitanium; }
     public static boolean explosionsDamageBlocks() { return explosionsDamageBlocks; }
+    public static boolean mobsEnabled() { return mobsEnabled; }
+    public static boolean mobsAiEnabled() { return mobsAiEnabled && mobsEnabled; }
+    public static boolean mobsGriefing() { return mobsGriefing; }
+    public static boolean mobsDynamite() { return mobsDynamite; }
+    public static boolean mobsPickupWeapons() { return mobsPickupWeapons; }
+    public static boolean mobsKeepGunsOnDeath() { return mobsKeepGunsOnDeath; }
+    public static double mobsDifficulty() { return mobsDifficulty; }
+    public static double mobsSpawnRate() { return mobsSpawnRate; }
     public static boolean ammoHud() { return ammoHud; }
     public static boolean cameraRecoil() { return cameraRecoil; }
     public static boolean cinematicFx() { return cinematicFx; }
@@ -135,8 +180,19 @@ public final class TGConfig {
     public static double weaponBob() { return weaponBob; }
     public static boolean enhancedFx() { return enhancedFx; }
 
+    // Loading/Reloading only: the base ModConfigEvent also covers Unloading,
+    // where the spec is already torn down and .get() would throw on halt.
     @SubscribeEvent
-    static void onLoad(final ModConfigEvent event) {
+    static void onLoad(final ModConfigEvent.Loading event) {
+        apply(event);
+    }
+
+    @SubscribeEvent
+    static void onReload(final ModConfigEvent.Reloading event) {
+        apply(event);
+    }
+
+    private static void apply(final ModConfigEvent event) {
         if (event.getConfig().getSpec() == COMMON_SPEC) {
             gunDamageMultiplier = GUN_DAMAGE_MULTIPLIER.get();
             fxDensity = FX_DENSITY.get();
@@ -150,6 +206,14 @@ public final class TGConfig {
             generateUranium = GEN_URANIUM.get();
             generateTitanium = GEN_TITANIUM.get();
             explosionsDamageBlocks = EXPLOSIONS_DAMAGE_BLOCKS.get();
+            mobsEnabled = MOBS_ENABLED.get();
+            mobsAiEnabled = MOBS_AI_ENABLED.get();
+            mobsGriefing = MOBS_GRIEFING.get();
+            mobsDynamite = MOBS_DYNAMITE.get();
+            mobsPickupWeapons = MOBS_PICKUP_WEAPONS.get();
+            mobsKeepGunsOnDeath = MOBS_KEEP_GUNS_ON_DEATH.get();
+            mobsDifficulty = MOBS_DIFFICULTY.get();
+            mobsSpawnRate = MOBS_SPAWN_RATE.get();
         } else if (event.getConfig().getSpec() == CLIENT_SPEC) {
             ammoHud = AMMO_HUD.get();
             cameraRecoil = CAMERA_RECOIL.get();

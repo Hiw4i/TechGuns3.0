@@ -3,6 +3,15 @@
   "biomes": "#minecraft:is_overworld",
   "spawners": [
     {"type": "techguns3:zombie_soldier", "weight": 20, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
-    {"type": "techguns3:bandit", "weight": 10, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}}
+    {"type": "techguns3:bandit", "weight": 10, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
+    {"type": "techguns3:army_soldier", "weight": 8, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
+    {"type": "techguns3:skeleton_soldier", "weight": 10, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
+    {"type": "techguns3:zombie_policeman", "weight": 8, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
+    {"type": "techguns3:zombie_miner", "weight": 6, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
+    {"type": "techguns3:zombie_farmer", "weight": 5, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2}},
+    {"type": "techguns3:psycho_steve", "weight": 4, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 1}},
+    {"type": "techguns3:commando", "weight": 3, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 1}},
+    {"type": "techguns3:super_mutant", "weight": 2, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 1}},
+    {"type": "techguns3:outcast", "weight": 1, "count": {"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 1}}
   ]
 }

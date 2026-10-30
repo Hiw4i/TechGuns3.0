@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "stats": {
+    "max_health": 40.0,
+    "movement_speed": 0.3,
+    "attack_damage": 5.0,
+    "follow_range": 64.0,
+    "armor": 8.0,
+    "knockback_resistance": 0.2,
+    "block_break_speed": 2.5
+  },
+  "combat": {
+    "weapons": ["techguns3:m4"],
+    "accuracy": 0.75,
+    "reaction_ticks": 10,
+    "burst": 5,
+    "burst_pause_ticks": 15,
+    "preferred_range": 16.0,
+    "max_range": 36.0,
+    "damage_multiplier": 0.9,
+    "ammo_magazines": 4
+  },
+  "abilities": {
+    "cover": true,
+    "flank": true,
+    "flee_health": 0.15,
+    "pickup_weapons": true,
+    "pickup_radius": 8.0,
+    "mine_blocks": true,
+    "dig_range": 24.0,
+    "dynamite": 2,
+    "dynamite_item": "minecraft:tnt",
+    "dynamite_range": 20.0,
+    "hear_players": true
+  },
+  "spawn": { "weight": 3, "min": 1, "max": 1 }
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "stats": {
+    "max_health": 60.0,
+    "movement_speed": 0.23,
+    "attack_damage": 6.0,
+    "follow_range": 72.0,
+    "armor": 10.0,
+    "knockback_resistance": 0.4,
+    "block_break_speed": 1.5
+  },
+  "combat": {
+    "weapons": ["techguns3:minigun", "techguns3:teslagun", "techguns3:lasergun"],
+    "accuracy": 0.85,
+    "reaction_ticks": 8,
+    "burst": 10,
+    "burst_pause_ticks": 25,
+    "preferred_range": 20.0,
+    "max_range": 44.0,
+    "damage_multiplier": 0.85,
+    "ammo_magazines": -1
+  },
+  "abilities": {
+    "cover": true,
+    "flank": true,
+    "flee_health": 0.1,
+    "pickup_weapons": false,
+    "hear_players": true
+  },
+  "spawn": { "weight": 1, "min": 1, "max": 1 }
+}

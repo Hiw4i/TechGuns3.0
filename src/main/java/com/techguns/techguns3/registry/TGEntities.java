@@ -12,6 +12,7 @@ import com.techguns.techguns3.entity.ShellCasingEntity;
 import com.techguns.techguns3.entity.SlimeBlobEntity;
 import com.techguns.techguns3.entity.TeslaArcEntity;
 import com.techguns.techguns3.entity.ZombieSoldierEntity;
+import com.techguns.techguns3.mob.TGArmedMob;
 import com.techguns.techguns3.turret.TurretHeadEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -111,6 +112,58 @@ public final class TGEntities {
             ENTITY_TYPES.registerEntityType("bandit", BanditEntity::new,
                     MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
                             .clientTrackingRange(8));
+
+    // --- profile-driven armed NPCs (single class; stats/abilities from data/techguns3/mobs) ---
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> ARMY_SOLDIER =
+            ENTITY_TYPES.registerEntityType("army_soldier", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> COMMANDO =
+            ENTITY_TYPES.registerEntityType("commando", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> OUTCAST =
+            ENTITY_TYPES.registerEntityType("outcast", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> ZOMBIE_POLICEMAN =
+            ENTITY_TYPES.registerEntityType("zombie_policeman", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> ZOMBIE_MINER =
+            ENTITY_TYPES.registerEntityType("zombie_miner", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> PSYCHO_STEVE =
+            ENTITY_TYPES.registerEntityType("psycho_steve", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> SKELETON_SOLDIER =
+            ENTITY_TYPES.registerEntityType("skeleton_soldier", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> ZOMBIE_PIGMAN_SOLDIER =
+            ENTITY_TYPES.registerEntityType("zombie_pigman_soldier", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> SUPER_MUTANT =
+            ENTITY_TYPES.registerEntityType("super_mutant", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.9f, 2.7f)
+                            .clientTrackingRange(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> ZOMBIE_FARMER =
+            ENTITY_TYPES.registerEntityType("zombie_farmer", TGArmedMob::new,
+                    MobCategory.MONSTER, builder -> builder.sized(0.6f, 1.95f)
+                            .clientTrackingRange(10));
 
     public static final DeferredHolder<EntityType<?>, EntityType<TurretHeadEntity>> TURRET_HEAD =
             ENTITY_TYPES.registerEntityType("turret_head", TurretHeadEntity::new,

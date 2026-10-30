@@ -37,6 +37,13 @@ public final class TGClientSetup {
         event.registerEntityRenderer(TGEntities.FLYING_GIB.get(), FlyingGibRenderer::new);
         event.registerEntityRenderer(TGEntities.ZOMBIE_SOLDIER.get(), GunSoldierRenderer::new);
         event.registerEntityRenderer(TGEntities.BANDIT.get(), GunSoldierRenderer::new);
+        for (var type : java.util.List.of(
+                TGEntities.ARMY_SOLDIER.get(), TGEntities.COMMANDO.get(), TGEntities.OUTCAST.get(),
+                TGEntities.ZOMBIE_POLICEMAN.get(), TGEntities.ZOMBIE_MINER.get(), TGEntities.PSYCHO_STEVE.get(),
+                TGEntities.SKELETON_SOLDIER.get(), TGEntities.ZOMBIE_PIGMAN_SOLDIER.get(),
+                TGEntities.SUPER_MUTANT.get(), TGEntities.ZOMBIE_FARMER.get())) {
+            event.registerEntityRenderer(type, GunSoldierRenderer::new);
+        }
         event.registerEntityRenderer(TGEntities.TURRET_HEAD.get(), GeoTurretHeadRenderer::new);
         event.registerBlockEntityRenderer(TGBlockEntities.TURRET_BASE.get(), GeoTurretBaseRenderer::new);
     }

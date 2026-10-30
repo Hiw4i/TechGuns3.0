@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "techguns3:item/psycho_steve_spawn_egg"
+  }
+}

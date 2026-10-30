@@ -19,12 +19,14 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.SpawnPlacementTypes;
 import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import org.slf4j.Logger;
 
 /**
@@ -77,6 +79,19 @@ public class TechGuns3 {
                 .add(Attributes.MAX_HEALTH, 50.0)
                 .add(Attributes.MOVEMENT_SPEED, 0.0)
                 .add(Attributes.FOLLOW_RANGE, 32.0).build());
+        // Registration-time defaults for the profile-driven NPCs; the datapack
+        // profile re-applies them (and more) on spawn — see TGArmedMob.applyProfile.
+        for (var type : java.util.List.of(
+                TGEntities.ARMY_SOLDIER.get(), TGEntities.COMMANDO.get(), TGEntities.OUTCAST.get(),
+                TGEntities.ZOMBIE_POLICEMAN.get(), TGEntities.ZOMBIE_MINER.get(), TGEntities.PSYCHO_STEVE.get(),
+                TGEntities.SKELETON_SOLDIER.get(), TGEntities.ZOMBIE_PIGMAN_SOLDIER.get(),
+                TGEntities.SUPER_MUTANT.get(), TGEntities.ZOMBIE_FARMER.get())) {
+            event.put(type, Monster.createMonsterAttributes()
+                    .add(Attributes.MAX_HEALTH, 25.0)
+                    .add(Attributes.MOVEMENT_SPEED, 0.28)
+                    .add(Attributes.ATTACK_DAMAGE, 4.0)
+                    .add(Attributes.FOLLOW_RANGE, 48.0).build());
+        }
     }
 
     private static void registerSpawnPlacements(RegisterSpawnPlacementsEvent event) {
@@ -86,14 +101,27 @@ public class TechGuns3 {
         event.register(TGEntities.BANDIT.get(), SpawnPlacementTypes.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules,
                 RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        for (var type : java.util.List.of(
+                TGEntities.ARMY_SOLDIER.get(), TGEntities.COMMANDO.get(), TGEntities.OUTCAST.get(),
+                TGEntities.ZOMBIE_POLICEMAN.get(), TGEntities.ZOMBIE_MINER.get(), TGEntities.PSYCHO_STEVE.get(),
+                TGEntities.SKELETON_SOLDIER.get(), TGEntities.ZOMBIE_PIGMAN_SOLDIER.get(),
+                TGEntities.SUPER_MUTANT.get(), TGEntities.ZOMBIE_FARMER.get())) {
+            event.register(type, SpawnPlacementTypes.ON_GROUND,
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules,
+                    RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        }
     }
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("[TechGuns3] server starting, gun damage multiplier x{}", TGConfig.gunDamageMultiplier());
-        if ("autofire".equals(System.getenv("TECHGUNS3_SELFTEST"))) {
+        String selfTest = System.getenv("TECHGUNS3_SELFTEST");
+        if ("autofire".equals(selfTest)) {
             LOGGER.info("[TechGuns3] TECHGUNS3_SELFTEST=autofire, running headless gun self-test");
             com.techguns.techguns3.test.GunSelfTestCommand.runHeadless(event.getServer());
+        } else if ("mobs".equals(selfTest)) {
+            LOGGER.info("[TechGuns3] TECHGUNS3_SELFTEST=mobs, running headless armed-mob self-test");
+            com.techguns.techguns3.test.MobSelfTestCommand.runHeadless(event.getServer());
         }
     }
 
@@ -102,6 +130,9 @@ public class TechGuns3 {
         event.addListener(
                 net.minecraft.resources.Identifier.fromNamespaceAndPath(MODID, "guns"),
                 new com.techguns.techguns3.resource.GunDataLoader());
+        event.addListener(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(MODID, "mobs"),
+                new com.techguns.techguns3.resource.MobDataLoader());
     }
 
     @SubscribeEvent

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "stats": {
+    "max_health": 30.0,
+    "movement_speed": 0.28,
+    "attack_damage": 4.0,
+    "follow_range": 64.0,
+    "armor": 6.0,
+    "knockback_resistance": 0.1,
+    "step_height": 0.6,
+    "block_break_speed": 1.0
+  },
+  "combat": {
+    "weapons": ["techguns3:m4", "techguns3:bolt_action"],
+    "accuracy": 0.7,
+    "reaction_ticks": 12,
+    "burst": 4,
+    "burst_pause_ticks": 18,
+    "preferred_range": 18.0,
+    "max_range": 40.0,
+    "damage_multiplier": 0.9,
+    "ammo_magazines": 3
+  },
+  "abilities": {
+    "cover": true,
+    "flank": true,
+    "flee_health": 0.25,
+    "pickup_weapons": true,
+    "pickup_radius": 8.0,
+    "hear_players": true
+  },
+  "spawn": { "weight": 8, "min": 1, "max": 2 }
+}

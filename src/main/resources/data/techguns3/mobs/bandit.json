@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "stats": {
+    "max_health": 20.0,
+    "movement_speed": 0.3,
+    "attack_damage": 5.0,
+    "follow_range": 40.0
+  },
+  "combat": {
+    "weapons": ["techguns3:ak47"],
+    "accuracy": 0.6,
+    "reaction_ticks": 10,
+    "burst": 4,
+    "burst_pause_ticks": 16,
+    "preferred_range": 14.0,
+    "max_range": 32.0,
+    "damage_multiplier": 0.8,
+    "ammo_magazines": 3
+  },
+  "abilities": {
+    "cover": true,
+    "flank": true,
+    "flee_health": 0.2,
+    "pickup_weapons": true,
+    "pickup_radius": 8.0,
+    "hear_players": true
+  },
+  "spawn": { "weight": 10, "min": 1, "max": 2 }
+}

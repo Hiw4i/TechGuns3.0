@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "stats": {
+    "max_health": 25.0,
+    "movement_speed": 0.25,
+    "attack_damage": 4.0,
+    "follow_range": 50.0
+  },
+  "combat": {
+    "weapons": ["techguns3:pistol"],
+    "accuracy": 0.5,
+    "reaction_ticks": 12,
+    "burst": 3,
+    "burst_pause_ticks": 20,
+    "preferred_range": 10.0,
+    "max_range": 24.0,
+    "damage_multiplier": 0.7,
+    "ammo_magazines": 2
+  },
+  "abilities": {
+    "cover": true,
+    "flank": true,
+    "flee_health": 0.25,
+    "pickup_weapons": true,
+    "pickup_radius": 8.0,
+    "hear_players": true
+  },
+  "spawn": { "weight": 20, "min": 1, "max": 2 }
+}

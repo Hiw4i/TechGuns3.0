@@ -72,6 +72,16 @@ public record GunStats(
                 spinsBarrels, slimeGrowthPerHit, actionSound, actionDelayTicks, bulletBulk);
     }
 
+    /** Copy with scaled per-shot damage; used by NPC fire (profile damage_multiplier). */
+    public GunStats withDamage(float newBaseDamage) {
+        return new GunStats(newBaseDamage, fireCooldownTicks, magazineSize, reloadTimeTicks,
+                maxRange, spread, bulletSpeed, gravity, pellets, pelletSpread,
+                dropStart, dropEnd, dropMin, penetration, semiAuto, magazineFed,
+                fireSound, reloadSound, extraSound, projectileKind, canZoom, zoomFov,
+                zoomSpreadMult, recoilPitchDeg, recoilYawJitter, muzzleFlashScale,
+                spinsBarrels, slimeGrowthPerHit, actionSound, actionDelayTicks, bulletBulk);
+    }
+
     public GunStats(float baseDamage, int fireCooldownTicks, int magazineSize, int reloadTimeTicks,
                     int maxRange, float spread, float bulletSpeed, double gravity, int pellets,
                     float pelletSpread, float dropStart, float dropEnd, float dropMin,
