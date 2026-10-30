@@ -16,20 +16,22 @@
 4. Client package: only changes marked SAFE by the client audit (identical-value extraction, dead code, allocation hoisting with bit-identical output, renames). Never touch RISKY-listed constants.
 5. No new dependencies. No over-DRY: extract only byte-identical or provably-equivalent logic.
 
-## Bug Fixes (documented, intentional)
+## Bug Fixes (documented, intentional) — final status after verification
 
-| # | Where | What | Why it is a bug |
-|---|-------|------|-----------------|
-| B1 | `GunServerLogic` + `BallisticCombat` | Remove pre-multiplication by `TGConfig.gunDamageMultiplier()` before storing explosive spec | `ExplosiveCombat.explode` applies the multiplier again → config² scaling on the default path (nuke/hv paths apply once) |
-| B2 | `BulletProjectile` | Replace server-side `level().addParticle(BULLET_HOLE…)` with `ServerLevel.sendParticles` | `addParticle` is a client-only no-op on ServerLevel → bullet holes never rendered |
-| B3 | `TGCombatMemory.clearTargetState` | Also clear `requestBuild` | Stale build request blocks `TGGunCombatGoal.canUse()` for the next target |
-| B4 | `TGFleeGoal` | Parting shots honor `stats.fireCooldownTicks()` | Bolt-action fired 4×/s while fleeing |
-| B5 | `TGHearingGoal` | Single place decrements `scanCooldown` | Predicate side-effect double-decrement |
-| B6 | `TGPickupWeaponGoal` | Ammo restock scored by distance like the gun branch | First-listed entity won regardless of distance |
-| B7 | `TGBuildGoal` | Clear `requestBuild` when rejecting on cooldown | 5-tick re-request vs 100-tick cooldown → idle stall loop |
-| B8 | `GunSelfTestCommand` | Aggregate failures into `finish(ok)` | Self-test reported `ok=true` even with failing phases |
-| B9 | `TurretBaseBlockEntity`/`TurretBaseBlock` | One head-search helper, radius 2.0 everywhere | serverTick used 1.5 while removeHead/useItemOn used 2.0 → head pushed 1.6–2.0 blocks orphaned but discardable |
-| B10 | `GunActionSounds` | Play order by `dueTick` (priority queue) | FIFO head-blocks-later-short-delay sound scheduling |
+| # | Where | What | Status |
+|---|-------|------|--------|
+| B1 | `GunServerLogic` + `BallisticCombat` | Explosive spec stores unmultiplied damage; `ExplosiveCombat.explode` is the single application point of `gunDamageMultiplier()` (was config²) | **APPLIED** |
+| B2 | `BulletProjectile` | Bullet-hole decals via `ServerLevel.sendParticles` (server-side `addParticle` was a client-only no-op → decals never rendered) | **APPLIED** |
+| B3 | `TGCombatMemory.clearTargetState` | Also clear `requestBuild` | **REVERTED** — perturbs the deterministic AI sequence; documented in code as a candidate fix |
+| B4 | `TGFleeGoal` | Parting shots honor `stats.fireCooldownTicks()` | **REVERTED** — same reason; documented in code |
+| B5 | `TGHearingGoal` | Single `scanCooldown` decrement site | **REVERTED** — the TargetGoal lifecycle couples the two decrements; rescheduling changes the acquisition tick. Documented |
+| B6 | `TGPickupWeaponGoal` | Ammo restock scored by distance | **APPLIED** (verified through all self-test runs) |
+| B7 | `TGBuildGoal` | Clear `requestBuild` when rejecting on cooldown + shared cooldown | **REVERTED** — same reason as B3/B5 |
+| B8 | `GunSelfTestCommand` | Aggregate failures into `finish(ok)` | **APPLIED** |
+| B9 | Turret head search | One `findHeads` helper, radius 2.0 everywhere | **APPLIED** |
+| B10 | `GunActionSounds` | Play order by `dueTick` (priority queue) | **APPLIED** |
+| — | `TeslaArcRenderer` | Shared scratch vectors captured by deferred submit lambdas (review finding; visible with 2+ arcs/frame) | **FIXED** — per-submit locals restored |
+| — | Gun self-test world | `run/world` persists across runs; old TNT craters under the stage change outcomes | **DISCOVERED** — comparable runs require a fresh world |
 
 Everything else flagged by audits as "behavior-visible if changed" (TTL off-by-one, explosive+poison precedence, lock-acquisition cadence, fxDensity config max, guided-lock throttle) is **left as-is** and listed in the final report.
 
