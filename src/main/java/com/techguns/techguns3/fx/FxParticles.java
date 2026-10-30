@@ -2,6 +2,7 @@ package com.techguns.techguns3.fx;
 
 import com.techguns.techguns3.TGConfig;
 import com.techguns.techguns3.registry.TGParticles;
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
 
@@ -13,6 +14,10 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class FxParticles {
     private FxParticles() {}
+
+    /** Shared randomization mode for the mod's custom particles. */
+    public static final ClientboundLevelParticlesPacket.RandomizationType RANDOMIZATION_DEFAULT =
+            ClientboundLevelParticlesPacket.RandomizationType.DEFAULT;
 
     public static void glow(ServerLevel level, double x, double y, double z, int count,
                             int color, int endColor, float size0, float size1, int life,
@@ -27,7 +32,7 @@ public final class FxParticles {
             level.sendParticles(new TGParticles.GlowOptions(color, endColor, size0, size1,
                             life, gravity, drag),
                     x, y, z, 1, vx, vy, vz, 1.0,
-                    net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    RANDOMIZATION_DEFAULT);
         }
     }
 
@@ -44,7 +49,7 @@ public final class FxParticles {
             level.sendParticles(new TGParticles.PuffOptions(color, endColor, size0, size1,
                             life, gravity, drag),
                     x, y, z, 1, vx, vy, vz, 1.0,
-                    net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    RANDOMIZATION_DEFAULT);
         }
     }
 
@@ -62,7 +67,7 @@ public final class FxParticles {
             level.sendParticles(new TGParticles.PuffOptions(color, endColor, size0, size1,
                             life, gravity, drag),
                     at.x, at.y, at.z, 1, vx, vy, vz, 1.0,
-                    net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    RANDOMIZATION_DEFAULT);
         }
     }
 
@@ -79,7 +84,7 @@ public final class FxParticles {
             level.sendParticles(new TGParticles.FlameOptions(color, endColor, size0, size1,
                             life, gravity, drag),
                     x, y, z, 1, vx, vy, vz, 1.0,
-                    net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    RANDOMIZATION_DEFAULT);
         }
     }
 
@@ -97,7 +102,7 @@ public final class FxParticles {
             level.sendParticles(new TGParticles.FlameOptions(color, endColor, size0, size1,
                             life, gravity, drag),
                     at.x, at.y, at.z, 1, vx, vy, vz, 1.0,
-                    net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    RANDOMIZATION_DEFAULT);
         }
     }
 
@@ -131,7 +136,7 @@ public final class FxParticles {
             level.sendParticles(new TGParticles.GlowOptions(color, color, 0.09f, 0.015f,
                             10, 0.05f, 0.92f),
                     at.x, at.y, at.z, 1, vx, vy, vz, 1.0,
-                    net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    RANDOMIZATION_DEFAULT);
         }
     }
 

@@ -1,20 +1,40 @@
 package com.techguns.techguns3.entity;
 
+import com.techguns.techguns3.TechGuns3;
+import com.techguns.techguns3.combat.ExplosiveCombat;
+import com.techguns.techguns3.combat.HitFeedback;
+import com.techguns.techguns3.damagesystem.GoreHandler;
+import com.techguns.techguns3.damagesystem.GoreRegistry;
+import com.techguns.techguns3.fx.BloodFx;
+import com.techguns.techguns3.fx.FxParticles;
+import com.techguns.techguns3.fx.GunFxPresets;
+import com.techguns.techguns3.fx.SurfaceMaterial;
+import com.techguns.techguns3.registry.TGEffects;
 import com.techguns.techguns3.registry.TGEntities;
 import com.techguns.techguns3.registry.TGItems;
+import com.techguns.techguns3.registry.TGParticles;
 import com.techguns.techguns3.registry.TGSounds;
 import com.techguns.techguns3.turret.TurretHeadEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ItemSupplier;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.entity.projectile.ItemSupplier;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -22,7 +42,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
  * Wave-1 bullet. Collapses every plain 1.12 {@code GenericProjectile} shooter
@@ -36,6 +56,14 @@ import net.minecraft.world.phys.Vec3;
  * NPC factions/revenge AI, muzzle-light pulses, impact FX packets.</p>
  */
 public class BulletProjectile extends Projectile implements ItemSupplier {
+
+    /** 1.12 spread-to-degrees factor: a spread of 1.0 fans over 40 degrees. */
+    private static final float SPREAD_DEGREES = 40.0f;
+    /** Turn rate for homing shots that declare none (compact Spec ctor / NBT default). */
+    private static final float DEFAULT_HOMING_TURN = 0.2f;
+    // --- direct-hit knockback (explosion knockback lives in ExplosiveCombat) ---
+    private static final double HIT_KNOCKBACK_SCALE = 0.6;
+    private static final double HIT_KNOCKBACK_LIFT = 0.15;
 
     /** Tunables per shot, built from {@code GunStats} by the firing gun. */
     public record Spec(float damage, float speed, int ttlTicks,
@@ -55,8 +83,8 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                     float dropStart, float dropEnd, float dropMin,
                     double gravity, float penetration) {
             this(damage, speed, ttlTicks, dropStart, dropEnd, dropMin, gravity,
-                    penetration, 0.0f, 0.0f, -1, 0.2f, 0.0f, 0, 0, 0, 0xFFD9A8, 1.0f,
-                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, 0.0f, false, 0, false);
+                    penetration, 0.0f, 0.0f, -1, DEFAULT_HOMING_TURN, 0.0f, 0, 0, 0, GunFxPresets.TRACER_WARM,
+                    1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, 0.0f, false, 0, false);
         }
 
         public boolean hasExplosive() { return explosiveMax > 0.0f && explosiveR2 > 0.0f; }
@@ -74,15 +102,12 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
     private Spec spec = new Spec(5.0f, 2.0f, 40, 20.0f, 40.0f, 5.0f, 0.0, 0.0f);
     private int ttlLeft;
     private int age;
-    private static final net.minecraft.network.syncher.EntityDataAccessor<Integer> DATA_COLOR =
-            net.minecraft.network.syncher.SynchedEntityData.defineId(
-                    BulletProjectile.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
-    private static final net.minecraft.network.syncher.EntityDataAccessor<Float> DATA_BULK =
-            net.minecraft.network.syncher.SynchedEntityData.defineId(
-                    BulletProjectile.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
-    private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_MAIN =
-            net.minecraft.network.syncher.SynchedEntityData.defineId(
-                    BulletProjectile.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_COLOR =
+            SynchedEntityData.defineId(BulletProjectile.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> DATA_BULK =
+            SynchedEntityData.defineId(BulletProjectile.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Boolean> DATA_MAIN =
+            SynchedEntityData.defineId(BulletProjectile.class, EntityDataSerializers.BOOLEAN);
     private double startX;
     private double startY;
     private double startZ;
@@ -103,15 +128,16 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
         entityData.set(DATA_BULK, spec.bulk());
         entityData.set(DATA_MAIN, spec.sonicMain());
         // 1.12 spread: (spread - 2*rand*spread) * 40 degrees on yaw and pitch.
-        float yawOff = (spread - random.nextFloat() * 2.0f * spread) * 40.0f;
-        float pitchOff = (spread - random.nextFloat() * 2.0f * spread) * 40.0f;
-        float y = yaw + yawOff;
-        float p = pitch + pitchOff;
+        float yawOff = (spread - random.nextFloat() * 2.0f * spread) * SPREAD_DEGREES;
+        float pitchOff = (spread - random.nextFloat() * 2.0f * spread) * SPREAD_DEGREES;
+        float aimedYaw = yaw + yawOff;
+        float aimedPitch = pitch + pitchOff;
         setPos(spawn.x, spawn.y, spawn.z);
-        setRot(y, p);
-        double f = Math.cos(p * Math.PI / 180.0);
-        Vec3 motion = new Vec3(-Math.sin(y * Math.PI / 180.0) * f, -Math.sin(p * Math.PI / 180.0),
-                Math.cos(y * Math.PI / 180.0) * f).scale(spec.speed());
+        setRot(aimedYaw, aimedPitch);
+        double cosPitch = Math.cos(aimedPitch * Math.PI / 180.0);
+        Vec3 motion = new Vec3(-Math.sin(aimedYaw * Math.PI / 180.0) * cosPitch,
+                -Math.sin(aimedPitch * Math.PI / 180.0),
+                Math.cos(aimedYaw * Math.PI / 180.0) * cosPitch).scale(spec.speed());
         setDeltaMovement(motion);
     }
 
@@ -165,11 +191,7 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
         // TG2 flare-trail per ammunition kind. The ribbon renderer stays
         // short; these sprites sell the stream. Client only, zero gameplay.
         if (level().isClientSide()) {
-            try {
-                trailSprite(to);
-            } catch (Exception e) {
-                com.techguns.techguns3.TechGuns3.LOGGER.debug("[TechGuns3] bullet trail failed", e);
-            }
+            trailSprite(to);
         }
 
         Vec3 motion = getDeltaMovement();
@@ -201,51 +223,51 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
      * plain rounds a tiny spark.
      */
     private void trailSprite(Vec3 at) {
-        int c = tracerColor();
-        if (c == com.techguns.techguns3.fx.GunFxPresets.TRACER_FIRE) {
+        int color = tracerColor();
+        if (color == GunFxPresets.TRACER_FIRE) {
             float wob = (float) tickCount * 12.9898f;
             float ox = (float) Math.sin(wob) * 0.09f;
             float oy = (float) Math.sin(wob * 1.7f) * 0.09f;
             float oz = (float) Math.cos(wob * 0.9f) * 0.09f;
-            level().addParticle(new com.techguns.techguns3.registry.TGParticles.FlameOptions(
+            level().addParticle(new TGParticles.FlameOptions(
                             0xFFE9A8, 0xFF5A1A, 0.30f, 0.07f, 14, -0.02f, 0.94f),
                     at.x, at.y, at.z, 0, 0.02, 0);
-            level().addParticle(new com.techguns.techguns3.registry.TGParticles.FlameOptions(
+            level().addParticle(new TGParticles.FlameOptions(
                             0xFFF3C4, 0xFF7A1A, 0.22f, 0.05f, 12, -0.02f, 0.94f),
                     at.x + ox, at.y + oy, at.z + oz, 0, 0.03, 0);
             if (tickCount % 2 == 0) {
-                level().addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
+                level().addParticle(new TGParticles.GlowOptions(
                                 0xFFE9A8, 0xFF5A1A, 0.10f, 0.02f, 14, 0.06f, 0.95f),
                         at.x, at.y, at.z, 0, 0.05, 0);
             }
-        } else if (c == com.techguns.techguns3.fx.GunFxPresets.TRACER_BIO) {
+        } else if (color == GunFxPresets.TRACER_BIO) {
             if (tickCount % 2 == 0) {
-                level().addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
-                                c, 0x2FA32F, 0.13f, 0.03f, 9, 0.02f, 0.95f),
+                level().addParticle(new TGParticles.GlowOptions(
+                                color, 0x2FA32F, 0.13f, 0.03f, 9, 0.02f, 0.95f),
                         at.x, at.y, at.z, 0, 0, 0);
             }
-        } else if (c == com.techguns.techguns3.fx.GunFxPresets.TRACER_TFG
-                || c == com.techguns.techguns3.fx.GunFxPresets.TRACER_LASER
-                || c == com.techguns.techguns3.fx.GunFxPresets.TRACER_GAUSS
-                || c == com.techguns.techguns3.fx.GunFxPresets.TRACER_ADVANCED
-                || c == com.techguns.techguns3.fx.GunFxPresets.TRACER_SONIC) {
+        } else if (color == GunFxPresets.TRACER_TFG
+                || color == GunFxPresets.TRACER_LASER
+                || color == GunFxPresets.TRACER_GAUSS
+                || color == GunFxPresets.TRACER_ADVANCED
+                || color == GunFxPresets.TRACER_SONIC) {
             // Wave-2 energy trails: fat colored glow every tick (CE Albedo light feel).
-            level().addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
-                            c, c, 0.13f, 0.03f, 9, 0.0f, 0.96f),
+            level().addParticle(new TGParticles.GlowOptions(
+                            color, color, 0.13f, 0.03f, 9, 0.0f, 0.96f),
                     at.x, at.y, at.z, 0, 0, 0);
-        } else if (c == com.techguns.techguns3.fx.GunFxPresets.TRACER_ROCKET) {
+        } else if (color == GunFxPresets.TRACER_ROCKET) {
             // Rocket exhaust: orange glow + grey smoke puff.
-            level().addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
+            level().addParticle(new TGParticles.GlowOptions(
                             0xFFE9A8, 0xFF5A1A, 0.16f, 0.03f, 10, 0.02f, 0.95f),
                     at.x, at.y, at.z, 0, 0, 0);
             if (tickCount % 2 == 0) {
-                level().addParticle(new com.techguns.techguns3.registry.TGParticles.PuffOptions(
+                level().addParticle(new TGParticles.PuffOptions(
                                 0xB0B0B0, 0x404040, 0.16f, 0.40f, 20, -0.01f, 0.97f),
                         at.x, at.y, at.z, 0, 0.05, 0);
             }
         } else if ((tickCount % 2) == 0) {
-            level().addParticle(new com.techguns.techguns3.registry.TGParticles.GlowOptions(
-                            c, c, 0.075f, 0.015f, 6, 0.0f, 1.0f),
+            level().addParticle(new TGParticles.GlowOptions(
+                            color, color, 0.075f, 0.015f, 6, 0.0f, 1.0f),
                     at.x, at.y, at.z, 0, 0, 0);
         }
     }
@@ -276,7 +298,7 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
     private void onBulletHit(HitResult hit) {
         if (!level().isClientSide()) {
             // Per-impact trace: debug only, this fires on every landed bullet.
-            com.techguns.techguns3.TechGuns3.LOGGER.debug(
+            TechGuns3.LOGGER.debug(
                     "[TGTEST] bullet hit {} at {} target={}",
                     hit.getType(), hit.getLocation(),
                     hit instanceof EntityHitResult e ? e.getEntity().toString() : "-");
@@ -292,6 +314,7 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                     source = damageSources().thrown(this, owner != null ? owner : this);
                 }
                 Vec3 impact = entityHit.getLocation();
+                Vec3 shotDir = getDeltaMovement().normalize();
                 float dmg = damageAt(impact.x, impact.y, impact.z);
                 boolean bio = spec.slimeAmount() > 0.0f || spec.poisonDuration() > 0;
                 if (spec.ignoreIframes() && target instanceof LivingEntity livingTarget) {
@@ -302,36 +325,33 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 }
                 target.hurtServer(serverLevel, source, dmg);
                 if (target instanceof LivingEntity livingVictim && owner instanceof LivingEntity livingShooter) {
-                    com.techguns.techguns3.combat.HitFeedback.hit(serverLevel, livingShooter, livingVictim);
+                    HitFeedback.hit(serverLevel, livingShooter, livingVictim);
                 }
                 if (spec.knockback() > 0.0f && target instanceof LivingEntity livingKb) {
-                    Vec3 push = getDeltaMovement().normalize().scale(spec.knockback() * 0.6);
-                    livingKb.push(push.x, push.y + spec.knockback() * 0.15, push.z);
+                    Vec3 push = shotDir.scale(spec.knockback() * HIT_KNOCKBACK_SCALE);
+                    livingKb.push(push.x, push.y + spec.knockback() * HIT_KNOCKBACK_LIFT, push.z);
                 }
                 if (spec.radiationTicks() > 0 && target instanceof LivingEntity livingRad) {
-                    livingRad.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                            com.techguns.techguns3.registry.TGEffects.RADIATION,
-                            spec.radiationTicks(), 1));
+                    livingRad.addEffect(new MobEffectInstance(
+                            TGEffects.RADIATION, spec.radiationTicks(), 1));
                 }
                 if (spec.hasExplosive()) {
-                    com.techguns.techguns3.combat.ExplosiveCombat.explode(serverLevel,
-                            getOwner() instanceof LivingEntity livingOwner ? livingOwner : null,
+                    // The blast consumes the hit: no poison/fire/gore stack on top.
+                    ExplosiveCombat.explode(serverLevel,
+                            owner instanceof LivingEntity livingOwner ? livingOwner : null,
                             impact, spec);
                     discard();
                     return;
                 }
                 if (target instanceof LivingEntity livingVictim && !livingVictim.isAlive()) {
                     // Lethal Techguns hit: dense blood explosion, chunks on the gib roll.
-                    com.techguns.techguns3.damagesystem.GoreHandler.onKill(serverLevel, livingVictim,
-                            getDeltaMovement().normalize(),
-                            com.techguns.techguns3.damagesystem.GoreHandler.BULLET_GORE_CHANCE,
-                            bio ? com.techguns.techguns3.damagesystem.GoreRegistry.ICHOR_GREEN
-                                    : com.techguns.techguns3.damagesystem.GoreHandler.USE_VICTIM_COLOR);
+                    GoreHandler.onKill(serverLevel, livingVictim, shotDir,
+                            GoreHandler.BULLET_GORE_CHANCE,
+                            bio ? GoreRegistry.ICHOR_GREEN : GoreHandler.USE_VICTIM_COLOR);
                 }
                 if (spec.poisonDuration() > 0 && target instanceof LivingEntity living) {
-                    living.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                            net.minecraft.world.effect.MobEffects.POISON,
-                            spec.poisonDuration(), spec.poisonAmp()));
+                    living.addEffect(new MobEffectInstance(
+                            MobEffects.POISON, spec.poisonDuration(), spec.poisonAmp()));
                 }
                 if (spec.fireTicks() > 0) {
                     target.igniteForSeconds(spec.fireTicks() / 20.0f);
@@ -340,26 +360,24 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 // Never head-sized; the ring sells power, not quad size.
                 level().addFreshEntity(new MuzzleFlashEntity(level(),
                         impact.x, impact.y, impact.z, MuzzleFlashEntity.WHITE, 0.20f));
-                com.techguns.techguns3.fx.FxParticles.impactSparks(serverLevel, impact, 5);
-                com.techguns.techguns3.fx.FxParticles.impactRing(serverLevel, impact,
-                        getDeltaMovement().normalize().scale(-1), 0xFFE9C8, 6);
+                FxParticles.impactSparks(serverLevel, impact, 5);
+                FxParticles.impactRing(serverLevel, impact, shotDir.scale(-1), 0xFFE9C8, 6);
                 if (target instanceof LivingEntity livingVictim) {
                     // Flesh hit, not stone: directional blood along the shot + wet thud.
                     // Bio rounds bleed acid ichor instead of arterial red.
-                    int blood = bio ? com.techguns.techguns3.damagesystem.GoreRegistry.ICHOR_GREEN
-                            : com.techguns.techguns3.damagesystem.GoreRegistry.bloodColor(livingVictim);
-                    com.techguns.techguns3.fx.BloodFx.hitBurst(serverLevel, impact,
-                            getDeltaMovement().normalize(), dmg, blood);
+                    int blood = bio ? GoreRegistry.ICHOR_GREEN
+                            : GoreRegistry.bloodColor(livingVictim);
+                    BloodFx.hitBurst(serverLevel, impact, shotDir, dmg, blood);
                     level().playSound(null, impact.x, impact.y, impact.z,
-                            com.techguns.techguns3.registry.TGSounds.FLESH_IMPACT.get(),
-                            net.minecraft.sounds.SoundSource.HOSTILE, 0.9f,
+                            TGSounds.FLESH_IMPACT.get(),
+                            SoundSource.HOSTILE, 0.9f,
                             0.85f + serverLevel.getRandom().nextFloat() * 0.3f);
                 }
                 if (spec.fireTicks() > 0) {
-                    com.techguns.techguns3.fx.FxParticles.flameBurst(serverLevel, impact, 5);
+                    FxParticles.flameBurst(serverLevel, impact, 5);
                 }
                 if (spec.slimeAmount() > 0.0f) {
-                    com.techguns.techguns3.fx.FxParticles.slimeBurst(serverLevel, impact, 6);
+                    FxParticles.slimeBurst(serverLevel, impact, 6);
                 }
             }
             discard();
@@ -378,26 +396,24 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 level().addFreshEntity(new MuzzleFlashEntity(level(),
                         at.x, at.y, at.z, MuzzleFlashEntity.WHITE, 0.17f));
                 // The impact looks like the material it hit.
-                com.techguns.techguns3.fx.FxParticles.impactMaterial(
-                        (ServerLevel) level(), at, normal,
-                        com.techguns.techguns3.fx.SurfaceMaterial.of(sound));
-                // A hole in the surface, flat on the face that was hit.
-                level().addParticle(new com.techguns.techguns3.registry.TGParticles.BulletHoleOptions(
-                        blockHit.getBlockPos(), face.ordinal()), at.x, at.y, at.z, 0, 0, 0);
+                FxParticles.impactMaterial((ServerLevel) level(), at, normal, SurfaceMaterial.of(sound));
+                // A hole in the surface, flat on the face that was hit. sendParticles
+                // is the server-side emission; Level.addParticle would be a no-op here.
+                ((ServerLevel) level()).sendParticles(
+                        new TGParticles.BulletHoleOptions(blockHit.getBlockPos(), face.ordinal()),
+                        at.x, at.y, at.z, 1, 0, 0, 0, 0, FxParticles.RANDOMIZATION_DEFAULT);
                 if (spec.fireTicks() > 0) {
                     // The stream sets the world alight where it lands, like the
                     // original flamethrower: bloom of flame + a real fire block.
-                    com.techguns.techguns3.fx.FxParticles.flameBurst(
-                            (ServerLevel) level(), at, 9);
+                    FxParticles.flameBurst((ServerLevel) level(), at, 9);
                     igniteAt((ServerLevel) level(), at, face);
                 }
                 if (spec.slimeAmount() > 0.0f) {
-                    com.techguns.techguns3.entity.SlimeBlobEntity.growAt(
-                            (ServerLevel) level(), blockHit.getBlockPos(),
+                    SlimeBlobEntity.growAt((ServerLevel) level(), blockHit.getBlockPos(),
                             blockHit.getDirection(), spec.slimeAmount());
                 }
                 if (spec.hasExplosive()) {
-                    com.techguns.techguns3.combat.ExplosiveCombat.explode((ServerLevel) level(),
+                    ExplosiveCombat.explode((ServerLevel) level(),
                             getOwner() instanceof LivingEntity livingOwner ? livingOwner : null,
                             at, spec);
                 }
@@ -411,27 +427,20 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
      * weapon, like flint and steel: no mob-griefing check). Tries the impact
      * cell first, then the cell above, and only onto a sturdy top face.
      */
-    private static void igniteAt(ServerLevel level, Vec3 at, net.minecraft.core.Direction face) {
-        try {
-            net.minecraft.core.BlockPos base = net.minecraft.core.BlockPos.containing(at.x, at.y, at.z);
-            net.minecraft.core.BlockPos[] candidates = {
-                    base, base.relative(face), base.above()
-            };
-            for (net.minecraft.core.BlockPos pos : candidates) {
-                if (!level.getBlockState(pos).isAir()) continue;
-                net.minecraft.core.BlockPos below = pos.below();
-                if (!level.getBlockState(below).isFaceSturdy(level, below, net.minecraft.core.Direction.UP)) continue;
-                level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.FIRE.defaultBlockState());
-                return;
-            }
-        } catch (Exception e) {
-            com.techguns.techguns3.TechGuns3.LOGGER.debug("[TechGuns3] bullet ignite failed", e);
+    private static void igniteAt(ServerLevel level, Vec3 at, Direction face) {
+        BlockPos base = BlockPos.containing(at.x, at.y, at.z);
+        BlockPos[] candidates = {base, base.relative(face), base.above()};
+        for (BlockPos pos : candidates) {
+            if (!level.getBlockState(pos).isAir()) continue;
+            BlockPos below = pos.below();
+            if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) continue;
+            level.setBlockAndUpdate(pos, Blocks.FIRE.defaultBlockState());
+            return;
         }
     }
 
-    private static net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.sounds.SoundEvent, net.minecraft.sounds.SoundEvent> impactFor(
-            SoundType sound) {
-        return switch (com.techguns.techguns3.fx.SurfaceMaterial.of(sound)) {
+    private static DeferredHolder<SoundEvent, SoundEvent> impactFor(SoundType sound) {
+        return switch (SurfaceMaterial.of(sound)) {
             case WOOD -> TGSounds.IMPACT_WOOD;
             case GLASS -> TGSounds.IMPACT_GLASS;
             case METAL -> TGSounds.IMPACT_METAL;
@@ -457,8 +466,8 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
     }
 
     @Override
-    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
-        builder.define(DATA_COLOR, 0xFFD9A8);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(DATA_COLOR, GunFxPresets.TRACER_WARM);
         builder.define(DATA_BULK, 1.0f);
         builder.define(DATA_MAIN, false);
     }
@@ -479,8 +488,8 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
 
     /** Inventory representation only; in flight the tracer is rendered with particles. */
     @Override
-    public net.minecraft.world.item.ItemStack getItem() {
-        return new net.minecraft.world.item.ItemStack(TGItems.RIFLE_ROUNDS.get());
+    public ItemStack getItem() {
+        return new ItemStack(TGItems.RIFLE_ROUNDS.get());
     }
 
     @Override
@@ -497,12 +506,12 @@ public class BulletProjectile extends Projectile implements ItemSupplier {
                 input.getFloatOr("WeaveAmp", 0.0f),
                 input.getFloatOr("WeaveFreq", 0.0f),
                 input.getIntOr("HomingId", -1),
-                input.getFloatOr("HomingTurn", 0.2f),
+                input.getFloatOr("HomingTurn", DEFAULT_HOMING_TURN),
                 input.getFloatOr("Slime", 0.0f),
                 input.getIntOr("PoisonTicks", 0),
                 input.getIntOr("PoisonAmp", 0),
                 input.getIntOr("FireTicks", 0),
-                input.getIntOr("TracerColor", 0xFFD9A8),
+                input.getIntOr("TracerColor", GunFxPresets.TRACER_WARM),
                 input.getFloatOr("Bulk", 1.0f),
                 input.getFloatOr("ExpMax", 0.0f),
                 input.getFloatOr("ExpMin", 0.0f),

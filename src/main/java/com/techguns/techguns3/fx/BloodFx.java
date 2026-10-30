@@ -3,7 +3,6 @@ package com.techguns.techguns3.fx;
 import com.techguns.techguns3.TGConfig;
 import com.techguns.techguns3.damagesystem.GoreRegistry;
 import com.techguns.techguns3.registry.TGParticles;
-import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
@@ -50,7 +49,7 @@ public final class BloodFx {
             level.sendParticles(new TGParticles.BloodOptions(bloodColor, GoreRegistry.BLOOD_DARK,
                             size, 0.03f, life, 0.30f, 0.96f),
                     at.x, at.y, at.z, 1, v.x, v.y, v.z, 1.0,
-                    ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    FxParticles.RANDOMIZATION_DEFAULT);
         }
 
         // Backmist hanging at the wound: dark, slow, grows like breath on air.
@@ -63,7 +62,7 @@ public final class BloodFx {
             level.sendParticles(new TGParticles.PuffOptions(darken(bloodColor), GoreRegistry.BLOOD_DARK,
                             0.22f, 0.5f, 22, -0.01f, 0.96f),
                     at.x, at.y, at.z, 1, v.x, v.y, v.z, 1.0,
-                    ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    FxParticles.RANDOMIZATION_DEFAULT);
         }
 
         // Meat: every flesh hit tears off something solid that arcs and falls.
@@ -77,7 +76,7 @@ public final class BloodFx {
             level.sendParticles(new TGParticles.PuffOptions(darken(bloodColor), GoreRegistry.BLOOD_DARK,
                             0.20f, 0.07f, 26, 0.35f, 0.97f),
                     at.x, at.y, at.z, 1, v.x, v.y, v.z, 1.0,
-                    ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    FxParticles.RANDOMIZATION_DEFAULT);
         }
     }
 
@@ -133,7 +132,7 @@ public final class BloodFx {
             level.sendParticles(new TGParticles.PuffOptions(darken(bloodColor), GoreRegistry.BLOOD_DARK,
                             0.3f, 0.65f, 26, -0.01f, 0.96f),
                     at.x, at.y, at.z, 1, v.x, v.y, v.z, 1.0,
-                    ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    FxParticles.RANDOMIZATION_DEFAULT);
         }
         // Solid flesh bits, always: even a failed gib roll leaves meat behind.
         int bits = scaled(5);
@@ -145,7 +144,7 @@ public final class BloodFx {
             level.sendParticles(new TGParticles.PuffOptions(darken(bloodColor), GoreRegistry.BLOOD_DARK,
                             0.20f, 0.07f, 28, 0.35f, 0.97f),
                     at.x, at.y, at.z, 1, v.x, v.y, v.z, 1.0,
-                    ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                    FxParticles.RANDOMIZATION_DEFAULT);
         }
         // Low flat ring hugging the ground, like the TG2 shockwave but wet.
         FxParticles.impactRing(level, new Vec3(at.x, at.y - 0.4, at.z), new Vec3(0, 1, 0), bloodColor, 16);
@@ -156,7 +155,7 @@ public final class BloodFx {
         level.sendParticles(new TGParticles.BloodOptions(bloodColor, GoreRegistry.BLOOD_DARK,
                         size, 0.03f, life, 0.32f, 0.96f),
                 at.x, at.y, at.z, 1, v.x, v.y, v.z, 1.0,
-                ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                FxParticles.RANDOMIZATION_DEFAULT);
     }
 
     private static void sendBlood(ServerLevel level, Vec3 at, Vec3 v,
@@ -164,7 +163,7 @@ public final class BloodFx {
         level.sendParticles(new TGParticles.BloodOptions(bloodColor, GoreRegistry.BLOOD_DARK,
                         size, 0.03f, life, 0.32f, 0.96f),
                 at.x, at.y, at.z, 1, v.x, v.y, v.z, 1.0,
-                ClientboundLevelParticlesPacket.RandomizationType.DEFAULT);
+                FxParticles.RANDOMIZATION_DEFAULT);
     }
 
     private static int scaled(int count) {

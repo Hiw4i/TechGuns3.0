@@ -4,6 +4,8 @@ import com.techguns.techguns3.registry.TGEntities;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -114,8 +116,7 @@ public class MuzzleFlashEntity extends Entity {
     }
 
     @Override
-    public boolean hurtServer(net.minecraft.server.level.ServerLevel level,
-                              net.minecraft.world.damagesource.DamageSource damageSource, float amount) {
+    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
         return false;
     }
 

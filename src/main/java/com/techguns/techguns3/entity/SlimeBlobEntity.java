@@ -21,6 +21,15 @@ import net.minecraft.world.phys.Vec3;
  * at critical mass it pops into a block-damaging explosion.
  */
 public class SlimeBlobEntity extends Entity {
+    /** Squared distance at which a new dose merges into an existing blob (1.2 blocks). */
+    private static final double MERGE_RADIUS_SQ = 1.44;
+    /** A dose below this is rounded up so a blob always visibly appears. */
+    private static final float MIN_GROWTH = 0.05f;
+    /** Pop strength: base + per-growth scale, capped (CE slime bomb). */
+    private static final float POP_BASE_POWER = 1.5f;
+    private static final float POP_GROWTH_POWER = 1.5f;
+    private static final float POP_GROWTH_CAP = 1.5f;
+
     private static final EntityDataAccessor<Integer> FACE =
             SynchedEntityData.defineId(SlimeBlobEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> GROWTH =
@@ -59,7 +68,7 @@ public class SlimeBlobEntity extends Entity {
         Vec3 anchor = Vec3.atCenterOf(block)
                 .add(face.getStepX() * 0.55, face.getStepY() * 0.55, face.getStepZ() * 0.55);
         SlimeBlobEntity existing = null;
-        double best = 1.44;
+        double best = MERGE_RADIUS_SQ;
         for (SlimeBlobEntity blob : level.getEntitiesOfClass(SlimeBlobEntity.class,
                 new AABB(anchor.x - 1, anchor.y - 1, anchor.z - 1,
                         anchor.x + 1, anchor.y + 1, anchor.z + 1))) {
@@ -79,7 +88,7 @@ public class SlimeBlobEntity extends Entity {
             existing.entityData.set(GROWTH, grown);
             return false;
         }
-        level.addFreshEntity(new SlimeBlobEntity(level, block, face, Math.max(0.05f, amount)));
+        level.addFreshEntity(new SlimeBlobEntity(level, block, face, Math.max(MIN_GROWTH, amount)));
         return false;
     }
 
@@ -90,7 +99,7 @@ public class SlimeBlobEntity extends Entity {
         double cx = at.x - face.getStepX() * 0.55;
         double cy = at.y - face.getStepY() * 0.55;
         double cz = at.z - face.getStepZ() * 0.55;
-        float power = 1.5f + 1.5f * Math.min(1.5f, blob.growth());
+        float power = POP_BASE_POWER + POP_GROWTH_POWER * Math.min(POP_GROWTH_CAP, blob.growth());
         blob.discard();
         level.addFreshEntity(new MuzzleFlashEntity(level, at.x, at.y, at.z,
                 MuzzleFlashEntity.WHITE, 0.6f));

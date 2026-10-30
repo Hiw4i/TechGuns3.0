@@ -4,6 +4,8 @@ import com.techguns.techguns3.registry.TGEntities;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -18,12 +20,13 @@ import net.minecraft.world.phys.Vec3;
  * and discards it on release (the shot itself carries the scaled damage).
  */
 public class ChargeOrbEntity extends Entity {
+    /** Ticks the orb survives without a refresh (never reached while held). */
+    public static final int MAX_LIFE = 8;
+
     private static final EntityDataAccessor<Float> CHARGE =
             SynchedEntityData.defineId(ChargeOrbEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Integer> SEED =
-            SynchedEntityData.defineId(ChargeOrbEntity.class, EntityDataSerializers.INT);
 
-    private int life = 8;
+    private int life = MAX_LIFE;
 
     public ChargeOrbEntity(EntityType<ChargeOrbEntity> type, Level level) {
         super(type, level);
@@ -34,7 +37,6 @@ public class ChargeOrbEntity extends Entity {
         this(TGEntities.CHARGE_ORB.get(), level);
         setPos(at.x, at.y, at.z);
         entityData.set(CHARGE, charge);
-        entityData.set(SEED, level.getRandom().nextInt());
     }
 
     public float charge() {
@@ -45,7 +47,7 @@ public class ChargeOrbEntity extends Entity {
     public void updateCharge(Vec3 at, float charge) {
         setPos(at.x, at.y, at.z);
         entityData.set(CHARGE, charge);
-        life = 8;
+        life = MAX_LIFE;
     }
 
     @Override
@@ -55,8 +57,7 @@ public class ChargeOrbEntity extends Entity {
     }
 
     @Override
-    public boolean hurtServer(net.minecraft.server.level.ServerLevel level,
-                              net.minecraft.world.damagesource.DamageSource damageSource, float amount) {
+    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
         return false;
     }
 
@@ -66,20 +67,17 @@ public class ChargeOrbEntity extends Entity {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(CHARGE, 0.0f);
-        builder.define(SEED, 0);
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
-        life = input.getIntOr("Life", 8);
+        life = input.getIntOr("Life", MAX_LIFE);
         entityData.set(CHARGE, input.getFloatOr("Charge", 0.0f));
-        entityData.set(SEED, input.getIntOr("Seed", 0));
     }
 
     @Override
     protected void addAdditionalSaveData(ValueOutput output) {
         output.putInt("Life", life);
         output.putFloat("Charge", charge());
-        output.putInt("Seed", entityData.get(SEED));
     }
 }

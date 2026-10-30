@@ -23,6 +23,9 @@ import net.minecraft.world.phys.Vec3;
  * like {@code ModelGibsBiped}; unlisted mobs reuse the same generic chunks.</p>
  */
 public class FlyingGibEntity extends Entity {
+    /** Part ids 0..5 (head, torso, four limbs); anything else clamps. */
+    private static final int MAX_PART = 5;
+
     /** Visible lifetime, ticked symmetrically on both sides so the end fade matches. */
     public static final int MAX_LIFE = 110;
     /** Last ticks spent squashing into the ground before the discard. */
@@ -48,7 +51,7 @@ public class FlyingGibEntity extends Entity {
         this(TGEntities.FLYING_GIB.get(), level);
         setPos(pos.x, pos.y, pos.z);
         setDeltaMovement(velocity);
-        entityData.set(PART, Math.max(0, Math.min(5, part)));
+        entityData.set(PART, Math.max(0, Math.min(MAX_PART, part)));
         entityData.set(COLOR, color);
         entityData.set(SCALE, scale);
         entityData.set(SEED, level.getRandom().nextInt());
@@ -152,7 +155,8 @@ public class FlyingGibEntity extends Entity {
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
         age = input.getIntOr("Age", 0);
-        entityData.set(PART, input.getIntOr("Part", 0));
+        // Clamp like the ctor: an edited NBT part id must not reach the renderer.
+        entityData.set(PART, Math.max(0, Math.min(MAX_PART, input.getIntOr("Part", 0))));
         entityData.set(COLOR, input.getIntOr("Color", 0xC81818));
         entityData.set(SCALE, input.getFloatOr("Scale", 1.0f));
         entityData.set(SEED, input.getIntOr("Seed", 0));

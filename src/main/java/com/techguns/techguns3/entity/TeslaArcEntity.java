@@ -4,6 +4,8 @@ import com.techguns.techguns3.registry.TGEntities;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -17,12 +19,15 @@ import org.joml.Vector3f;
  * so arcs look the same for every viewer with zero per-tick traffic.
  */
 public class TeslaArcEntity extends Entity {
+    /** Ticks one arc link stays visible (CE bolt flicker). */
+    public static final int MAX_LIFE = 4;
+
     private static final EntityDataAccessor<org.joml.Vector3fc> END =
             SynchedEntityData.defineId(TeslaArcEntity.class, EntityDataSerializers.VECTOR3);
     private static final EntityDataAccessor<Integer> SEED =
             SynchedEntityData.defineId(TeslaArcEntity.class, EntityDataSerializers.INT);
 
-    private int life = 4;
+    private int life = MAX_LIFE;
 
     public TeslaArcEntity(EntityType<TeslaArcEntity> type, Level level) {
         super(type, level);
@@ -52,8 +57,7 @@ public class TeslaArcEntity extends Entity {
     }
 
     @Override
-    public boolean hurtServer(net.minecraft.server.level.ServerLevel level,
-                              net.minecraft.world.damagesource.DamageSource damageSource, float amount) {
+    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
         return false;
     }
 
@@ -70,7 +74,7 @@ public class TeslaArcEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
-        life = input.getIntOr("Life", 4);
+        life = input.getIntOr("Life", MAX_LIFE);
         entityData.set(END, new Vector3f(
                 input.getFloatOr("EndX", 0), input.getFloatOr("EndY", 0), input.getFloatOr("EndZ", 0)));
         entityData.set(SEED, input.getIntOr("Seed", 0));

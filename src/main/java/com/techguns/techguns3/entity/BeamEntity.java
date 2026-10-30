@@ -18,12 +18,15 @@ import org.joml.Vector3f;
  * straight colored quad, not a fractal arc.
  */
 public class BeamEntity extends Entity {
+    /** Ticks the beam survives without a refresh (never reached while held). */
+    public static final int MAX_LIFE = 5;
+
     private static final EntityDataAccessor<org.joml.Vector3fc> END =
             SynchedEntityData.defineId(BeamEntity.class, EntityDataSerializers.VECTOR3);
     private static final EntityDataAccessor<Integer> COLOR =
             SynchedEntityData.defineId(BeamEntity.class, EntityDataSerializers.INT);
 
-    private int life = 5;
+    private int life = MAX_LIFE;
 
     public BeamEntity(EntityType<BeamEntity> type, Level level) {
         super(type, level);
@@ -39,7 +42,7 @@ public class BeamEntity extends Entity {
 
     public org.joml.Vector3fc endOffset() { return entityData.get(END); }
     public int color() { return entityData.get(COLOR); }
-    public float fade() { return Math.max(0.0f, Math.min(1.0f, life / 5.0f)); }
+    public float fade() { return Math.max(0.0f, Math.min(1.0f, life / (float) MAX_LIFE)); }
 
     /**
      * Sustained-beam refresh (NDRProjectile teleport 1:1): re-anchor at the
@@ -49,7 +52,7 @@ public class BeamEntity extends Entity {
     public void updateEnd(Vec3 from, Vec3 to) {
         setPos(from.x, from.y, from.z);
         entityData.set(END, new Vector3f((float) (to.x - from.x), (float) (to.y - from.y), (float) (to.z - from.z)));
-        life = 5;
+        life = MAX_LIFE;
     }
 
     @Override
@@ -75,7 +78,7 @@ public class BeamEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
-        life = input.getIntOr("Life", 5);
+        life = input.getIntOr("Life", MAX_LIFE);
         entityData.set(END, new Vector3f(
                 input.getFloatOr("EndX", 0), input.getFloatOr("EndY", 0), input.getFloatOr("EndZ", 0)));
         entityData.set(COLOR, input.getIntOr("Color", 0xFF2A1A));
