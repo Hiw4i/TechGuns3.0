@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 /**
  * A bullet hole on a surface.
@@ -24,16 +25,8 @@ public final class BulletHoleParticle extends SingleQuadParticle {
     private static final int FADE = 120;
     /** How far the quad floats in front of the surface. */
     private static final float OFFSET = 0.006f;
-
-    /** The rotation that turns the quad towards a face, indexed like Direction. */
-    private static final Quaternionf[] FACE_ROTATIONS = {
-            faceRotation(0.0f, 180.0f, 0.0f),   // south
-            faceRotation(0.0f, 0.0f, 0.0f),     // north
-            faceRotation(0.0f, 90.0f, 0.0f),    // east
-            faceRotation(0.0f, -90.0f, 0.0f),   // west
-            faceRotation(-90.0f, 0.0f, 0.0f),   // up
-            faceRotation(90.0f, 0.0f, 0.0f),    // down
-    };
+    /** The vanilla base quad lies in the XY plane: its normal is +Z. */
+    private static final Vector3f BASE_NORMAL = new Vector3f(0.0f, 0.0f, 1.0f);
 
     private final BlockPos blockPos;
     private final BlockState blockState;
@@ -54,15 +47,12 @@ public final class BulletHoleParticle extends SingleQuadParticle {
         this.zo = this.z;
         this.quadSize = 0.13f;
         this.setLifetime(MAX_LIFE);
-        this.rotation.set(FACE_ROTATIONS[face.ordinal()]);
-    }
-
-    private static Quaternionf faceRotation(float x, float y, float z) {
-        Quaternionf q = new Quaternionf();
-        if (x != 0.0f) q.rotateX((float) Math.toRadians(x));
-        if (y != 0.0f) q.rotateY((float) Math.toRadians(y));
-        if (z != 0.0f) q.rotateZ((float) Math.toRadians(z));
-        return q;
+        // Shortest-arc rotation from the quad's base normal onto the face
+        // normal, so the quad always lies flat on the surface that was hit.
+        // A hand-written per-face table was indexed with the wrong direction
+        // order once already — deriving it from the normal cannot drift.
+        this.rotation.rotationTo(BASE_NORMAL,
+                new Vector3f(face.getStepX(), face.getStepY(), face.getStepZ()));
     }
 
     private final SingleQuadParticle.FacingCameraMode facing = (target, camera, partialTickTime) ->

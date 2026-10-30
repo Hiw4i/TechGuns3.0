@@ -66,7 +66,7 @@ public class TGArmedMob extends Monster {
     public static final int MAX_SPARE_MAGAZINES = 64;
     public static final int MAX_BUILD_MATERIALS = 256;
     /** Equipment drop chance for NPCs that do not keep their guns (vanilla default). */
-    private static final float NPC_GUN_DROP_CHANCE = 0.085f;
+    public static final float NPC_GUN_DROP_CHANCE = 0.085f;
     /** Weapon behaviour defaults for profiles missing the combat block. */
     private static final float DEFAULT_ACCURACY = 0.4f;
     private static final double DEFAULT_DAMAGE_MULTIPLIER = 0.5;

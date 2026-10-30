@@ -149,6 +149,10 @@ public final class TGPickupWeaponGoal extends Goal {
                 taken.set(TGDataComponents.AMMO.get(), gun.def().magazine());
             }
             mob.setItemSlot(EquipmentSlot.MAINHAND, taken);
+            // Scavenged iron follows the same death-drop policy as the gun the
+            // mob spawned with (guaranteed when keep-guns-on-death is on).
+            mob.setDropChance(EquipmentSlot.MAINHAND,
+                    TGConfig.mobsKeepGunsOnDeath() ? 1.0f : TGArmedMob.NPC_GUN_DROP_CHANCE);
             stack.shrink(1);
             if (stack.isEmpty()) entity.discard();
         } else {

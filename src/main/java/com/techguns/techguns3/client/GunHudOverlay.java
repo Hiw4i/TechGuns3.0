@@ -32,6 +32,8 @@ public final class GunHudOverlay {
 
     private static final int PANEL_W = 148;
     private static final int PANEL_H = 46;
+    /** Everything (panel, text, bars) is drawn scaled down by this factor. */
+    private static final float HUD_SCALE = 0.75f;
 
     /** Below this part of the magazine the counter starts to pulse. */
     private static final float LOW_AMMO_SHARE = 0.25f;
@@ -48,10 +50,19 @@ public final class GunHudOverlay {
         int magazine = stats.magazineSize();
         int reserve = countReserve(mc.player.getInventory(), gun);
 
-        int x = extractor.guiWidth() - PANEL_W - 6;
-        int y = extractor.guiHeight() - PANEL_H - 6;
+        int scaledW = Math.round(PANEL_W * HUD_SCALE);
+        int scaledH = Math.round(PANEL_H * HUD_SCALE);
+        int x = extractor.guiWidth() - scaledW - 6;
+        int y = extractor.guiHeight() - scaledH - 6;
 
-        extractor.blit(PANEL, x, y, x + PANEL_W, y + PANEL_H, 0.0f, 1.0f, 0.0f, 1.0f);
+        // The card is laid out in its own 148x46 coordinate space and drawn
+        // scaled, so the layout constants stay readable at any HUD scale.
+        var pose = extractor.pose();
+        pose.pushMatrix();
+        pose.translate(x, y);
+        pose.scale(HUD_SCALE, HUD_SCALE);
+
+        extractor.blit(PANEL, 0, 0, PANEL_W, PANEL_H, 0.0f, 1.0f, 0.0f, 1.0f);
 
         var font = mc.font;
         // Weapon name, dimmed. Long names are cut so they never run into the
@@ -61,12 +72,12 @@ public final class GunHudOverlay {
         if (font.width(label) > room) {
             label = font.plainSubstrByWidth(label, Math.max(0, room - font.width("..."))) + "...";
         }
-        extractor.text(font, label, x + 12, y + 6, 0xFFB9BEC7, true);
+        extractor.text(font, label, 12, 6, 0xFFB9BEC7, true);
 
         // Ammunition icon of the weapon.
         Item ammoItem = gun.ammoItem();
         if (ammoItem != null && ammoItem != net.minecraft.world.item.Items.AIR) {
-            extractor.item(new ItemStack(ammoItem), x + PANEL_W - 22, y + 4);
+            extractor.item(new ItemStack(ammoItem), PANEL_W - 22, 4);
         }
 
         // Rounds in the magazine, big, and the size of the magazine next to it.
@@ -79,22 +90,22 @@ public final class GunHudOverlay {
             float pulse = 0.5f + 0.5f * (float) Math.sin(System.nanoTime() / 120_000_000.0);
             ammoColor = lerpColor(0xFFE05A5A, 0xFFE8A22A, pulse);
         }
-        extractor.text(font, String.valueOf(loaded), x + 12, y + 16, ammoColor, true);
+        extractor.text(font, String.valueOf(loaded), 12, 16, ammoColor, true);
         int loadedWidth = font.width(String.valueOf(loaded));
-        extractor.text(font, "/ " + magazine, x + 12 + loadedWidth + 3, y + 21, 0xFF8A9099, true);
+        extractor.text(font, "/ " + magazine, 12 + loadedWidth + 3, 21, 0xFF8A9099, true);
 
         // The fire mode of the weapon, behind the rounds.
-        extractor.text(font, stats.semiAuto() ? "SEMI" : "AUTO", x + 78, y + 21, 0xFF6E747E, true);
+        extractor.text(font, stats.semiAuto() ? "SEMI" : "AUTO", 78, 21, 0xFF6E747E, true);
 
         // Rounds in the inventory.
         if (reserve > 0) {
-            extractor.text(font, String.valueOf(reserve), x + PANEL_W - 40, y + 22, 0xFFB9BEC7, true);
+            extractor.text(font, String.valueOf(reserve), PANEL_W - 40, 22, 0xFFB9BEC7, true);
         }
 
         // Reload progress.
         float reload = GunClientHandler.reloadProgress(held);
         if (reload > 0.0f) {
-            drawBar(extractor, x + 12, y + PANEL_H - 9, PANEL_W - 30, reload, 0xFFE8A22A);
+            drawBar(extractor, 12, PANEL_H - 9, PANEL_W - 30, reload, 0xFFE8A22A);
         }
 
         // Charge bar of the plasma gun.
@@ -103,13 +114,15 @@ public final class GunHudOverlay {
             float charge = GunClientHandler.chargeProgress(held);
             if (charge >= 0.0f) {
                 boolean full = charge >= 1.0f;
-                drawBar(extractor, x + 12, y + PANEL_H - 9, PANEL_W - 30, charge,
+                drawBar(extractor, 12, PANEL_H - 9, PANEL_W - 30, charge,
                         full ? 0xFF39FF5E : 0xFF2A9A3A);
                 if (full) {
-                    extractor.text(font, "MAX", x + PANEL_W - 30, y + PANEL_H - 13, 0xFF39FF5E, true);
+                    extractor.text(font, "MAX", PANEL_W - 30, PANEL_H - 13, 0xFF39FF5E, true);
                 }
             }
         }
+
+        pose.popMatrix();
     }
 
     /** A bar with a dark groove and a coloured fill. */
