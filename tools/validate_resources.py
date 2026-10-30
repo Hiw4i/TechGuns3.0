@@ -306,7 +306,10 @@ else:
 
 # --- armed NPC profiles (data/techguns3/mobs) ---
 entities_java = (root / "src/main/java/com/techguns/techguns3/registry/TGEntities.java").read_text(encoding="utf-8")
+# TGEntities registers TGArmedMob types directly or through the humanoidNpc()
+# helper; keep both shapes in sync with the Java source.
 mob_ids = set(re.findall(r'registerEntityType\("([a-z0-9_]+)",\s*TGArmedMob::new', entities_java))
+mob_ids |= set(re.findall(r'humanoidNpc\("([a-z0-9_]+)"', entities_java))
 mob_ids |= {"zombie_soldier", "bandit"}
 mobs_dir = resources / "data/techguns3/mobs"
 if not mobs_dir.is_dir():

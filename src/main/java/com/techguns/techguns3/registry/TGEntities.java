@@ -116,7 +116,9 @@ public final class TGEntities {
         /**
      * Standard humanoid NPC body (vanilla player footprint, 1.95 tall) tracked
      * at 10 chunks. Profiles rescale attributes at spawn; registration only
-     * carries safe dimensions.
+     * carries safe dimensions. NOTE: tools/validate_resources.py matches a
+     * humanoidNpc call shape to check mob datapack coverage — keep the id
+     * string literal on the call when renaming.
      */
     private static DeferredHolder<EntityType<?>, EntityType<TGArmedMob>> humanoidNpc(String name) {
         return humanoidNpc(name, 0.6f, 1.95f);
