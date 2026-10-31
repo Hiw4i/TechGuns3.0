@@ -133,7 +133,7 @@ public final class GunClientHandler {
         // every shot mutates the AMMO component, which must NOT look like a switch.
         if (held.getItem() != lastGun.getItem()) {
             // TEMP DIAGNOSTIC: pins down the reported per-shot draw replay.
-            com.techguns.techguns3.TechGuns3.LOGGER.info(
+            com.techguns.techguns3.TechGuns3.LOGGER.debug(
                     "[TechGuns3] weapon switch: {} -> {} (draw anim)",
                     lastGun.isEmpty() ? "<empty>" : lastGun.getItem(), held.getItem());
             lastGun = held.copy();
