@@ -163,9 +163,7 @@ public final class FxRenderTypes {
             return false;
         }
         try {
-            Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
-            Object instance = api.getMethod("getInstance").invoke(null);
-            return (boolean) api.getMethod("isShaderPackInUse").invoke(instance);
+            return IrisFxBridge.shaderPackInUse();
         } catch (Throwable t) {
             // Iris is installed but its API is not the expected shape: play
             // safe and draw with the vanilla-shader family.
