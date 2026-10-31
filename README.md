@@ -54,7 +54,7 @@ Three client settings let you tune the feel without touching the code (see `conf
 | `adsPose` | 1.0 | How far the weapon comes up to the shoulder while aiming. 0 disables the aim pose. |
 | `weaponSway` | 1.0 | Mouse sway of the held weapon. 0 disables it. |
 | `weaponBob` | 1.0 | Walk bob of the held weapon. 0 disables it. |
-| `enhancedFx` | true | Use the own effect shaders. Turn off to fall back to the vanilla core shaders. |
+| `enhancedFx` | true | Use the own effect shaders. While an Iris shader pack is active the effects switch to the vanilla-shader path automatically. Turn off to always use the vanilla path. |
 
 Spawn the two enemies with `/summon techguns3:zombie_soldier` and `/summon techguns3:bandit`. They also spawn naturally in the overworld. Place `techguns3:turret_base` and right-click it to open its control screen. The left 3x3 slots take matching loaded magazines or loose shells; the right 3x3 slots receive empty magazines. The middle slots take a gun and optional `techguns3:turret_armor_iron`. The screen shows loaded rounds, head health and redstone status, with buttons for PvP and animal targeting. The turret attacks permitted targets within 32 blocks. A redstone signal disables firing. An iron ingot used on the base repairs the damaged head. The turret never uses energy.
 

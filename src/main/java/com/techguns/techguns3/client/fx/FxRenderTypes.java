@@ -130,6 +130,50 @@ public final class FxRenderTypes {
 
     private static final Map<String, RenderType> TEXTURED = new ConcurrentHashMap<>();
 
+    /** Cached Iris shader-pack check, re-queried twice a second. */
+    private static boolean shaderPackInUse;
+    private static long shaderPackCheckedAt;
+
+    /**
+     * True while an Iris shader pack is rendering the world.
+     *
+     * <p>The enhanced pipelines carry own GLSL, which a shader pack knows
+     * nothing about: it would not receive the pack's lighting and fog. The
+     * vanilla-shader family keeps every effect alive under a pack, so the
+     * render types switch to it while a pack is active and back when it is
+     * turned off.</p>
+     */
+    private static boolean shaderPackInUse() {
+        long now = System.nanoTime();
+        if (shaderPackCheckedAt == 0L || now - shaderPackCheckedAt > 500_000_000L) {
+            boolean wasInUse = shaderPackInUse;
+            shaderPackCheckedAt = now;
+            shaderPackInUse = detectShaderPackInUse();
+            if (shaderPackInUse != wasInUse) {
+                TechGuns3.LOGGER.info("[TechGuns3] shader pack {}: using the {} FX path",
+                        shaderPackInUse ? "active" : "off",
+                        shaderPackInUse ? "vanilla-shader" : "enhanced");
+            }
+        }
+        return shaderPackInUse;
+    }
+
+    private static boolean detectShaderPackInUse() {
+        if (!net.neoforged.fml.ModList.get().isLoaded("iris")) {
+            return false;
+        }
+        try {
+            Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            Object instance = api.getMethod("getInstance").invoke(null);
+            return (boolean) api.getMethod("isShaderPackInUse").invoke(instance);
+        } catch (Throwable t) {
+            // Iris is installed but its API is not the expected shape: play
+            // safe and draw with the vanilla-shader family.
+            TechGuns3.LOGGER.debug("[TechGuns3] Iris API unavailable, assuming a shader pack is active", t);
+            return true;
+        }
+    }
+
     /** Additive textured render type for the given texture (vanilla shader). */
     public static RenderType additive(Identifier texture) {
         return TEXTURED.computeIfAbsent("legacy:" + texture, tex -> RenderType.create(
@@ -144,11 +188,15 @@ public final class FxRenderTypes {
     /**
      * Additive textured render type for the given texture, drawn with the own shader.
      *
+     * <p>While an Iris shader pack is active the vanilla-shader family is used
+     * instead, whatever {@code enhancedFx} says: the pack cannot light or fog
+     * the own GLSL.</p>
+     *
      * @param style how the sprite is drawn
      * @param texture the sprite sheet
      */
     public static RenderType styled(Style style, Identifier texture) {
-        if (!TGConfig.enhancedFx()) {
+        if (!TGConfig.enhancedFx() || shaderPackInUse()) {
             return additive(texture);
         }
         return TEXTURED.computeIfAbsent(style.name() + ":" + texture, key -> {

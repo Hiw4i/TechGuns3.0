@@ -116,7 +116,9 @@ public final class TGConfig {
             .defineInRange("weaponBob", 1.0, 0.0, 3.0);
     private static final ModConfigSpec.BooleanValue ENHANCED_FX = CLIENT
             .comment("Use the own effect shaders (soft edges on glows, fog that dims the light "
-                    + "instead of tinting it). Turn off to fall back to the vanilla core shaders.")
+                    + "instead of tinting it). While an Iris shader pack is active the effects "
+                    + "switch to the vanilla-shader path automatically; turn off to always "
+                    + "use the vanilla path.")
             .define("enhancedFx", true);
 
     static final ModConfigSpec COMMON_SPEC = COMMON.build();
