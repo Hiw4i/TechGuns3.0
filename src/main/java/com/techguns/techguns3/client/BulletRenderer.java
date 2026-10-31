@@ -133,6 +133,8 @@ public final class BulletRenderer extends EntityRenderer<BulletProjectile, Bulle
     @Override
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
+        // A flash of light does not block light: skip the pack's shadow pass.
+        if (!FxRenderTypes.renderFxNow()) return;
         Vector3f dir = DIR.set(state.motion).normalize();
         float speed = state.motion.length();
 

@@ -133,6 +133,22 @@ public final class FxRenderTypes {
     /** Cached Iris shader-pack check, re-queried twice a second. */
     private static boolean shaderPackInUse;
     private static long shaderPackCheckedAt;
+    /** True once the enhanced pipelines were handed to the pack's programs. */
+    private static volatile boolean packProgramsAssigned;
+
+    /**
+     * True while the effects may render. Inside the shadow pass of a shader
+     * pack they are skipped: a muzzle flash is a light, not something that
+     * blocks light.
+     */
+    public static boolean renderFxNow() {
+        if (!net.neoforged.fml.ModList.get().isLoaded("iris")) return true;
+        try {
+            return !IrisFxBridge.renderingShadowPass();
+        } catch (Throwable t) {
+            return true;
+        }
+    }
 
     /**
      * True while an Iris shader pack is rendering the world.
@@ -172,6 +188,25 @@ public final class FxRenderTypes {
         }
     }
 
+    /**
+     * Hands the enhanced pipelines to the pack's programs once, so the pack's
+     * lighting, fog and bloom apply to the effects. Failures leave the flag
+     * off and the render types fall back to the vanilla-shader family.
+     */
+    private static void tryAssignPackPrograms() {
+        if (packProgramsAssigned || !TGConfig.irisPackPrograms()) return;
+        if (!net.neoforged.fml.ModList.get().isLoaded("iris")) return;
+        try {
+            IrisFxBridge.assignEnhancedPipelines(
+                    FX_SPRITE, FX_GLOW, FX_ATLAS_GLOW, FX_ATLAS_ENERGY, FX_BEAM);
+            packProgramsAssigned = true;
+            TechGuns3.LOGGER.info("[TechGuns3] the enhanced FX pipelines follow the shader pack's lighting");
+        } catch (Throwable t) {
+            TechGuns3.LOGGER.info("[TechGuns3] the pack program hand-off failed, effects "
+                    + "draw with the vanilla-shader path under a pack", t);
+        }
+    }
+
     /** Additive textured render type for the given texture (vanilla shader). */
     public static RenderType additive(Identifier texture) {
         return TEXTURED.computeIfAbsent("legacy:" + texture, tex -> RenderType.create(
@@ -194,7 +229,8 @@ public final class FxRenderTypes {
      * @param texture the sprite sheet
      */
     public static RenderType styled(Style style, Identifier texture) {
-        if (!TGConfig.enhancedFx() || shaderPackInUse()) {
+        boolean packCovered = shaderPackInUse() && packProgramsAssigned && TGConfig.irisPackPrograms();
+        if (!TGConfig.enhancedFx() || (shaderPackInUse() && !packCovered)) {
             return additive(texture);
         }
         return TEXTURED.computeIfAbsent(style.name() + ":" + texture, key -> {
@@ -237,5 +273,6 @@ public final class FxRenderTypes {
         event.registerPipeline(FX_ATLAS_GLOW);
         event.registerPipeline(FX_ATLAS_ENERGY);
         event.registerPipeline(FX_BEAM);
+        tryAssignPackPrograms();
     }
 }

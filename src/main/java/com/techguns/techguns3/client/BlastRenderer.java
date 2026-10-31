@@ -68,6 +68,8 @@ public final class BlastRenderer extends EntityRenderer<BlastEntity, BlastRender
     @Override
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
+        // A flash of light does not block light: skip the pack's shadow pass.
+        if (!FxRenderTypes.renderFxNow()) return;
         float prog = Math.max(0.0f, Math.min(1.0f, state.progress));
         // Fast bloom, slow fade: 60% size in the first quarter.
         float grow = (float) (1.0 - Math.pow(1.0 - Math.min(1.0f, prog * 2.0f), 2.0));

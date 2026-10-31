@@ -65,6 +65,8 @@ public final class TeslaArcRenderer extends EntityRenderer<TeslaArcEntity, Tesla
     @Override
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
+        // A flash of light does not block light: skip the pack's shadow pass.
+        if (!FxRenderTypes.renderFxNow()) return;
         float len = state.end.length();
         if (len < FxGeometry.MIN_EFFECT_LENGTH) return;
         BoltGeometry.Bolt bolt = BoltGeometry.tesla(state.seed, 0, 0, 0, state.end.x, state.end.y, state.end.z);

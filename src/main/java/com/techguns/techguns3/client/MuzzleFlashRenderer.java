@@ -69,6 +69,8 @@ public final class MuzzleFlashRenderer extends EntityRenderer<MuzzleFlashEntity,
     @Override
     public void submit(State state, com.mojang.blaze3d.vertex.PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
+        // A flash of light does not block light: skip the pack's shadow pass.
+        if (!FxRenderTypes.renderFxNow()) return;
         if (state.fade <= 0.01f) return;
         MuzzleFlashArt.Art art = MuzzleFlashArt.art(state.texture);
         if (art != null) {

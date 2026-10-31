@@ -120,6 +120,11 @@ public final class TGConfig {
                     + "switch to the vanilla-shader path automatically; turn off to always "
                     + "use the vanilla path.")
             .define("enhancedFx", true);
+    private static final ModConfigSpec.BooleanValue IRIS_PACK_PROGRAMS = CLIENT
+            .comment("While a shader pack is active, hand the effect rendering to the pack's own "
+                    + "programs so pack lighting, fog and bloom apply to muzzle flashes, tracers "
+                    + "and beams. Turn off to draw the effects with the mod's own shaders under a pack.")
+            .define("irisPackPrograms", true);
 
     static final ModConfigSpec COMMON_SPEC = COMMON.build();
     static final ModConfigSpec CLIENT_SPEC = CLIENT.build();
@@ -153,6 +158,7 @@ public final class TGConfig {
     private static volatile double weaponSway = 1.0;
     private static volatile double weaponBob = 1.0;
     private static volatile boolean enhancedFx = true;
+    private static volatile boolean irisPackPrograms = true;
 
     public static double gunDamageMultiplier() { return gunDamageMultiplier; }
     public static double fxDensity() { return fxDensity; }
@@ -182,6 +188,7 @@ public final class TGConfig {
     public static double weaponSway() { return weaponSway; }
     public static double weaponBob() { return weaponBob; }
     public static boolean enhancedFx() { return enhancedFx; }
+    public static boolean irisPackPrograms() { return irisPackPrograms; }
 
     // Loading/Reloading only: the base ModConfigEvent also covers Unloading,
     // where the spec is already torn down and .get() would throw on halt.
@@ -226,6 +233,7 @@ public final class TGConfig {
             weaponSway = WEAPON_SWAY.get();
             weaponBob = WEAPON_BOB.get();
             enhancedFx = ENHANCED_FX.get();
+            irisPackPrograms = IRIS_PACK_PROGRAMS.get();
         }
     }
 }
